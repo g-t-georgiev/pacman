@@ -1,0 +1,25 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    --padding-block: 10;
+    --padding-inline: 20;
+    margin: 0;
+    padding: calc(var(--padding-block) * 1px) calc(var(--padding-inline) * 1px);
+    background-color: #000;
+}
+
+canvas {
+    display: block;
+    width: calc(var(--w, 1920) * 1px);
+    height: calc(var(--h, 1080) * 1px);
+}
+
+.score {
+    margin: 0;
+    margin-bottom: 5px;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    color: #fff;
+}
