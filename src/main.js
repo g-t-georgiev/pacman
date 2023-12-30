@@ -60,6 +60,7 @@ const player = new Player(ctx, {
 });
 
 let animationId;
+let imageData;
 let score = 0;
 let gameOver = false;
 let lastPressedControl = null;
