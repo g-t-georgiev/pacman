@@ -12,8 +12,6 @@ body {
 
 canvas {
     display: block;
-    width: calc(var(--w, 1920) * 1px);
-    height: calc(var(--h, 1080) * 1px);
 }
 
 .score {
