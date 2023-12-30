@@ -11,6 +11,8 @@ export class Ghost {
         this.position = position;
         this.velocity = velocity;
         this.color = color;
+        this._color = color;
+        this.moving = false;
         this.scared = false;
         this.collisions = [];
 
@@ -37,9 +39,13 @@ export class Ghost {
         this.context.fill();
     }
 
-    update() {
+    update(dt, move) {
+        if (move) {
+            if (!this.moving) this.moving = true;
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+        }
+
         this.draw();
-        this.position.x += this.velocity.x;
-        this.position.y += this.velocity.y;
     }
 }
