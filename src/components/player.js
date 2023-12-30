@@ -18,7 +18,7 @@ export const PlayerControls = {
 }
 
 export class Player {
-    static speed = 3;
+    static speed = 2;
     static radius = 15;
 
     /**
@@ -65,8 +65,7 @@ export class Player {
         this.context.restore();
     }
 
-    update() {
-        this.draw();
+    update(dt) {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
 
@@ -79,5 +78,7 @@ export class Player {
         } else {
             this.mouthGap = 0.75;
         }
+
+        this.draw();
     }
 }
