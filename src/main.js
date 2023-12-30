@@ -15,7 +15,7 @@ const paddingInline = parseFloat(bodyStyleMap.get('--padding-inline').toString()
 
 const map = [
     ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
-    ['|', '.', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
+    ['|', ' ', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
     ['|', '.', 'b', '.', '[', '7', ']', '.', 'b', '.', '|'],
     ['|', '.', '.', '.', '.', '_', '.', '.', '.', '.', '|'],
     ['|', '.', '[', ']', '.', '.', '.', '[', ']', '.', '|'],
@@ -30,20 +30,19 @@ const map = [
 ]; 
 
 const pellets = [];
-const powerUps = [];
 const boundaries = [];
 const controls = {};
-const ghosts = Array.from({ length: 3 }, function (_, i) {
+const ghosts = Array.from({ length: 4 }, function (_, i) {
     return new Ghost(ctx, {
         position: {
-            x: Boundary.width * (i == 1 ? 3 : i == 2 ? 8 : 6) + Boundary.width / 2,
-            y: Boundary.height * (i == 1 ? 5 : i == 2 ? 11 : 1) + Boundary.height / 2
+            x: Boundary.width * (i == 1 ? 3 : i == 2 ? 8 : i == 3 ? 2 : 6) + Boundary.width / 2,
+            y: Boundary.height * (i == 1 ? 5 : i == 2 ? 11 : i == 3 ? 9 : 1) + Boundary.height / 2
         },
         velocity: {
-            x: Ghost.speed,
+            x: 0,
             y: 0
         },
-        ...(i == 1 ? { color: 'lightblue' } : i == 2 ? { color: 'purple' } : { color: 'red' })
+        ...(i == 1 ? { color: 'red' } : i == 2 ? { color: 'pink' } : i == 3 ? { color: 'cyan' } : { color: 'orange' })
     });
 });
 
@@ -62,6 +61,7 @@ const player = new Player(ctx, {
 let animationId;
 let imageData;
 let score = 0;
+let gameStarted = false;
 let gameOver = false;
 let lastPressedControl = null;
 
@@ -273,7 +273,7 @@ map.forEach(function (row, i) {
                 break;
             }
             case 'p': {
-                powerUps.push(
+                pellets.push(
                     new PowerUp(ctx, {
                         position: {
                             x: j * Boundary.width + Boundary.width / 2,
@@ -338,12 +338,16 @@ function onKeyDownHandler(event) {
     event.preventDefault();
     if (PlayerControls.Move.Up.includes(event.code)) {
         updateControlsState(event.code, { pressed: true });
+        if (!gameStarted) gameStarted = true;
     } else if (PlayerControls.Move.Down.includes(event.code)) {
         updateControlsState(event.code, { pressed: true });
+        if (!gameStarted) gameStarted = true;
     } else if (PlayerControls.Move.Left.includes(event.code)) {
         updateControlsState(event.code, { pressed: true });
+        if (!gameStarted) gameStarted = true;
     } else if (PlayerControls.Move.Right.includes(event.code)) {
         updateControlsState(event.code, { pressed: true });
+        if (!gameStarted) gameStarted = true;
     }
 }
 
@@ -363,7 +367,7 @@ function onKeyUpHandler(event) {
     }
 }
 
-function update() {
+function update(ts = performance.now()) {
     animationId = requestAnimationFrame(update);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -470,9 +474,22 @@ function update() {
             if (ghost.scared) {
                 ghosts.splice(i, 1);
             } else {
-                if (imageData != null && imageData instanceof ImageData) {
-                    ctx.putImageData(imageData, 0, 0);
-                }
+                // Redraw map setting
+                pellets.forEach(function (pellet) {
+                    pellet.draw();
+                });
+
+                player.velocity.x = 0;
+                player.velocity.y = 0;
+                player.mouthGap = 0.75;
+                player.draw();
+
+                ghosts.forEach(function (ghost) {
+                    ghost.velocity.x = 0;
+                    ghost.velocity.y = 0;
+                    ghost.color = ghost._color;
+                    ghost.draw();
+                });
 
                 ctx.fillStyle = 'white';
                 ctx.font = 'bold 80px Consolas, monospace';
@@ -482,6 +499,7 @@ function update() {
                 ctx.fillText('You lost', 40, 240);
 
                 gameOver = true;
+                gameStarted = false;
                 imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
                 return cancelAnimationFrame(animationId);
             }
@@ -490,9 +508,18 @@ function update() {
 
     // Winning condition check
     if (pellets.length === 0) {
-        if (imageData != null && imageData instanceof ImageData) {
-            ctx.putImageData(imageData, 0, 0);
-        }
+        // Redraw map setting
+        player.velocity.x = 0;
+        player.velocity.y = 0;
+        player.mouthGap = 0.75;
+        player.draw();
+
+        ghosts.forEach(function (ghost) {
+            ghost.velocity.x = 0;
+            ghost.velocity.y = 0;
+            ghost.color = ghost._color;
+            ghost.draw();
+        });
 
         ctx.fillStyle = 'yellow';
         ctx.font = 'bold 80px Consolas, monospace';
@@ -502,11 +529,12 @@ function update() {
         ctx.fillText('You won', 60, 240);
 
         gameOver = true;
+        gameStarted = false;
         imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
         return cancelAnimationFrame(animationId);
     }
 
-    // Draw pellets
+    // Draw pellets and power-ups
     for (let len = pellets.length, i = len - 1; i >= 0; i--) {
         const pellet = pellets[i];
         pellet.draw();
@@ -517,29 +545,33 @@ function update() {
         ) < pellet.radius + player.radius) {
             pellets.splice(i, 1);
 
-            score += 10;
+            score += pellet.reward;
             scoreElem.textContent = score;
-        }
-    }
 
-    // Draw power-ups
-    for (let len = powerUps.length, i = len - 1; i >= 0; i--) {
-        const powerUp = powerUps[i];
-        powerUp.draw();
+            if (pellet instanceof PowerUp) {
+                ghosts.forEach(function (ghost) {
+                    ghost.scared = true;
 
-        if (Math.hypot(
-            powerUp.position.x - player.position.x, 
-            powerUp.position.y - player.position.y
-        ) < powerUp.radius + player.radius) {
-            powerUps.splice(i, 1);
+                    let timeoutId = setTimeout(function () {
+                        clearTimeout(timeoutId);
+                        ghost.scared = false;
 
-            ghosts.forEach(function (ghost) {
-                ghost.scared = true;
+                        let color = ghost.color;
+                        let index = 0;
 
-                setTimeout(function () {
-                    ghost.scared = false;
-                }, 5000);
-            });
+                        let intervalId = setInterval(function () {
+                            index ^= 1;
+                            ghost.color = ['blue', color][index];
+                        }, 100);
+
+                        timeoutId = setTimeout(function () {
+                            clearTimeout(timeoutId);
+                            clearInterval(intervalId);
+                            ghost.color = color;
+                        }, 1000);
+                    }, 5000);
+                });
+            }
         }
     }
 
@@ -548,12 +580,18 @@ function update() {
 
     // Draw ghosts
     for (const ghost of ghosts) {
-        ghost.update();
+        if (gameStarted && !ghost.moving) {
+            const velocities = [-ghost.speed, ghost.speed];
+            ghost.velocity.x = velocities[Math.floor(Math.random() * velocities.length)];
+        }
+
+        ghost.update(null, gameStarted);
+
+        if (!gameStarted) continue;
 
         let ghostClone = { ...ghost, position: { ...ghost.position }, velocity: { ...ghost.velocity }, radius: ghost.radius, speed: ghost.speed };
 
         const collisions = [];
-        
         boundaries.forEach(function (boundary) {
             ghostClone.velocity.x = -ghost.speed;
             ghostClone.velocity.y = 0;
