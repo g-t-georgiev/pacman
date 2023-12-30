@@ -70,10 +70,14 @@ export class Player {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
 
-        if (this.mouthGap < 0 || this.mouthGap > 0.75) {
-            this.chompingRate = -this.chompingRate;
+        if (this.velocity.x || this.velocity.y) {
+            if (this.mouthGap < 0 || this.mouthGap > 0.75) {
+                this.chompingRate = -this.chompingRate;
+            }
+    
+            this.mouthGap += this.chompingRate;
+        } else {
+            this.mouthGap = 0.75;
         }
-
-        this.mouthGap += this.chompingRate;
     }
 }
