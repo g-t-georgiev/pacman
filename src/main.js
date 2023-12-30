@@ -316,7 +316,9 @@ function windowResizeHandler() {
     canvas.width = width;
     canvas.height = height;
 
-
+    if (gameOver && imageData != null && imageData instanceof ImageData) {
+        ctx.putImageData(imageData, 0, 0);
+    }
 }
 
 /**
