@@ -3,12 +3,13 @@ export class Pellet {
 
     /**
      * @param {CanvasRenderingContext2D} context 
-     * @param {{ position: { x: number, y: number }, radius?: number, color?: string }} options 
+     * @param {{ position: { x: number, y: number }, radius?: number, reward?: number, color?: string }} options 
      */
-    constructor(context, { position, radius, color = 'white' }) {
+    constructor(context, { position, radius, reward = 10, color = 'white' }) {
         this.context = context;
         this.position = position;
         this.color = color;
+        this.reward = reward;
         
         if (radius) {
             Pellet.radius = radius;
@@ -28,18 +29,24 @@ export class Pellet {
 export class PowerUp extends Pellet {
     /**
      * @param {CanvasRenderingContext2D} context 
-     * @param {{ position: { x: number, y: number }, radius?: number }} options 
+     * @param {{ position: { x: number, y: number }, radius?: number, color?: string, reward?: number }} options 
      */
-    constructor(context, { position, radius }) {
-        super(context, { position, radius });
-        this.colors = ['white', 'red', 'gray', 'blue'];
+    constructor(context, { position, radius, reward = 20, color = 'yellow' }) {
+        super(context, { position, radius, reward, color });
+        this.colors = ['white', 'yellow', 'pink'];
+        this.pulsingTime = 10;
     }
 
     draw() {
-        let currentColorIndex = this.colors.findIndex(color => color === this.color);
-        if (currentColorIndex !== -1) {
-            currentColorIndex = (currentColorIndex + 1) % this.colors.length;
-            this.color = this.colors[currentColorIndex];
+        this.pulsingTime--;
+        if (this.pulsingTime <= 0) {
+            this.pulsingTime = 10;
+
+            let currentColorIndex = this.colors.findIndex(color => color === this.color);
+            if (currentColorIndex !== -1) {
+                currentColorIndex = (currentColorIndex + 1) % this.colors.length;
+                this.color = this.colors[currentColorIndex];
+            }
         }
         super.draw();
     }
