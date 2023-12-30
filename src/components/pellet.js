@@ -3,11 +3,12 @@ export class Pellet {
 
     /**
      * @param {CanvasRenderingContext2D} context 
-     * @param {{ position: { x: number, y: number }, radius?: number }} options 
+     * @param {{ position: { x: number, y: number }, radius?: number, color?: string }} options 
      */
-    constructor(context, { position, radius }) {
+    constructor(context, { position, radius, color = 'white' }) {
         this.context = context;
         this.position = position;
+        this.color = color;
         
         if (radius) {
             Pellet.radius = radius;
@@ -17,7 +18,7 @@ export class Pellet {
     }
 
     draw() {
-        this.context.fillStyle = 'white';
+        this.context.fillStyle = this.color;
         this.context.beginPath();
         this.context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
         this.context.fill();
