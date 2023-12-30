@@ -32,5 +32,15 @@ export class PowerUp extends Pellet {
      */
     constructor(context, { position, radius }) {
         super(context, { position, radius });
+        this.colors = ['white', 'red', 'gray', 'blue'];
+    }
+
+    draw() {
+        let currentColorIndex = this.colors.findIndex(color => color === this.color);
+        if (currentColorIndex !== -1) {
+            currentColorIndex = (currentColorIndex + 1) % this.colors.length;
+            this.color = this.colors[currentColorIndex];
+        }
+        super.draw();
     }
 }
