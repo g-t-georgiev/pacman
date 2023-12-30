@@ -7,7 +7,7 @@ import { playerBoundaryCollision } from "./components/collisions.js";
 const canvas = document.querySelector('canvas');
 const scoreElem = document.querySelector('[data-score]');
 const scoreBoxElem = scoreElem.parentElement;
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 const bodyStyleMap = document.body.computedStyleMap();
 const paddingBlock = parseFloat(bodyStyleMap.get('--padding-block').toString());
