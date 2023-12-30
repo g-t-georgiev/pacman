@@ -469,12 +469,19 @@ function update() {
             if (ghost.scared) {
                 ghosts.splice(i, 1);
             } else {
+                if (imageData != null && imageData instanceof ImageData) {
+                    ctx.putImageData(imageData, 0, 0);
+                }
+
                 ctx.fillStyle = 'white';
                 ctx.font = 'bold 80px Consolas, monospace';
                 ctx.shadowColor = 'purple';
                 ctx.shadowOffsetX = 5;
                 ctx.shadowOffsetY = 5;
                 ctx.fillText('You lost', 40, 240);
+
+                gameOver = true;
+                imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
                 return cancelAnimationFrame(animationId);
             }
         }
@@ -482,12 +489,19 @@ function update() {
 
     // Winning condition check
     if (pellets.length === 0) {
+        if (imageData != null && imageData instanceof ImageData) {
+            ctx.putImageData(imageData, 0, 0);
+        }
+
         ctx.fillStyle = 'yellow';
         ctx.font = 'bold 80px Consolas, monospace';
         ctx.shadowColor = 'red';
         ctx.shadowOffsetX = 5;
         ctx.shadowOffsetY = 5;
         ctx.fillText('You won', 60, 240);
+
+        gameOver = true;
+        imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
         return cancelAnimationFrame(animationId);
     }
 
@@ -639,4 +653,7 @@ function update() {
     else if (player.velocity.x < 0) player.rotation = Math.PI;
     else if (player.velocity.y > 0) player.rotation = Math.PI / 2;
     else if (player.velocity.y < 0) player.rotation = Math.PI * 1.5;
+
+    // Save image data
+    imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
