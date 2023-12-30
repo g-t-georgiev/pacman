@@ -316,8 +316,7 @@ function windowResizeHandler() {
     canvas.width = width;
     canvas.height = height;
 
-    canvas.style.setProperty('--w', width);
-    canvas.style.setProperty('--h', height);
+
 }
 
 /**
