@@ -33,15 +33,15 @@ export class Ghost {
     }
 
     draw() {    
-        this.context.fillStyle = this.scared ? 'blue' : this.color;
+        this.context.fillStyle = this.color;
         this.context.beginPath();
         this.context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
         this.context.fill();
     }
 
-    update(dt, move) {
-        if (move) {
-            if (!this.moving) this.moving = true;
+    update(dt, pause) {
+        if (!pause) {
+            this.moving = !pause;
             this.position.x += this.velocity.x;
             this.position.y += this.velocity.y;
         }
