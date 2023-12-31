@@ -76,7 +76,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeHorizontal.png')
+                        image: createImage('./images/pipeHorizontal.png')
                     })
                 );
                 break;
@@ -88,7 +88,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeVertical.png')
+                        image: createImage('./images/pipeVertical.png')
                     })
                 );
                 break;  
@@ -100,7 +100,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeCorner1.png')
+                        image: createImage('./images/pipeCorner1.png')
                     })
                 ); 
                 break;
@@ -112,7 +112,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeCorner2.png')
+                        image: createImage('./images/pipeCorner2.png')
                     })
                 );
                 break;
@@ -124,7 +124,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeCorner3.png')
+                        image: createImage('./images/pipeCorner3.png')
                     })
                 );
                 break;
@@ -136,7 +136,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeCorner4.png')
+                        image: createImage('./images/pipeCorner4.png')
                     })
                 );
                 break;
@@ -148,7 +148,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeConnectorTop.png')
+                        image: createImage('./images/pipeConnectorTop.png')
                     })
                 );
                 break;
@@ -160,7 +160,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeConnectorRight.png')
+                        image: createImage('./images/pipeConnectorRight.png')
                     })
                 );
                 break;
@@ -172,7 +172,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeConnectorBottom.png')
+                        image: createImage('./images/pipeConnectorBottom.png')
                     })
                 );
                 break;
@@ -184,7 +184,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeConnectorLeft.png')
+                        image: createImage('./images/pipeConnectorLeft.png')
                     })
                 );
                 break;
@@ -196,7 +196,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/block.png')
+                        image: createImage('./images/block.png')
                     })
                 );
                 break;
@@ -208,7 +208,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/capLeft.png')
+                        image: createImage('./images/capLeft.png')
                     })
                 );
                 break;
@@ -220,7 +220,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/capRight.png')
+                        image: createImage('./images/capRight.png')
                     })
                 );
                 break;
@@ -232,7 +232,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/capBottom.png')
+                        image: createImage('./images/capBottom.png')
                     })
                 );
                 break;
@@ -244,7 +244,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/capTop.png')
+                        image: createImage('./images/capTop.png')
                     })
                 );
                 break;
@@ -256,7 +256,7 @@ map.forEach(function (row, i) {
                             x: Boundary.width * j, 
                             y: Boundary.height * i 
                         }, 
-                        image: createImage('./src/images/pipeCross.png')
+                        image: createImage('./images/pipeCross.png')
                     })
                 );
                 break;
@@ -365,6 +365,10 @@ function onKeyUpHandler(event) {
     } else if (PlayerControls.Move.Right.includes(event.code)) {
         updateControlsState(event.code, { pressed: false });
     }
+}
+
+function pause() {
+    return !gameStarted || gameOver;
 }
 
 function update(ts = performance.now()) {
@@ -551,24 +555,21 @@ function update(ts = performance.now()) {
             if (pellet instanceof PowerUp) {
                 ghosts.forEach(function (ghost) {
                     ghost.scared = true;
+                    ghost.color = 'blue';
 
-                    let timeoutId = setTimeout(function () {
-                        clearTimeout(timeoutId);
+                    let scaredExpiresColorChangeIntervalId;
+                    let scaredExpiresTimeoutId = setTimeout(function () {
+                        clearTimeout(scaredExpiresTimeoutId);
+                        scaredExpiresColorChangeIntervalId = setInterval(function () {
+                            ghost.color = ghost.color == 'blue' ? 'white' : 'blue';
+                        }, 250);
+                    }, 2500);
+
+                    let scaredTimeoutId = setTimeout(function () {
+                        clearTimeout(scaredTimeoutId);
+                        clearInterval(scaredExpiresColorChangeIntervalId);
                         ghost.scared = false;
-
-                        let color = ghost.color;
-                        let index = 0;
-
-                        let intervalId = setInterval(function () {
-                            index ^= 1;
-                            ghost.color = ['blue', color][index];
-                        }, 100);
-
-                        timeoutId = setTimeout(function () {
-                            clearTimeout(timeoutId);
-                            clearInterval(intervalId);
-                            ghost.color = color;
-                        }, 1000);
+                        ghost.color = ghost._color;
                     }, 5000);
                 });
             }
@@ -585,9 +586,9 @@ function update(ts = performance.now()) {
             ghost.velocity.x = velocities[Math.floor(Math.random() * velocities.length)];
         }
 
-        ghost.update(null, gameStarted);
+        ghost.update(null, pause());
 
-        if (!gameStarted) continue;
+        if (pause()) continue;
 
         let ghostClone = { ...ghost, position: { ...ghost.position }, velocity: { ...ghost.velocity }, radius: ghost.radius, speed: ghost.speed };
 
