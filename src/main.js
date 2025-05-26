@@ -22,7 +22,7 @@ const maze = [];
 const loader = Loader.getInstance();
 
 loader
-    .add({ url: './src/maze.json', name: 'maze' })
+    .add({ url: './src/mazeLayout.json', name: 'maze' })
     .add({ url: '../assets/images/pipeHorizontal.png', name: '-' })
     .add({ url: '../assets/images/pipeVertical.png', name: '|'})
     .add({ url: '../assets/images/pipeCorner1.png', name: '1'})
