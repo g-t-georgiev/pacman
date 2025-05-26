@@ -13,8 +13,8 @@ A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas 
 
 ## 🚀 Demo
 
-> _[Link to live demo]_  
-> Coming soon...
+> Link to live demo:
+> a github pages setup [here](https://g-t-georgiev.github.io/pacman/)
 
 ## 🛠️ Technologies Used
 
