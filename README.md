@@ -30,7 +30,7 @@ root/
 ├── favicon.ico # App icon
 ├── .gitignore
 ├── .vscode/ # VSCode config
-├── assets/ # (Optional) Images, sounds, etc.
+├── assets/ # Images, sounds, fonts, etc.
 ├── src/
 ├── components/
 │ ├── boundary.js # Maze walls and boundaries
