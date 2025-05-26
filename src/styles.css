@@ -1,0 +1,58 @@
+*, 
+*::before, 
+*::after {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000000;
+    overflow: hidden;
+    display: grid;
+    justify-content: center;
+}
+
+canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+#score-board {
+    font-family: 'Emulogic', monospace;
+    font-size: .9375rem;
+    color: #ffffff;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+
+    padding: 1.5rem .875rem 0 .5625rem;
+    margin-bottom: 1rem;
+}
+
+.score-area {
+    text-align: right;
+}
+
+.score-area .active-player {
+    text-align: center;
+    text-indent: 1rem;
+    padding-right: 1rem;
+}
+
+.high-score-area {
+    text-align: center;
+}
+
+.score-area .active-player,
+.high-score-area .high-score-label {
+    margin-bottom: .1875rem;
+}
+
+.score-area .score-value,
+.high-score-area .high-score-value {
+    font-size: 115%;
+}
