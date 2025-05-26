@@ -45,7 +45,7 @@ loader
 
 loader.onLoad.add(function (asset) {
     // console.log('Loaded', asset);
-    if (asset.name === 'maze') {
+    if (asset.name === 'mazeLayout') {
         Object.assign(maze, asset.data);
     }
 });
