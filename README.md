@@ -13,7 +13,7 @@ A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas 
 
 ## 🚀 Demo
 
-> _[Link to live demo (if hosted)]_  
+> _[Link to live demo]_  
 > Coming soon...
 
 ## 🛠️ Technologies Used
@@ -50,8 +50,8 @@ root/
 ## 🎮 Controls
 
 - **Arrow keys / WASD** – Move Pac-Man
-- **R** – Restart game (if implemented)
-- **P** – Pause/resume (optional)
+- **R** – Restart game (to be implemented)
+- **P** – Pause/resume (to be implemented)
 
 ## 📸 Screenshots
 
