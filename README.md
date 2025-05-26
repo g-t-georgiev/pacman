@@ -26,25 +26,29 @@ A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas 
 
 ```
 root/
-├── index.html # Entry point
-├── favicon.ico # App icon
-├── .gitignore
 ├── .vscode/ # VSCode config
 ├── assets/ # Images, sounds, fonts, etc.
 ├── src/
-├── components/
-│ ├── boundary.js # Maze walls and boundaries
-│ ├── ghost.js # Ghost AI and rendering
-│ ├── hero.js # Shared base class for Pac-Man & ghosts
-│ ├── pacman.js # Pac-Man behavior and animation
-│ ├── pellet.js # Regular and power pellet logic
-│ ├── tile.js # Tile types (walls, pellets, etc.)
-│ └── tilemap.js # Maze generation from layout
-├── collisions.js # Collision detection logic
-├── constants.js # Game constants (tile size, colors, speed)
-├── Loader.js # Asset preloader (images, sounds)
-├── main.js # Main game loop and orchestration
-└── mazeLayout.json # 2D array layout for maze grid
+│ ├── components/
+│ │ ├── boundary.js # Maze walls and boundaries
+│ │ ├── ghost.js # Ghost AI and rendering
+│ │ ├── hero.js # Shared base class for Pac-Man & ghosts
+│ │ ├── pacman.js # Pac-Man behavior and animation
+│ │ ├── pellet.js # Regular and power pellet logic
+│ │ ├── tile.js # Tile types (walls, pellets, etc.)
+│ │ └── tilemap.js # Maze generation from layout
+│ ├── collisions.js # Collision detection logic
+│ ├── constants.js # Game constants (tile size, colors, speed)
+│ ├── Loader.js # Asset preloader (images, sounds)
+│ ├── main.js # Main game loop and orchestration
+│ ├── mazeLayout.json # 2D array layout for maze grid
+│ ├── styles.css
+│ └── utils.js
+├── .gitignore
+├── favicon.ico # App icon
+├── index.html # Entry point
+├── LICENSE
+└── README.md
 ```
 
 ## 🎮 Controls
