@@ -81,8 +81,7 @@ let tilemap,
     imageData, 
     score = 0, 
     highScore = 0, 
-    isGameOver = false,
-    isPowerUpActivated = false;
+    isGameOver = false;
 
 function setupPacman(pacman) {
     pacman.drawCollisionBox = true;
@@ -185,7 +184,6 @@ function setup() {
                 isGameOver = true;
             } else if (isPowerUp) {
                 console.log('POWERUP');
-                // isPowerUpActivated = isPowerUp;
                 // ghosts.forEach(ghost => {
                 //     ghost.scared = true;
                 // });
