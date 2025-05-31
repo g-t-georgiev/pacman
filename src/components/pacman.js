@@ -34,8 +34,8 @@ export class Pacman extends Hero {
     #keydownHandler;
     #keyupHandler;
 
-    #startTimeout = null;
-    #startTime = 0;
+    startTimeout = null;
+    startTime = 0;
 
     name = 'Pacman';
     direction = null;
