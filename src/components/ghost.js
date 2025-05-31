@@ -320,7 +320,10 @@ export default class Ghost extends Hero {
         const tile = this.#map.getTile(pos.x, pos.y);
         const solid = isSolidObject(tile);
         const colliding = tile && checkFor2RectCollisions(pos, { ...tile.position, width: tile.width, height: tile.height });
-        const aligned = checkAlignByX ? Number.isInteger(this.position.x / this.#map.size) : Number.isInteger(this.position.y / this.#map.size);
+        const EPSILON = 0.001;
+        const aligned = checkAlignByX 
+            ? Math.abs((this.position.x / this.#map.size) % 1) < EPSILON
+            : Math.abs((this.position.y / this.#map.size) % 1) < EPSILON;
 
         if (aligned) {
             if (solid && colliding) collisionsListRef.push(direction);
