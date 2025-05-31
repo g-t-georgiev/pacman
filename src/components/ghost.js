@@ -122,14 +122,6 @@ export default class Ghost extends Hero {
         this.#radius = value;
     }
 
-    get centerX() {
-        return this.position.x + this.width * 0.5;
-    }
-
-    get centerY() {
-        return this.position.y + this.height * 0.5;
-    }
-
     /** @private */
     get eyeBallRadiusX() {
         return this.radius / 3;
@@ -175,6 +167,8 @@ export default class Ghost extends Hero {
     }
 
     draw() {
+
+        let center = this.center;
         this.#ctx.save();
 
         (this.#fringeToggle 
@@ -182,8 +176,8 @@ export default class Ghost extends Hero {
             : drawGhostBodyState2
         )(
             this.#ctx,
-            this.centerX,
-            this.centerY, 
+            center.x,
+            center.y, 
             this.radius,
             this.bodyColor
         );
@@ -213,14 +207,14 @@ export default class Ghost extends Hero {
             this.#ctx.setLineDash([4, 1]);
             this.#ctx.strokeStyle = parseHexNumToCSSColor(0x000000);
             this.#ctx.beginPath();
-            this.#ctx.moveTo(this.centerX - 0.5, this.position.y);
-            this.#ctx.lineTo(this.centerX - 0.5, this.position.y + this.height);
-            this.#ctx.moveTo(this.position.x, this.centerY - 0.5);
-            this.#ctx.lineTo(this.position.x + this.width, this.centerY - 0.5);
+            this.#ctx.moveTo(center.x - 0.5, this.position.y);
+            this.#ctx.lineTo(center.x - 0.5, this.position.y + this.height);
+            this.#ctx.moveTo(this.position.x, center.y - 0.5);
+            this.#ctx.lineTo(this.position.x + this.width, center.y - 0.5);
             this.#ctx.stroke();
 
             this.#ctx.beginPath();
-            this.#ctx.arc(this.centerX, this.centerY, this.radius, 0, 2 * Math.PI, true);
+            this.#ctx.arc(center.x, center.y, this.radius, 0, 2 * Math.PI, true);
             this.#ctx.stroke();
 
             this.#ctx.restore();
@@ -435,8 +429,7 @@ function drawGhostEyes(ctx, ghost) {
         eyeBallRadiusY,
         eyeSocketRadiusX,
         eyeSocketRadiusY,
-        centerX,
-        centerY,
+        center,
         radius,
         direction
     } = ghost;
@@ -444,15 +437,12 @@ function drawGhostEyes(ctx, ghost) {
     // Draw eyeballs
     ctx.fillStyle = parseHexNumToCSSColor(0xffffff);
     ctx.beginPath();
-    ctx.ellipse(centerX - radius / 2.5, centerY, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(centerX + radius / 2.5, centerY, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x - radius / 2.5, center.y, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x + radius / 2.5, center.y, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
     ctx.fill();
 
     // Calculate retina direction offset
-    const offset = {
-        x: 0,
-        y: 0
-    };
+    const offset = {x:0,y:0};
 
     const offsetAmount = eyeBallRadiusX * 0.5;
 
@@ -474,8 +464,8 @@ function drawGhostEyes(ctx, ghost) {
     // Draw pupils
     ctx.fillStyle = parseHexNumToCSSColor(0x0000ff);
     ctx.beginPath();
-    ctx.ellipse(centerX - radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(centerX + radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x - radius / 2.5 + offset.x, center.y + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x + radius / 2.5 + offset.x, center.y + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
     ctx.fill();
 }
 
@@ -488,8 +478,7 @@ function drawScaredGhostFace(ctx, ghost) {
     const {
         eyeSocketRadiusX,
         eyeSocketRadiusY,
-        centerX,
-        centerY,
+        center,
         radius,
         faceColor
     } = ghost;
@@ -497,12 +486,12 @@ function drawScaredGhostFace(ctx, ghost) {
     // Draw pupils
     ctx.fillStyle = faceColor;
     ctx.beginPath();
-    ctx.ellipse(centerX - radius / 2.5, centerY - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(centerX + radius / 2.5, centerY - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x - radius / 2.5, center.y - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(center.x + radius / 2.5, center.y - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
     ctx.fill();
 
     // Draw mouth
-    drawPathFromPoints(ctx, centerX, centerY, radius, [
+    drawPathFromPoints(ctx, center.x, center.y, radius, [
         [11, 101], [21, 101], [21, 91], [41, 91], [41, 101], [61, 101], 
         [61, 91], [81, 91], [81, 101], [101, 101], [101, 91], [121, 91], 
         [121, 101], [131, 101], [131, 91], [121, 91], [121, 81], [101, 81], 
