@@ -7,6 +7,11 @@ import Hero from "./hero.js";
 const SVG_WIDTH = 140;
 const SVG_HEIGHT = 140;
 
+const BODY_COLOR_FRIGHTENED1 = parseHexNumToCSSColor(0x1e1ce9);
+const BODY_COLOR_FRIGHTENED2 = parseHexNumToCSSColor(0xffffff);
+const FACE_COLOR_FRIGHTENED1 = parseHexNumToCSSColor(0xf7b8b1);
+const FACE_COLOR_FRIGHTENED2 = parseHexNumToCSSColor(0xea1d26);
+
 export const GHOSTS_IDS = {
     0: 'Blinky',
     1: 'Inky',
@@ -53,29 +58,40 @@ export default class Ghost extends Hero {
     #fringeShiftTime = 0;
     #fringeShiftInterval = 30;
 
+    #scared = false;
+    #frightenedStateTime = 0;
+    #frightenedStateTimeStep = 15;
+    #frightenedStateInterval = 5000;
+
+    #bodyColor;
+    #faceColor;
+    #isFlashingWhite = false;
+
     direction = null;
     requestedDirection = null;
 
     startTimeout = null;
     startTime = 0;
 
-    constructor(ctx, map, { position, velocity, width, height, radius = 15, speed = 1, color = 0xffffff, name, startTime = 0 }) {
+    constructor(ctx, map, { position, velocity, width, height, radius = 15, speed = 1, color = 0xe90402, name, startTime = 0 }) {
+        
         super();
+
+        this.name = name;
+        this.position = position ?? { x: 0, y: 0 };
+        this.velocity = velocity ?? { x: 0, y: 0 };
+        this.speed = speed;
+        this.color = parseHexNumToCSSColor(color, this.alpha);
 
         this.#ctx = ctx;
         this.#map = map;
         this.#width = width;
         this.#height = height;
         this.#radius = radius;
-        this.position = position ?? { x: 0, y: 0 };
-        this.velocity = velocity ?? { x: 0, y: 0 };
-        this.speed = speed;
-        this.color = parseHexNumToCSSColor(color, this.alpha);
-        this.name = name;
+        this.#bodyColor = this.color;
 
         this.startTime = startTime;
 
-        this.scared = false;
         this.collisions = [];
 
         this.drawCollisionBox = false;
@@ -114,35 +130,38 @@ export default class Ghost extends Hero {
         return this.position.y + this.height * 0.5;
     }
 
+    /** @private */
     get eyeBallRadiusX() {
         return this.radius / 3;
     }
 
+    /** @private */
     get eyeBallRadiusY() {
         return this.radius / 2.3;
     }
 
+    /** @private */
     get eyeSocketRadiusX() {
         return this.radius / 6;
     }
 
+    /** @private */
     get eyeSocketRadiusY() {
         return this.radius / 6;
     }
 
-    get leftEyeSocketPositionX() {
-        const modifier = (this.direction === PATH_DIRECTIONS.Left ? -1 : (this.direction === PATH_DIRECTIONS.Right ? 1 : 0));
-        return this.centerX - this.radius / 2.5 + this.eyeSocketRadiusX * modifier;
+    /** @private */
+    get bodyColor() {
+        return this.#bodyColor;
     }
 
-    get rightEyeSocketPositionX() {
-        const modifier = (this.direction === PATH_DIRECTIONS.Left ? -1 : (this.direction === PATH_DIRECTIONS.Right ? 1 : 0));
-        return this.centerX + this.radius / 2.5 + this.eyeSocketRadiusX * modifier;
+    /** @private */
+    get faceColor() {
+        return this.#faceColor;
     }
 
-    get eyeSocketPositionY() {
-        const modifier = (this.direction === PATH_DIRECTIONS.Up ? -1 : (this.direction === PATH_DIRECTIONS.Down ? 1 : 0));
-        return this.centerY + this.eyeSocketRadiusY * modifier;
+    get isScared() {
+        return this.#scared;
     }
 
     update({ position, velocity, width, height, radius, speed, color }) {
@@ -157,6 +176,7 @@ export default class Ghost extends Hero {
 
     draw() {
         this.#ctx.save();
+
         (this.#fringeToggle 
             ? drawGhostBodyState1 
             : drawGhostBodyState2
@@ -165,9 +185,15 @@ export default class Ghost extends Hero {
             this.centerX,
             this.centerY, 
             this.radius,
-            this.color
+            this.bodyColor
         );
-        drawGhostEyes(this.#ctx, this);
+
+        // draw body outline
+        // this.#ctx.strokeStyle = parseHexNumToCSSColor(0xffffff);
+        // this.#ctx.stroke();
+
+        (this.#scared ? drawScaredGhostFace : drawGhostEyes)(this.#ctx, this);
+
         this.#ctx.restore();
 
         if (this.drawCollisionBox) {
@@ -202,6 +228,11 @@ export default class Ghost extends Hero {
     }
 
     render(dt) {
+
+        if (this.#scared) {
+            this.#updateFrightenedState(dt * this.#frightenedStateTimeStep);
+        }
+
         this.#updateRequestedDirection();
         const currentCollisions = this.#detectCollisions();
 
@@ -225,6 +256,43 @@ export default class Ghost extends Hero {
         }
 
         this.draw();
+    }
+
+    enterFrightenedState() {
+        if (this.#scared) return;
+        this.#scared = true;
+        this.#bodyColor = BODY_COLOR_FRIGHTENED1;
+        this.#faceColor = FACE_COLOR_FRIGHTENED1;
+    }
+
+    #exitFrightenedState() {
+        if (!this.#scared) return;
+        this.#scared = false;
+        this.#isFlashingWhite = false;
+        this.#bodyColor = this.color;
+        this.#frightenedStateTime = 0;
+    }
+
+    #updateFrightenedState(timestep) {
+        if (!this.#scared) return;
+
+        this.#frightenedStateTime += timestep;
+        const remainingTime = this.#frightenedStateInterval - this.#frightenedStateTime;
+
+        if (remainingTime <= 0) {
+            this.#exitFrightenedState();
+            return;
+        }
+
+        if (remainingTime <= this.#frightenedStateInterval / 3) {
+            const flashInterval = 250;
+            const flashCycle = Math.floor(this.#frightenedStateTime / flashInterval);
+            this.#isFlashingWhite = flashCycle % 2 === 0;
+            this.#bodyColor = this.#isFlashingWhite ? BODY_COLOR_FRIGHTENED2 : BODY_COLOR_FRIGHTENED1;
+            this.#faceColor = this.#isFlashingWhite ? FACE_COLOR_FRIGHTENED2 : FACE_COLOR_FRIGHTENED1;
+        } else {
+            this.#bodyColor = BODY_COLOR_FRIGHTENED1;
+        }
     }
 
     #updateRequestedDirection() {
@@ -354,6 +422,10 @@ function drawGhostBodyState2(ctx, centerX, centerY, radius, color) {
     ], SVG_WIDTH, SVG_HEIGHT);
 }
 
+/**
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {Ghost} ghost 
+ */
 function drawGhostEyes(ctx, ghost) {
     const {
         eyeBallRadiusX,
@@ -396,10 +468,42 @@ function drawGhostEyes(ctx, ghost) {
             break;
     }
 
-    // Draw retinas (pupils)
+    // Draw pupils
     ctx.fillStyle = parseHexNumToCSSColor(0x0000ff);
     ctx.beginPath();
     ctx.ellipse(centerX - radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
     ctx.ellipse(centerX + radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
     ctx.fill();
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {Ghost} ghost 
+ */
+function drawScaredGhostFace(ctx, ghost) {
+
+    const {
+        eyeSocketRadiusX,
+        eyeSocketRadiusY,
+        centerX,
+        centerY,
+        radius,
+        faceColor
+    } = ghost;
+
+    // Draw pupils
+    ctx.fillStyle = faceColor;
+    ctx.beginPath();
+    ctx.ellipse(centerX - radius / 2.5, centerY - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.ellipse(centerX + radius / 2.5, centerY - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw mouth
+    drawPathFromPoints(ctx, centerX, centerY, radius, [
+        [11, 101], [21, 101], [21, 91], [41, 91], [41, 101], [61, 101], 
+        [61, 91], [81, 91], [81, 101], [101, 101], [101, 91], [121, 91], 
+        [121, 101], [131, 101], [131, 91], [121, 91], [121, 81], [101, 81], 
+        [101, 91], [81, 91], [81, 81], [61, 81], [61, 91], [41, 91], 
+        [41, 81], [21, 81], [21, 91], [11, 91], [11, 101]
+    ], SVG_WIDTH, SVG_HEIGHT);
 }
