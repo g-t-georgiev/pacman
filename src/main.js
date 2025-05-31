@@ -183,10 +183,9 @@ function setup() {
             if (score === targetScorePts) {
                 isGameOver = true;
             } else if (isPowerUp) {
-                console.log('POWERUP');
-                // ghosts.forEach(ghost => {
-                //     ghost.scared = true;
-                // });
+                ghosts.forEach(ghost => {
+                    ghost.enterFrightenedState();
+                });
             }
         }
     });
@@ -282,12 +281,18 @@ function update(timestamp) {
 
     // Render ghosts
     for (const ghost of ghosts) {
+
         let dist = Math.hypot(
             ghost.center.x - pacman.center.x,
             ghost.center.y - pacman.center.y
         );
         let collision = dist < pacman.radius + ghost.radius;
-        if (collision) return setGameLoseState();
+
+        if (collision) {
+            if (!ghost.isScared) {
+                return setGameLoseState();
+            }
+        }
     
         ghost.render(delta);
     }
