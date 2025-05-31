@@ -1,8 +1,11 @@
 import { PATH_DIRECTIONS, PATH_DIRECTIONS_LIST } from '../constants.js';
-import { parseHexNumToCSSColor, updateVelocity } from "../utils.js";
+import { parseHexNumToCSSColor, updateVelocity, drawPathFromPoints } from "../utils.js";
 import { isSolidObject, checkFor2RectCollisions } from "../collisions.js";
 
 import Hero from "./hero.js";
+
+const SVG_WIDTH = 140;
+const SVG_HEIGHT = 140;
 
 export const GHOSTS_IDS = {
     0: 'Blinky',
@@ -314,35 +317,6 @@ export default class Ghost extends Hero {
  * @param {number} centerX 
  * @param {number} centerY 
  * @param {number} radius 
- * @param {[number, number][]} points 
- */
-function drawPathFromPoints(ctx, centerX, centerY, radius, points) {
-
-    const scale = (radius * 2) / 131; // SVG width normalization
-    const offsetX = centerX - radius;
-    const offsetY = centerY - (141 * scale) / 2;
-
-    ctx.beginPath();
-    let [x, y] = points[0];
-    ctx.moveTo(offsetX + x * scale, offsetY + y * scale);
-
-    for (let i = 1; i < points.length; i++) {
-        [x, y] = points[i];
-        ctx.lineTo(offsetX + x * scale, offsetY + y * scale);
-    }
-
-    ctx.closePath();
-    ctx.fill('nonzero');
-
-    // ctx.strokeStyle = parseHexNumToCSSColor(0xffffff);
-    // ctx.stroke();
-}
-
-/**
- * @param {CanvasRenderingContext2D} ctx 
- * @param {number} centerX 
- * @param {number} centerY 
- * @param {number} radius 
  * @param {number} radius 
  * @param {string} color 
  */
@@ -356,7 +330,7 @@ function drawGhostBodyState1(ctx, centerX, centerY, radius, color) {
         [101, 121], [101, 131], [111, 131], [111, 141], [131, 141], [131, 131],
         [141, 131], [141, 61], [131, 61], [131, 31], [121, 31], [131, 31],
         [121, 31], [121, 21], [111, 21], [111, 11], [91, 11], [91, 1], [51, 1]
-    ]);
+    ], SVG_WIDTH, SVG_HEIGHT);
 }
 
 /**
@@ -377,7 +351,7 @@ function drawGhostBodyState2(ctx, centerX, centerY, radius, color) {
         [111, 131], [111, 121], [121, 121], [121, 131], [131, 131], [131, 141],
         [141, 141], [141, 51], [131, 51], [131, 31], [121, 31], [121, 21],
         [111, 21], [111, 11], [91, 11], [91, 1], [51, 1]
-    ]);
+    ], SVG_WIDTH, SVG_HEIGHT);
 }
 
 function drawGhostEyes(ctx, ghost) {
