@@ -34,6 +34,16 @@ export class Hero {
         }
     }
 
+    updateProps({ position, velocity, width, height, radius, speed, color }) {
+        if (position && typeof position === 'object') Object.assign(this.position, position);
+        if (velocity && typeof velocity === 'object') Object.assign(this.velocity, velocity);
+        if (typeof width === 'number') this.width = width;
+        if (typeof height === 'number') this.height = height;
+        if (typeof radius === 'number') this.radius = radius;
+        if (typeof speed === 'number') this.speed = speed;
+        if (color && ['string', 'number'].includes(typeof color)) this.color = parseHexNumToCSSColor(color, this.alpha);
+    }
+
     /**
      * Logs a set of arguments in the console,
      * only if `debug` property is set to **true**.
