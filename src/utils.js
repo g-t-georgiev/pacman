@@ -96,6 +96,37 @@ export function getDirectionFromVelocity(velocity) {
 }
 
 /**
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {number} centerX 
+ * @param {number} centerY 
+ * @param {number} radius 
+ * @param {[number, number][]} points 
+ * @param {number} originalWidth 
+ * @param {number} originalHeight 
+ */
+export function drawPathFromPoints(ctx, centerX, centerY, radius, points, originalWidth, originalHeight) {
+
+    const scale = (radius * 2) / originalWidth; // SVG width normalization
+    const offsetX = centerX - radius;
+    const offsetY = centerY - (originalHeight * scale) / 2;
+
+    ctx.beginPath();
+    let [x, y] = points[0];
+    ctx.moveTo(offsetX + x * scale, offsetY + y * scale);
+
+    for (let i = 1; i < points.length; i++) {
+        [x, y] = points[i];
+        ctx.lineTo(offsetX + x * scale, offsetY + y * scale);
+    }
+
+    ctx.closePath();
+    ctx.fill('nonzero');
+
+    // ctx.strokeStyle = parseHexNumToCSSColor(0xffffff);
+    // ctx.stroke();
+}
+
+/**
  * Generates a cryptographically secure random number between two values.
  *
  * Depending on the `returnFloat` flag, the function returns either:
