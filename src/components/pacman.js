@@ -84,18 +84,6 @@ export class Pacman extends Hero {
     get radius() { return this.#radius; }
     set radius(value) { this.#radius = value; }
 
-    update({ position, velocity, width, height, radius, speed, color }) {
-        if (position && typeof position === 'object') Object.assign(this.position, position);
-        if (velocity && typeof velocity === 'object') Object.assign(this.velocity, velocity);
-        if (typeof width === 'number') this.width = width;
-        if (typeof height === 'number') this.height = height;
-        if (typeof radius === 'number') this.radius = radius;
-        if (typeof speed === 'number') this.speed = speed;
-        if (color && (typeof color === 'string' || typeof color === 'number')) {
-            this.color = parseHexNumToCSSColor(color, this.alpha);
-        }
-    }
-
     freeze() {
         super.freeze();
         this.mouthGap = mouthGap.idle;
@@ -103,7 +91,8 @@ export class Pacman extends Hero {
         window.removeEventListener('keyup', this.#keyupHandler);
     }
 
-    render(dt) {
+    update(dt) {
+
         if (this.requestedDirection) {
             this.#checkCollisionAndMove(this.requestedDirection);
         }
@@ -168,8 +157,6 @@ export class Pacman extends Hero {
                 this.mouthGap = mouthGap.idle;
             }
         }
-
-        this.draw();
     }
 
     draw() {
@@ -213,6 +200,11 @@ export class Pacman extends Hero {
 
             this.#ctx.restore();
         }
+    }
+
+    render(dt) {
+        this.update(dt);
+        this.draw();
     }
 
     onLose(callback) {

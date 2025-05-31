@@ -91,6 +91,7 @@ export default class Ghost extends Hero {
         this.#bodyColor = this.color;
 
         this.startTime = startTime;
+        this.startPosition = { ...this.position };
 
         this.collisions = [];
 
@@ -156,14 +157,40 @@ export default class Ghost extends Hero {
         return this.#scared;
     }
 
-    update({ position, velocity, width, height, radius, speed, color }) {
-        if (position && typeof position === 'object') Object.assign(this.position, position);
-        if (velocity && typeof velocity === 'object') Object.assign(this.velocity, velocity);
-        if (typeof width === 'number') this.width = width;
-        if (typeof height === 'number') this.height = height;
-        if (typeof radius === 'number') this.radius = radius;
-        if (typeof speed === 'number') this.speed = speed;
-        if (color && ['string', 'number'].includes(typeof color)) this.color = parseHexNumToCSSColor(color, this.alpha);
+    reset() {
+        this.position = { ...this.startPosition };
+        this.velocity = { x: 0, y: 0 };
+        this.direction = null;
+        this.#exitFrightenedState();
+    }
+
+    update(dt) {
+
+        if (this.#scared) {
+            this.#updateFrightenedState(dt * this.#frightenedStateTimeStep);
+        }
+
+        this.#updateRequestedDirection();
+        const currentCollisions = this.#detectCollisions();
+
+        if (currentCollisions.length > this.collisions.length) {
+            this.collisions = currentCollisions;
+        }
+
+        if (!this.#arraysEqual(currentCollisions, this.collisions)) {
+            this.#handleCollisionChanges(currentCollisions);
+        } else {
+            this.#handleNoCollisionChange(currentCollisions);
+        }
+
+        this.position.x += this.velocity.x * dt;
+        this.position.y += this.velocity.y * dt;
+
+        this.#fringeShiftTime += dt;
+        if (this.#fringeShiftTime >= this.#fringeShiftInterval) {
+            this.#fringeShiftTime %= this.#fringeShiftInterval;
+            this.#fringeToggle = !this.#fringeToggle;
+        }
     }
 
     draw() {
@@ -222,33 +249,7 @@ export default class Ghost extends Hero {
     }
 
     render(dt) {
-
-        if (this.#scared) {
-            this.#updateFrightenedState(dt * this.#frightenedStateTimeStep);
-        }
-
-        this.#updateRequestedDirection();
-        const currentCollisions = this.#detectCollisions();
-
-        if (currentCollisions.length > this.collisions.length) {
-            this.collisions = currentCollisions;
-        }
-
-        if (!this.#arraysEqual(currentCollisions, this.collisions)) {
-            this.#handleCollisionChanges(currentCollisions);
-        } else {
-            this.#handleNoCollisionChange(currentCollisions);
-        }
-
-        this.position.x += this.velocity.x * dt;
-        this.position.y += this.velocity.y * dt;
-
-        this.#fringeShiftTime += dt;
-        if (this.#fringeShiftTime >= this.#fringeShiftInterval) {
-            this.#fringeShiftTime %= this.#fringeShiftInterval;
-            this.#fringeToggle = !this.#fringeToggle;
-        }
-
+        this.update(dt);
         this.draw();
     }
 
