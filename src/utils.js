@@ -121,9 +121,6 @@ export function drawPathFromPoints(ctx, centerX, centerY, radius, points, origin
 
     ctx.closePath();
     ctx.fill('nonzero');
-
-    // ctx.strokeStyle = parseHexNumToCSSColor(0xffffff);
-    // ctx.stroke();
 }
 
 /**
