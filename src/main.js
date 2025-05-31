@@ -90,7 +90,7 @@ function setupPacman(pacman) {
 
     pacman.startTimeout = setTimeout(function () {
         clearTimeout(pacman.startTimeout);
-        pacman.update({ velocity: actorStartVectors[actorStartVectors.length - 1] });
+        pacman.updateProps({ velocity: actorStartVectors[actorStartVectors.length - 1] });
         pacman.direction = getDirectionFromVelocity(pacman.velocity);
     }, pacman.startTime);
 }
@@ -121,7 +121,7 @@ function setupGhosts(ghost) {
 
     ghost.startTimeout = setTimeout(function () {
         clearTimeout(ghost.startTimeout);
-        ghost.update({ velocity: actorStartVectors[getRandomNumber(0, actorStartVectors.length, false, true, false)] });
+        ghost.updateProps({ velocity: actorStartVectors[getRandomNumber(0, actorStartVectors.length, false, true, false)] });
         ghost.direction = getDirectionFromVelocity(ghost.velocity);
     }, ghost.startTime);
 }
