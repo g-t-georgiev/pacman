@@ -393,7 +393,7 @@ function drawGhostEyes(ctx, ghost) {
     } = ghost;
 
     // Draw eyeballs
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = parseHexNumToCSSColor(0xffffff);
     ctx.beginPath();
     ctx.ellipse(centerX - radius / 2.5, centerY, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
     ctx.ellipse(centerX + radius / 2.5, centerY, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
@@ -423,7 +423,7 @@ function drawGhostEyes(ctx, ghost) {
     }
 
     // Draw retinas (pupils)
-    ctx.fillStyle = "#0000ff"; // original was #008fff, simplified
+    ctx.fillStyle = parseHexNumToCSSColor(0x0000ff);
     ctx.beginPath();
     ctx.ellipse(centerX - radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
     ctx.ellipse(centerX + radius / 2.5 + offset.x, centerY + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
