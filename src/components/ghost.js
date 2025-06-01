@@ -12,6 +12,43 @@ const BODY_COLOR_FRIGHTENED2 = parseHexNumToCSSColor(0xffffff);
 const FACE_COLOR_FRIGHTENED1 = parseHexNumToCSSColor(0xf7b8b1);
 const FACE_COLOR_FRIGHTENED2 = parseHexNumToCSSColor(0xea1d26);
 
+const LEFT_EYE_BALL_POINTS = [
+    [31, 31],  [31, 41],  [21, 41],
+    [21, 71],  [31, 71],  [31, 81],
+    [51, 81],  [51, 71],  [61, 71],
+    [61, 41],  [51, 41],  [51, 31],
+    [31, 31]
+];
+const LEFT_EYE_PUPIL_POINTS = [ 
+    [31, 51], [31, 71], [51, 71], 
+    [51, 51], [31, 51] 
+];
+
+const RIGHT_EYE_BALL_POINTS = [
+    [91, 31],  [91, 41], [81, 41],  
+    [81, 71],  [91, 71], [91, 81], 
+    [112, 81], [112, 71], [121, 71], 
+    [121, 41], [111, 41], [111, 31], 
+    [91, 31]
+];
+const RIGHT_EYE_PUPIL_POINTS = [ 
+    [91, 51], [91, 71], [112, 71], 
+    [112, 51], [91, 51] 
+];
+
+const SCARED_GHOST_MOUTH_POINTS = [
+    [ 11, 111 ],  [ 21, 111 ],  [ 21, 101 ],
+    [ 41, 101 ],  [ 41, 111 ],  [ 61, 111 ],
+    [ 61, 101 ],  [ 81, 101 ],  [ 81, 111 ],
+    [ 101, 111 ], [ 101, 101 ], [ 121, 101 ],
+    [ 121, 111 ], [ 131, 111 ], [ 131, 101 ],
+    [ 121, 101 ], [ 121, 91 ],  [ 101, 91 ],
+    [ 101, 101 ], [ 81, 101 ],  [ 81, 91 ],
+    [ 61, 91 ],   [ 61, 101 ],  [ 41, 101 ],
+    [ 41, 91 ],   [ 21, 91 ],   [ 21, 101 ],
+    [ 11, 101 ],  [ 11, 111 ]
+];
+
 export const GHOSTS_IDS = {
     0: 'Blinky',
     1: 'Inky',
@@ -121,26 +158,6 @@ export default class Ghost extends Hero {
 
     set radius(value) {
         this.#radius = value;
-    }
-
-    /** @private */
-    get eyeBallRadiusX() {
-        return this.radius / 3;
-    }
-
-    /** @private */
-    get eyeBallRadiusY() {
-        return this.radius / 2.3;
-    }
-
-    /** @private */
-    get eyeSocketRadiusX() {
-        return this.radius / 6;
-    }
-
-    /** @private */
-    get eyeSocketRadiusY() {
-        return this.radius / 6;
     }
 
     /** @private */
@@ -426,10 +443,6 @@ function drawGhostBodyState2(ctx, centerX, centerY, radius, color) {
  */
 function drawGhostEyes(ctx, ghost) {
     const {
-        eyeBallRadiusX,
-        eyeBallRadiusY,
-        eyeSocketRadiusX,
-        eyeSocketRadiusY,
         center,
         radius,
         direction
@@ -438,35 +451,31 @@ function drawGhostEyes(ctx, ghost) {
     // Draw eyeballs
     ctx.fillStyle = parseHexNumToCSSColor(0xffffff);
     ctx.beginPath();
-    ctx.ellipse(center.x - radius / 2.5, center.y, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(center.x + radius / 2.5, center.y, eyeBallRadiusX, eyeBallRadiusY, 0, 0, 2 * Math.PI);
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius, 
+        syncEyeBallPointsWithDirection(LEFT_EYE_BALL_POINTS, direction), 
+        SVG_WIDTH, SVG_HEIGHT
+    );
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius, 
+        syncEyeBallPointsWithDirection(RIGHT_EYE_BALL_POINTS, direction), 
+        SVG_WIDTH, SVG_HEIGHT
+    );
     ctx.fill();
-
-    // Calculate retina direction offset
-    const offset = {x:0,y:0};
-
-    const offsetAmount = eyeBallRadiusX * 0.5;
-
-    switch (direction) {
-        case PATH_DIRECTIONS.Left:
-            offset.x = -offsetAmount;
-            break;
-        case PATH_DIRECTIONS.Right:
-            offset.x = offsetAmount;
-            break;
-        case PATH_DIRECTIONS.Up:
-            offset.y = -offsetAmount;
-            break;
-        case PATH_DIRECTIONS.Down:
-            offset.y = offsetAmount;
-            break;
-    }
 
     // Draw pupils
     ctx.fillStyle = parseHexNumToCSSColor(0x0000ff);
     ctx.beginPath();
-    ctx.ellipse(center.x - radius / 2.5 + offset.x, center.y + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(center.x + radius / 2.5 + offset.x, center.y + offset.y, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+        drawPathFromPoints(
+        ctx, center.x, center.y, radius,  
+        syncEyePupilPointsWithDirection(LEFT_EYE_PUPIL_POINTS, direction), 
+        SVG_WIDTH, SVG_HEIGHT
+    );
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius,  
+        syncEyePupilPointsWithDirection(RIGHT_EYE_PUPIL_POINTS, direction), 
+        SVG_WIDTH, SVG_HEIGHT
+    );
     ctx.fill();
 }
 
@@ -477,8 +486,6 @@ function drawGhostEyes(ctx, ghost) {
 function drawScaredGhostFace(ctx, ghost) {
 
     const {
-        eyeSocketRadiusX,
-        eyeSocketRadiusY,
         center,
         radius,
         faceColor
@@ -487,16 +494,62 @@ function drawScaredGhostFace(ctx, ghost) {
     // Draw pupils
     ctx.fillStyle = faceColor;
     ctx.beginPath();
-    ctx.ellipse(center.x - radius / 2.5, center.y - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
-    ctx.ellipse(center.x + radius / 2.5, center.y - radius * 0.25, eyeSocketRadiusX, eyeSocketRadiusY, 0, 0, 2 * Math.PI);
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius, 
+        LEFT_EYE_PUPIL_POINTS, 
+        SVG_WIDTH, SVG_HEIGHT
+    );
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius, 
+        RIGHT_EYE_PUPIL_POINTS, 
+        SVG_WIDTH, SVG_HEIGHT
+    );
     ctx.fill();
 
     // Draw mouth
-    drawPathFromPoints(ctx, center.x, center.y, radius, [
-        [11, 101], [21, 101], [21, 91], [41, 91], [41, 101], [61, 101], 
-        [61, 91], [81, 91], [81, 101], [101, 101], [101, 91], [121, 91], 
-        [121, 101], [131, 101], [131, 91], [121, 91], [121, 81], [101, 81], 
-        [101, 91], [81, 91], [81, 81], [61, 81], [61, 91], [41, 91], 
-        [41, 81], [21, 81], [21, 91], [11, 91], [11, 101]
-    ], SVG_WIDTH, SVG_HEIGHT);
+    drawPathFromPoints(
+        ctx, center.x, center.y, radius, 
+        SCARED_GHOST_MOUTH_POINTS, 
+        SVG_WIDTH, SVG_HEIGHT
+    );
+}
+
+/**
+ * @param {number[][]} points 
+ * @param {'up', 'down', 'left', 'right'} direction 
+ * @returns {number[][]}
+ */
+function syncEyeBallPointsWithDirection(points, direction) {
+    return points.map(function ([x, y]) {
+        if (direction === PATH_DIRECTIONS.Left) {
+            x -= 10;
+        } else if (direction === PATH_DIRECTIONS.Right) {
+            x += 10;
+        } else if (direction === PATH_DIRECTIONS.Up) {
+            y -= 20;
+        } else if (direction === PATH_DIRECTIONS.Down) {
+            y += 10;
+        }
+        return [x, y];
+    });
+}
+
+/**
+ * @param {number[][]} points 
+ * @param {'up', 'down', 'left', 'right'} direction 
+ * @returns {number[][]}
+ */
+function syncEyePupilPointsWithDirection(points, direction) {
+    return points.map(function ([x, y]) {
+        if (direction === PATH_DIRECTIONS.Left) {
+            x -= 20;
+        } else if (direction === PATH_DIRECTIONS.Right) {
+            x += 20;
+        } else if (direction === PATH_DIRECTIONS.Up) {
+            y -= 40;
+        } else if (direction === PATH_DIRECTIONS.Down) {
+            y += 20;
+        }
+        return [x, y];
+    });
 }
