@@ -37,6 +37,8 @@ root/
 │ │ ├── pellet.js # Regular and power pellet logic
 │ │ ├── tile.js # Tile types (walls, pellets, etc.)
 │ │ └── tilemap.js # Maze generation from layout
+│ ├── helpers/
+│ │ ├── ...
 │ ├── collisions.js # Collision detection logic
 │ ├── constants.js # Game constants (tile size, colors, speed)
 │ ├── Loader.js # Asset preloader (images, sounds)
