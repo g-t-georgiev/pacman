@@ -12,6 +12,7 @@ const scoreDisplay = scoreBoard.querySelector('#score');
 const highScoreDisplay = scoreBoard.querySelector('#high-score');
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
+ctx.imageSmoothingEnabled = false;
 
 const cols = 11;
 const rows = 13;
