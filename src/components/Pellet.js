@@ -3,7 +3,7 @@ import { parseHexNumToCSSColor } from "../utils.js";
 export default class Pellet {
   #ctx;
 
-  constructor(ctx, { position, radius = 3, reward = 10, color = 0xdead8e }) {
+  constructor(ctx, { position, radius = 4, reward = 10, color = 0xdead8e }) {
     this.#ctx = ctx;
     this.position = position;
     this.color = parseHexNumToCSSColor(color);

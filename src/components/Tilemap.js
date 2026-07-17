@@ -43,8 +43,8 @@ export default class Tilemap {
           const x = col * this.size + this.size / 2;
           const y = row * this.size + this.size / 2;
           const tileObject = tile === "."
-            ? new Pellet(this.#ctx, { position: { x, y }, radius: 3 })
-            : new PowerPellet(this.#ctx, { position: { x, y }, radius: 7 });
+            ? new Pellet(this.#ctx, { position: { x, y } })
+            : new PowerPellet(this.#ctx, { position: { x, y } });
           this.map[i] = tileObject;
           this.#currLvlTargetScorePts += tileObject.reward;
         } else {
@@ -71,21 +71,37 @@ export default class Tilemap {
   draw() {
     if (this.#ctx == null) return;
 
+    this.drawTiles();
+    this.drawTilesGrid();
+  }
+
+  drawTiles() {
     this.#ctx.save();
+
+    this.map.forEach((tile) => {
+      if (!tile) return;
+
+      tile.draw?.();
+    });
+
+    this.#ctx.restore();
+  }
+
+  drawTilesGrid() {
+    if (!this.drawGridLines) return;
+
+    this.#ctx.save();
+
     this.#ctx.strokeStyle = parseHexNumToCSSColor(0x666666);
     this.#ctx.lineWidth = 1;
 
-    this.map.forEach((tile, i) => {
-      if (tile) {
-        tile.draw?.();
+    this.map.forEach((_, i) => {
+      const col = i % this.cols;
+      const row = Math.floor(i / this.cols);
 
-        if (this.drawGridLines) {
-          const col = i % this.cols;
-          const row = Math.floor(i / this.cols);
-          this.#ctx.strokeRect(col * this.size, row * this.size, this.size, this.size);
-        }
-      }
+      this.#ctx.strokeRect(col * this.size, row * this.size, this.size, this.size);
     });
+
     this.#ctx.restore();
   }
 
@@ -111,7 +127,6 @@ export default class Tilemap {
    * @returns {void}
    */
   removePelletOnOverlap(pacman) {
-
     if (!pacman.collidable) return;
 
     let currentTile = null;

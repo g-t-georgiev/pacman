@@ -2,7 +2,7 @@ import { parseHexNumToCSSColor } from "../utils.js";
 import Pellet from "./Pellet.js";
 
 export default class PowerPellet extends Pellet {
-  constructor(ctx, { position, radius = 7, reward = 50, color = 0xdead8e }) {
+  constructor(ctx, { position, radius = 10, reward = 50, color = 0xdead8e }) {
     super(ctx, { position, radius, reward, color });
     this.colors = [0xffffff, 0xffff00, 0xdead8e];
     this.pulsingTime = 10;
