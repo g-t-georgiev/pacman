@@ -1,4 +1,4 @@
-import { PACMAN_GRID_COORDS, PATH_DIRECTIONS, ACTORS_DATA, PacmanAlias } from "../constants.js";
+import { PATH_DIRECTIONS, ACTORS_DATA, PacmanAlias } from "../constants.js";
 import { parseHexNumToCSSColor } from "../utils.js";
 import { isSolidObject, checkFor2RectCollisions } from "../collisions.js";
 

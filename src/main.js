@@ -5,7 +5,7 @@ import Ghost, { GHOSTS_IDS, getGhostsData } from "./components/Ghost.js";
 import mazeLayout from "./mazeLayout.js";
 
 import { parseHexNumToCSSColor, getDirectionFromVelocity, getRandomNumber } from "./utils.js";
-import { GhostAliases } from "./constants.js";
+import { GhostAliases, GRID_COLS, GRID_ROWS } from "./constants.js";
 
 const gameCache = sessionStorage;
 
@@ -16,8 +16,8 @@ const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 ctx.imageSmoothingEnabled = false;
 
-const cols = 28;
-const rows = 36;
+const cols = GRID_COLS;
+const rows = GRID_ROWS;
 const tileSize = 40;
 
 /** @type import("./helpers/Loader.js").Loader */
@@ -81,7 +81,6 @@ function setupPacman(pacman) {
   pacman.drawBoxQuadrants = false;
   pacman.debug = false;
 
-  console.log(pacman.name, pacman.startTime, pacmanActorData);
   pacman.startTimeout = setTimeout(function () {
     clearTimeout(pacman.startTimeout);
     pacman.updateProps({ velocity: actorStartVectors[actorStartVectors.length - 1] });
@@ -112,7 +111,6 @@ function setupGhosts(ghost) {
     }
   }
 
-  console.log(ghost.name, ghost.startTime);
   ghost.startTimeout = setTimeout(function () {
     clearTimeout(ghost.startTimeout);
     ghost.updateProps({
@@ -153,7 +151,6 @@ function setup() {
       structuredClone(defaultActorData),
       structuredClone(ghostActorsData[name])
     );
-    console.log(name, data);
 
     return setupGhosts(new Ghost(ctx, tilemap, data));
   });

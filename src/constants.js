@@ -1,15 +1,27 @@
+/** @typedef {{ x: number; y: number; }} Position */
+
+export const GRID_COLS = 28;
+export const GRID_ROWS = 36;
+
+/** @enum {"up" | "down" | "left" | "right"} */
 export const PATH_DIRECTIONS = {
-  Up: "up", Down: "down", Left: "left", Right: "right"
+  Up: "up",
+  Down: "down",
+  Left: "left",
+  Right: "right",
 };
 
+/** @type {PATH_DIRECTIONS} */
 export const PATH_DIRECTIONS_LIST = Object.values(PATH_DIRECTIONS);
 
-export const PACMAN_GRID_COORDS = {
-  x: 13,
-  y: 26,
-};
-
-/** @typedef {{ x: number; y: number; }} Position */
+/** 
+ * @typedef {{
+ *  name: string,
+ *  position: Position;
+ *  color: number | string;
+ *  startTime?: number;
+ * }} ActorData
+ */
 
 /** @enum {"Pacman"} */
 export const PacmanAlias = "Pacman";
@@ -23,15 +35,6 @@ export const GhostAliases = {
   Pink: "Pinky",
   Orange: "Clyde",
 };
-
-/** 
- * @typedef {{
- *  name: string,
- *  position: Position;
- *  color: number | string;
- *  startTime?: number;
- * }} ActorData
- */
 
 /** @type {Record<PacmanAlias | GhostAliases, ActorData>} */
 export const ACTORS_DATA = {

@@ -1,4 +1,4 @@
-import { PATH_DIRECTIONS } from "../constants.js";
+import { GRID_COLS, GRID_ROWS, PATH_DIRECTIONS } from "../constants.js";
 import { parseHexNumToCSSColor } from "../utils.js";
 import Tile from "./Tile.js";
 import Boundary from "./Boundary.js";
@@ -95,12 +95,36 @@ export default class Tilemap {
     this.#ctx.strokeStyle = parseHexNumToCSSColor(0x666666);
     this.#ctx.lineWidth = 1;
 
+    this.#ctx.beginPath();
+
     this.map.forEach((_, i) => {
       const col = i % this.cols;
       const row = Math.floor(i / this.cols);
+      const x = col * this.size;
+      const y = row * this.size;
 
-      this.#ctx.strokeRect(col * this.size, row * this.size, this.size, this.size);
+      // top edge of the current cell
+      this.#ctx.moveTo(x, y);
+      this.#ctx.lineTo(x + this.size, y);
+
+      // left edge of the current cell
+      this.#ctx.moveTo(x, y);
+      this.#ctx.lineTo(x, y + this.size);
+
+      // bottom edge only for the last row
+      if (row === this.rows - 1) {
+        this.#ctx.moveTo(x, y + this.size);
+        this.#ctx.lineTo(x + this.size, y + this.size);
+      }
+
+      // right edge only for the last column
+      if (col === this.cols - 1) {
+        this.#ctx.moveTo(x + this.size, y);
+        this.#ctx.lineTo(x + this.size, y + this.size);
+      }
     });
+
+    this.#ctx.stroke();
 
     this.#ctx.restore();
   }
@@ -115,9 +139,9 @@ export default class Tilemap {
     const row = Math.floor(y / this.size);
     const col = Math.floor(x / this.size);
     const index = row * this.cols + col;
-    // console.log(x, y, row, col, index);
+
     const tile = this.map[index];
-    // console.log(tile.constructor.name);
+
     return tile;
   }
 
