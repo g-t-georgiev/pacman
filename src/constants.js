@@ -45,7 +45,8 @@ export const ACTORS_DATA = {
       y: 26,
     },
     color: 0xffff00, // "#ffff00"
-    startTime: 2147483647, // 1000
+    startTime: 1000, // 1000
+    // startTime: 2147483647, // DEBUG FREEZE
   },
   [GhostAliases.Red]: {
     name: GhostAliases.Red, // "Blinky"
@@ -54,7 +55,8 @@ export const ACTORS_DATA = {
       y: 14,
     },
     color: 0xe90402, // "#e90402"
-    startTime: 2147483647, // 1200
+    startTime: 1200, // 1200
+    // startTime: 2147483647, // DEBUG FREEZE
   },
   [GhostAliases.Cyan]: {
     name: GhostAliases.Cyan, // "Inky"
@@ -63,7 +65,8 @@ export const ACTORS_DATA = {
       y: 17,
     },
     color: 0x09b4df, // "#e90402"
-    startTime: 2147483647, // 2000
+    startTime: 2000, // 2000
+    // startTime: 2147483647, // DEBUG FREEZE
   },
   [GhostAliases.Pink]: {
     name: GhostAliases.Pink, // "Pinky"
@@ -72,7 +75,8 @@ export const ACTORS_DATA = {
       y: 17,
     },
     color: 0xde91b8, // "#de91b8"
-    startTime: 2147483647, // 2300
+    startTime: 2300, // 2300
+    // startTime: 2147483647, // DEBUG FREEZE
   },
   [GhostAliases.Orange]: {
     name: GhostAliases.Orange, // "Clyde"
@@ -81,6 +85,7 @@ export const ACTORS_DATA = {
       y: 17,
     },
     color: 0xe09101, // "#e09101"
-    startTime: 2147483647, // 5000
+    startTime: 5000, // 5000
+    // startTime: 2147483647, // DEBUG FREEZE
   }
 };

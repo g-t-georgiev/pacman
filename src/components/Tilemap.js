@@ -172,7 +172,7 @@ export default class Tilemap {
         pacman.center.x - currentTile.center.x,
         pacman.center.y - currentTile.center.y
       );
-      isColliding = minDistance < pacman.radius + currentTile.radius - currentTile.radius;
+      isColliding = minDistance <= pacman.radius + currentTile.radius;
     }
 
     if (isColliding) {
