@@ -17,5 +17,5 @@ function convertSVGPathToMatrixOfPoints(path) {
     );
 }
 
-console.log(convertSVGPathToMatrixOfPoints('M11 111 L21 111 L21 101 L41 101 z M-10,-20 L0 0'));
+// console.log(convertSVGPathToMatrixOfPoints('M11 111 L21 111 L21 101 L41 101 z M-10,-20 L0 0'));
 // Output: [[11,111], [21,111], [21,101], [41,101], [-10,-20], [0,0]]
