@@ -1,58 +1,81 @@
-*, 
-*::before, 
+:root {
+  --aspect-ratio: 28 / 36;
+}
+
+*,
+*::before,
 *::after {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 body {
-    background: #000000;
-    overflow: hidden;
-    display: grid;
-    justify-content: center;
+  background: #000000;
+  overflow: hidden;
+
+  display: grid;
+  place-items: center;
+}
+
+#gameContainer {
+  position: relative;
+
+  max-height: 100dvh;
+  max-height: 100vh;
+  aspect-ratio: var(--aspect-ratio);
+
+  box-sizing: border-box;
 }
 
 canvas {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
 }
 
 #score-board {
-    font-family: 'Emulogic', monospace;
-    font-size: .9375rem;
-    color: #ffffff;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 2rem;
+  z-index: 2;
+  pointer-events: none;
 
-    padding: 1.5rem .875rem 0 .5625rem;
-    margin-bottom: 1rem;
+  font-family: "Emulogic", monospace;
+  font-size: .9375rem;
+  color: #ffffff;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+
+  padding: 0 .875rem 0 .5625rem;
 }
 
 .score-area {
-    text-align: right;
+  text-align: right;
 }
 
 .score-area .active-player {
-    text-align: center;
-    text-indent: 1rem;
-    padding-right: 1rem;
+  text-align: center;
+  text-indent: 1rem;
+  padding-right: 1rem;
 }
 
 .high-score-area {
-    text-align: center;
+  text-align: center;
 }
 
 .score-area .active-player,
 .high-score-area .high-score-label {
-    margin-bottom: .1875rem;
+  margin-bottom: .1875rem;
 }
 
 .score-area .score-value,
 .high-score-area .high-score-value {
-    font-size: 115%;
+  font-size: 115%;
 }

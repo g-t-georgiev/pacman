@@ -5,12 +5,12 @@
  * @returns {boolean}
  */
 export function checkFor2RectCollisions(rect1, rect2) {
-    return (
-        rect1.y <= rect2.y + rect2.height &&
-        rect1.x + rect1.width >= rect2.x &&
-        rect1.y + rect1.height >= rect2.y &&
-        rect1.x <= rect2.x + rect2.width
-    );
+  return (
+    rect1.y <= rect2.y + rect2.height &&
+    rect1.x + rect1.width >= rect2.x &&
+    rect1.y + rect1.height >= rect2.y &&
+    rect1.x <= rect2.x + rect2.width
+  );
 }
 
 /**
@@ -22,10 +22,10 @@ export function checkFor2RectCollisions(rect1, rect2) {
  * @returns {boolean}
  */
 export function checkFor2CircleCollisions(circle1, circle2) {
-    let dx = circle1.x - circle2.x;
-    let dy = circle1.y - circle2.y;
-    let distance = Math.sqrt(dx ** 2 + dy ** 2);
-    return distance <= circle1.radius + circle2.radius;
+  let dx = circle1.x - circle2.x;
+  let dy = circle1.y - circle2.y;
+  let distance = Math.sqrt(dx ** 2 + dy ** 2);
+  return distance <= circle1.radius + circle2.radius;
 }
 
 /**
@@ -34,9 +34,9 @@ export function checkFor2CircleCollisions(circle1, circle2) {
  * @returns {boolean}
  */
 export function isSolidObject(obj) {
-    return (
-        obj != null && typeof(obj) == 'object' && 
-        Object.prototype.hasOwnProperty.call(obj, 'solid') && 
-        obj.solid
-    );
+  return (
+    obj != null && typeof (obj) == "object" &&
+    Object.prototype.hasOwnProperty.call(obj, "solid") &&
+    obj.solid
+  );
 }
