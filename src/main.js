@@ -23,7 +23,7 @@ const tileSize = 40;
 /** @type import("./helpers/Loader.js").Loader */
 const loader = Loader.getInstance();
 
-const assetsUrl = "./assets/;
+const assetsUrl = "./assets/";
 
 loader
   .add({ url: `${assetsUrl}images/pipeHorizontal.png`, name: "-" })
