@@ -23,27 +23,27 @@ const tileSize = 40;
 /** @type import("./helpers/Loader.js").Loader */
 const loader = Loader.getInstance();
 
-const rootUrl = location.pathname;
+const assetsUrl = "./assets/;
 
 loader
-  .add({ url: `${rootUrl}assets/images/pipeHorizontal.png`, name: "-" })
-  .add({ url: `${rootUrl}assets/images/pipeVertical.png`, name: "|" })
-  .add({ url: `${rootUrl}assets/images/pipeCorner1.png`, name: "1" })
-  .add({ url: `${rootUrl}assets/images/pipeCorner2.png`, name: "2" })
-  .add({ url: `${rootUrl}assets/images/pipeCorner3.png`, name: "3" })
-  .add({ url: `${rootUrl}assets/images/pipeCorner4.png`, name: "4" })
-  .add({ url: `${rootUrl}assets/images/pipeConnectorTop.png`, name: "5" })
-  .add({ url: `${rootUrl}assets/images/pipeConnectorRight.png`, name: "6" })
-  .add({ url: `${rootUrl}assets/images/pipeConnectorBottom.png`, name: "7" })
-  .add({ url: `${rootUrl}assets/images/pipeConnectorLeft.png`, name: "8" })
-  .add({ url: `${rootUrl}assets/images/block.png`, name: "b" })
-  .add({ url: `${rootUrl}assets/images/capLeft.png`, name: "[" })
-  .add({ url: `${rootUrl}assets/images/capRight.png`, name: "]" })
-  .add({ url: `${rootUrl}assets/images/capBottom.png`, name: "_" })
-  .add({ url: `${rootUrl}assets/images/capTop.png`, name: "^" })
-  .add({ url: `${rootUrl}assets/images/pipeCross.png`, name: "+" })
-  .add({ url: `${rootUrl}assets/fonts/pac-font/PacFont.ttf`, name: "PacFont" })
-  .add({ url: `${rootUrl}assets/fonts/emulogic/Emulogic.ttf`, name: "EmulogicFont" });
+  .add({ url: `${assetsUrl}images/pipeHorizontal.png`, name: "-" })
+  .add({ url: `${assetsUrl}images/pipeVertical.png`, name: "|" })
+  .add({ url: `${assetsUrl}images/pipeCorner1.png`, name: "1" })
+  .add({ url: `${assetsUrl}images/pipeCorner2.png`, name: "2" })
+  .add({ url: `${assetsUrl}images/pipeCorner3.png`, name: "3" })
+  .add({ url: `${assetsUrl}images/pipeCorner4.png`, name: "4" })
+  .add({ url: `${assetsUrl}images/pipeConnectorTop.png`, name: "5" })
+  .add({ url: `${assetsUrl}images/pipeConnectorRight.png`, name: "6" })
+  .add({ url: `${assetsUrl}images/pipeConnectorBottom.png`, name: "7" })
+  .add({ url: `${assetsUrl}images/pipeConnectorLeft.png`, name: "8" })
+  .add({ url: `${assetsUrl}images/block.png`, name: "b" })
+  .add({ url: `${assetsUrl}images/capLeft.png`, name: "[" })
+  .add({ url: `${assetsUrl}images/capRight.png`, name: "]" })
+  .add({ url: `${assetsUrl}images/capBottom.png`, name: "_" })
+  .add({ url: `${assetsUrl}images/capTop.png`, name: "^" })
+  .add({ url: `${assetsUrl}images/pipeCross.png`, name: "+" })
+  .add({ url: `${assetsUrl}fonts/pac-font/PacFont.ttf`, name: "PacFont" })
+  .add({ url: `${assetsUrl}fonts/emulogic/Emulogic.ttf`, name: "EmulogicFont" });
 
 loader.load(setup);
 
