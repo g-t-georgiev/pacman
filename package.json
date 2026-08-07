@@ -1,0 +1,22 @@
+{
+  "name": "Pac-Man",
+  "version": "1.0.0",
+  "description": "A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas API. Navigate the maze, collect pellets, avoid ghosts, and beat your high score!",
+  "main": "src/main.js",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g-t-georgiev/pacman.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/g-t-georgiev/pacman/issues"
+  },
+  "homepage": "https://github.com/g-t-georgiev/pacman#readme"
+}
