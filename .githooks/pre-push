@@ -1,0 +1,8 @@
+#!/bin/sh
+while read local_ref local_sha remote_ref remote_sha
+do
+    if [ "$remote_ref" = "refs/heads/main" ]; then
+        echo "❌ Protection Warning: Direct pushes to main are blocked!"
+        exit 1
+    fi
+done
