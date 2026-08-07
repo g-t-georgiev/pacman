@@ -3,6 +3,7 @@ import Tilemap from "./components/Tilemap.js";
 import Pacman, { getPacmanData } from "./components/Pacman.js";
 import Ghost, { GHOSTS_IDS, getGhostsData } from "./components/Ghost.js";
 import mazeLayout from "./mazeLayout.js";
+import { TILE_SIZE } from "./constants.js";
 
 import { parseHexNumToCSSColor, getDirectionFromVelocity, getRandomNumber } from "./utils.js";
 import { GhostAliases, GRID_COLS, GRID_ROWS } from "./constants.js";
@@ -12,13 +13,14 @@ const gameCache = sessionStorage;
 const scoreBoard = document.querySelector("#score-board");
 const scoreDisplay = scoreBoard.querySelector("#score");
 const highScoreDisplay = scoreBoard.querySelector("#high-score");
+
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
-ctx.imageSmoothingEnabled = false;
 
-const cols = GRID_COLS;
-const rows = GRID_ROWS;
-const tileSize = 40;
+canvas.width = GRID_COLS * TILE_SIZE;
+canvas.height = GRID_ROWS * TILE_SIZE;
+
+ctx.imageSmoothingEnabled = false;
 
 /** @type import("./helpers/Loader.js").Loader */
 const loader = Loader.getInstance();
@@ -48,14 +50,14 @@ loader
 loader.load(setup);
 
 const defaultActorData = {
-  width: tileSize,
-  height: tileSize,
-  radius: tileSize / 3,
+  width: TILE_SIZE,
+  height: TILE_SIZE,
+  radius: TILE_SIZE / 3,
   speed: 2,
 };
 
-const pacmanActorData = structuredClone(getPacmanData(tileSize));
-const ghostActorsData = structuredClone(getGhostsData(tileSize));
+const pacmanActorData = structuredClone(getPacmanData(TILE_SIZE));
+const ghostActorsData = structuredClone(getGhostsData(TILE_SIZE));
 
 const actorStartVectors = [
   { x: 0, y: -defaultActorData.speed }, // Up
@@ -137,7 +139,7 @@ function setup() {
   highScoreDisplay.textContent = `${highScore}`.padStart(5, "0");
 
   // console.log("Assets finished loading.");
-  tilemap = new Tilemap(ctx, mazeLayout, cols, rows, tileSize).setup(loader);
+  tilemap = new Tilemap(ctx, mazeLayout, GRID_COLS, GRID_ROWS, TILE_SIZE).setup(loader);
   tilemap.drawGridLines = true;
 
   ghosts = Array.from({ length: 4 }, function (_, i) {
@@ -195,9 +197,6 @@ function setup() {
 }
 
 function resize() {
-  canvas.width = cols * tileSize;
-  canvas.height = rows * tileSize;
-
   if (imageData != null && imageData instanceof ImageData) {
     ctx.putImageData(imageData, 0, 0);
   }

@@ -2,6 +2,7 @@
 
 export const GRID_COLS = 28;
 export const GRID_ROWS = 36;
+export const TILE_SIZE = 40;
 
 /** @enum {"up" | "down" | "left" | "right"} */
 export const PATH_DIRECTIONS = {
