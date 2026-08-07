@@ -4,6 +4,8 @@ Thumbs.db
 
 # Editor/IDE config
 .vscode/
+!.vscode/extensions.json
+
 .idea/
 *.sublime-workspace
 *.code-workspace
