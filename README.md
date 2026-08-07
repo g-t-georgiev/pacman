@@ -26,30 +26,40 @@ A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas 
 
 ```
 root/
-├── .vscode/ # VSCode config
-├── assets/ # Images, sounds, fonts, etc.
+├── .githooks/
+│   └── pre-push
+├── .vscode/
+│   └── extensions.json
+├── assets/
+│   ├── fonts/
+│   └── images/
 ├── src/
-│ ├── components/
-│ │ ├── boundary.js # Maze walls and boundaries
-│ │ ├── ghost.js # Ghost AI and rendering
-│ │ ├── hero.js # Shared base class for Pac-Man & ghosts
-│ │ ├── pacman.js # Pac-Man behavior and animation
-│ │ ├── pellet.js # Regular and power pellet logic
-│ │ ├── tile.js # Tile types (walls, pellets, etc.)
-│ │ └── tilemap.js # Maze generation from layout
-│ ├── helpers/
-│ │ ├── ...
-│ ├── collisions.js # Collision detection logic
-│ ├── constants.js # Game constants (tile size, colors, speed)
-│ ├── Loader.js # Asset preloader (images, sounds)
-│ ├── main.js # Main game loop and orchestration
-│ ├── mazeLayout.json # 2D array layout for maze grid
-│ ├── styles.css
-│ └── utils.js
+│   ├── components/
+│   │   ├── Actor.js                    # Shared base class for Pac-Man & ghosts
+│   │   ├── Boundary.js                 # Ghost AI and rendering
+│   │   ├── Ghost.js                    # Maze walls and boundaries
+│   │   ├── Pacman.js                   # Pac-Man behavior and animation
+│   │   ├── Pellet.js                   # Regular pellet/dot logic
+│   │   ├── PowerPellet.js              # Power pellet/energizer logic
+│   │   ├── Tile.js                     # Tile types (walls, pellets, etc.)
+│   │   └── Tilemap.js                  # Maze generation from layout
+│   ├── helpers/
+│   │   └── svgPathConverter.js
+│   ├── collisions.js                   # Collision detection logic
+│   ├── constants.js                    # Game constants (tile size, colors, speed)
+│   ├── Loader.js                       # Asset preloader (images, sounds)
+│   ├── main.js                         # Main game loop and orchestration
+│   ├── mazeLayout.json                 # 1D array data file for maze grid layout
+│   ├── mazeLayout.txt                  # 1D array text helper file
+│   ├── styles.css
+│   └── utils.js
+├── .editorconfig
+├── .gitattributes
 ├── .gitignore
-├── favicon.ico # App icon
-├── index.html # Entry point
+├── favicon.ico
+├── index.html
 ├── LICENSE
+├── package.json
 └── README.md
 ```
 
@@ -91,7 +101,7 @@ No build tools or frameworks required — it's 100% browser-based.
    cd pacman
 ```
 
-2. Open index.html in your browser. 
+2. Open index.html in your browser.
 3. No server required – runs fully in the browser!
 
 ---
@@ -116,4 +126,4 @@ MIT License
 
 ---
 
-Built with ❤️ using JavaScript + Canvas.
+Built with ❤️ using JavaScript + Canvas
