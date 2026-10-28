@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FruitItem, GhostType, TileCoord } from '../types/game';
+import type { GhostType, TileCoord } from '../types/game';
 
 export const TILE_SIZE = 16;
 export const MAZE_COLS = 28;

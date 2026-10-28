@@ -100,7 +100,7 @@ export class GameRenderer {
         } else if (tile === 'GATE') {
           ctx.fillStyle = maze.gateColor || '#ffb8ff';
           ctx.fillRect(x, y + TILE_SIZE / 2 - 2, TILE_SIZE, 4);
-        } else if (tile === 'DOT' || tile === 'NO_UP_ZONE') {
+        } else if (tile === 'DOT') {
           if (engine.mode === 'COOKIE_MAN') {
             // Chocolate chip dot
             ctx.fillStyle = '#d2a679';
@@ -615,7 +615,7 @@ export class GameRenderer {
     }
 
     // 2. Highlight Decision Intersection Tiles (>= 3 walkable exits)
-    ctx.fillStyle = 'rgba(0, 255, 180, 0.1)';
+    ctx.fillStyle = 'rgba(0, 255, 180, 0.25)';
     for (let r = 1; r < maze.height - 1; r++) {
       for (let c = 1; c < maze.width - 1; c++) {
         if (maze.tiles[r][c] !== 'WALL') {

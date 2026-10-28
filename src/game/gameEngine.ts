@@ -17,18 +17,14 @@ import {
   PlayState,
   ScorePopup,
   SnapshotState,
-  TileCoord,
   TileType,
 } from '../types/game';
 import {
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
   CLASSIC_FRUITS,
   COOKIE_MAN_TREATS,
   CRAZY_OTTO_TREATS,
   FRIGHTENED_DURATIONS,
   GHOST_BASE_SPEED,
-  GHOST_COLORS,
   PACMAN_BASE_SPEED,
   PACMAN_EATING_SPEED,
   PACMAN_TURBO_SPEED,
@@ -52,7 +48,7 @@ export class GameEngine {
     turbo: false,
     turboSpeedMultiplier: 1.6,
     learnMode: false,
-    learnVisualsEnabled: true,
+    learnVisualsEnabled: false,
     activeGhostVisuals: {
       BLINKY: true,
       PINKY: true,
@@ -60,7 +56,7 @@ export class GameEngine {
       CLYDE: true,
     },
     practiceMode: false,
-    showGrid: false,
+    showGrid: true,
     showGhostPaths: false,
     showTargetLines: false,
     invincible: false,
@@ -141,7 +137,7 @@ export class GameEngine {
     for (let r = 0; r < this.maze.height; r++) {
       for (let c = 0; c < this.maze.width; c++) {
         const t = this.maze.tiles[r][c];
-        if (t === 'DOT' || t === 'ENERGIZER' || t === 'NO_UP_ZONE') {
+        if (t === 'DOT' || t === 'ENERGIZER') {
           this.dotsRemaining++;
         }
       }
@@ -764,7 +760,7 @@ export class GameEngine {
     if (pacRow >= 0 && pacRow < this.maze.height && pacCol >= 0 && pacCol < this.maze.width) {
       const tile = this.maze.tiles[pacRow][pacCol];
 
-      if (tile === 'DOT' || tile === 'NO_UP_ZONE') {
+      if (tile === 'DOT') {
         this.maze.tiles[pacRow][pacCol] = 'EMPTY';
         this.score += 10;
         this.dotsRemaining--;
