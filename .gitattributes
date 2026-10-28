@@ -1,9 +1,0 @@
-* text=auto
-
-.githooks/* text eol=lf
-*.sh text eol=lf
-
-*.png binary
-*.jpg binary
-*.gif binary
-*.ico binary
