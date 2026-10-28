@@ -406,6 +406,7 @@ export const ArcadeCabinet: React.FC = () => {
           crtFilter={crtFilter}
           onToggleCrt={handleToggleCrt}
           onOpenRestart={handleOpenRestartPanel}
+          restartPanelOpen={showRestartPanel}
         />
 
         {/* Canvas Screen Container */}

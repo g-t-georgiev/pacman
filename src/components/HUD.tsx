@@ -24,6 +24,7 @@ interface HUDProps {
   crtFilter: boolean;
   onToggleCrt: () => void;
   onOpenRestart: () => void;
+  restartPanelOpen: boolean;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -44,6 +45,7 @@ export const HUD: React.FC<HUDProps> = ({
   crtFilter,
   onToggleCrt,
   onOpenRestart,
+  restartPanelOpen,
 }) => {
   return (
     <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-t-xl px-3 sm:px-4 py-2.5 flex flex-col gap-2 select-none text-white">
@@ -72,7 +74,11 @@ export const HUD: React.FC<HUDProps> = ({
         {/* Restart Panel Button */}
         <button
           onClick={onOpenRestart}
-          className="px-2 py-1 rounded font-mono font-semibold transition-colors bg-red-950/80 border border-red-800/70 text-red-300 hover:bg-red-900 hover:text-white flex items-center gap-1 cursor-pointer"
+          className={`px-2 py-1 rounded font-mono font-semibold transition-colors border flex items-center gap-1 cursor-pointer ${
+            restartPanelOpen
+                ? 'bg-red-900 border-red-700 text-white'
+                : 'bg-neutral-800 border-transparent text-neutral-400 hover:text-white'
+          }`}
           title="Restart Game / Level / Mode"
         >
           <span>🔄 RESTART</span>
