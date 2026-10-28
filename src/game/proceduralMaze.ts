@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MazeData, TileType } from '../types/game';
+import type { MazeData, TileType } from '../types/game';
 import { MAZE_COLS, MAZE_ROWS } from './constants';
 
 /**
