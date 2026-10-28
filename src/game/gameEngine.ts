@@ -130,8 +130,11 @@ export class GameEngine {
   public loadLevel(lvl: number) {
     this.level = lvl;
     this.maze = getMazeData(this.mode, this.level);
+    this.waveIndex = 0;
+    this.waveTimer = 0;
     this.dotsRemaining = 0;
     this.dotsEatenThisRound = 0;
+    this.frightenedGlobalTimer = 0;
 
     // Count dots and energizers
     for (let r = 0; r < this.maze.height; r++) {
