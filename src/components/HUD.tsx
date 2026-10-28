@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { GameMode } from '../types/game';
+import React from "react";
+import { GameMode } from "../types/game";
 
 interface HUDProps {
   score: number;
@@ -54,13 +54,13 @@ export const HUD: React.FC<HUDProps> = ({
         <div className="flex flex-col items-start">
           <span className="text-red-500 font-bold">1UP</span>
           <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {score.toString().padStart(2, '0')}
+            {score.toString().padStart(2, "0")}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span className="text-yellow-400 font-bold">HIGH SCORE</span>
           <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {highScore.toString().padStart(2, '0')}
+            {highScore.toString().padStart(2, "0")}
           </span>
         </div>
         <div className="flex flex-col items-end">
@@ -76,8 +76,8 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onOpenRestart}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors border flex items-center gap-1 cursor-pointer ${
             restartPanelOpen
-                ? 'bg-red-900 border-red-700 text-white'
-                : 'bg-neutral-800 border-transparent text-neutral-400 hover:text-white'
+                ? "bg-red-900 border-red-700 text-white"
+                : "bg-neutral-800 border-transparent text-neutral-400 hover:text-white"
           }`}
           title="Restart Game / Level / Mode"
         >
@@ -89,8 +89,8 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onToggleTurbo}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
             turbo
-              ? 'bg-amber-500 text-black shadow-sm ring-1 ring-amber-300'
-              : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              ? "bg-amber-500 text-black shadow-sm ring-1 ring-amber-300"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
           title="Toggle Turbo Speed (1.6x fast arcade chip)"
         >
@@ -103,10 +103,10 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onToggleLearnMode}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
             learnMode
-              ? 'bg-cyan-500 text-black shadow-sm ring-1 ring-cyan-300'
+              ? "bg-cyan-500 text-black shadow-sm ring-1 ring-cyan-300"
               : learnVisualsEnabled
-              ? 'bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white'
-              : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              ? "bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
           title="Learn Mode: AI Targeting Lab & Maze Visualizer"
         >
@@ -121,8 +121,8 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onTogglePracticeMode}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
             practiceMode
-              ? 'bg-emerald-500 text-black shadow-sm ring-1 ring-emerald-300'
-              : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              ? "bg-emerald-500 text-black shadow-sm ring-1 ring-emerald-300"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
           title="Practice Mode: rewind, slow-mo, invincibility"
         >
@@ -134,8 +134,8 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onToggleCrt}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
             crtFilter
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              ? "bg-purple-600 text-white shadow-sm"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
           title="Toggle Arcade CRT Scanlines & Bloom"
         >
@@ -147,12 +147,12 @@ export const HUD: React.FC<HUDProps> = ({
           onClick={onToggleSound}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
             soundEnabled
-              ? 'bg-neutral-800 text-yellow-400 hover:text-yellow-300'
-              : 'bg-neutral-800 text-neutral-500 hover:text-neutral-400'
+              ? "bg-neutral-800 text-yellow-400 hover:text-yellow-300"
+              : "bg-neutral-800 text-neutral-500 hover:text-neutral-400"
           }`}
-          title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
+          title={soundEnabled ? "Mute Audio" : "Unmute Audio"}
         >
-          {soundEnabled ? '🔊' : '🔇'}
+          {soundEnabled ? "🔊" : "🔇"}
         </button>
       </div>
     </div>

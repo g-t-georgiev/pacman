@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { soundEngine } from '../audio/soundEngine';
+import { soundEngine } from "../audio/soundEngine";
 import {
   Direction,
   FruitItem,
@@ -18,7 +18,7 @@ import {
   ScorePopup,
   SnapshotState,
   TileType,
-} from '../types/game';
+} from "../types/game";
 import {
   CLASSIC_FRUITS,
   COOKIE_MAN_TREATS,
@@ -30,7 +30,7 @@ import {
   PACMAN_TURBO_SPEED,
   SCATTER_CHASE_SCHEDULE,
   TILE_SIZE,
-} from './constants';
+} from "./constants";
 import {
   calculateGhostTarget,
   chooseNextGhostDirection,
@@ -38,12 +38,12 @@ import {
   getGhostSpeed,
   getOppositeDirection,
   isTileWalkableForGhost,
-} from './ghostAi';
-import { getMazeData } from './mazes';
+} from "./ghostAi";
+import { getMazeData } from "./mazes";
 
 export class GameEngine {
-  public mode: GameMode = 'PACMAN';
-  public playState: PlayState = 'MENU';
+  public mode: GameMode = "PACMAN";
+  public playState: PlayState = "MENU";
   public settings: GameSettings = {
     turbo: false,
     turboSpeedMultiplier: 1.6,
@@ -101,7 +101,7 @@ export class GameEngine {
   public onGameOver?: (finalScore: number) => void;
   public onNewHighScore?: (score: number) => void;
 
-  constructor(mode: GameMode = 'PACMAN', highScoresRecord: number = 0) {
+  constructor(mode: GameMode = "PACMAN", highScoresRecord: number = 0) {
     this.mode = mode;
     this.highScore = highScoresRecord;
     this.initGame(mode, 1);
@@ -123,7 +123,7 @@ export class GameEngine {
     this.rewindIndex = -1;
 
     this.loadLevel(this.level);
-    this.playState = 'READY';
+    this.playState = "READY";
     this.readyTimer = 120; // 2 seconds ready screen
   }
 
@@ -140,7 +140,7 @@ export class GameEngine {
     for (let r = 0; r < this.maze.height; r++) {
       for (let c = 0; c < this.maze.width; c++) {
         const t = this.maze.tiles[r][c];
-        if (t === 'DOT' || t === 'ENERGIZER') {
+        if (t === "DOT" || t === "ENERGIZER") {
           this.dotsRemaining++;
         }
       }
@@ -170,13 +170,13 @@ export class GameEngine {
     const gSpawns = this.maze.ghostSpawns;
     this.ghosts = {
       BLINKY: {
-        type: 'BLINKY',
+        type: "BLINKY",
         x: gSpawns.BLINKY.x * TILE_SIZE + TILE_SIZE / 2,
         y: gSpawns.BLINKY.y * TILE_SIZE + TILE_SIZE / 2,
         dir: gSpawns.BLINKY.initialDir,
         nextDir: gSpawns.BLINKY.initialDir,
-        mode: 'SCATTER',
-        prevMode: 'SCATTER',
+        mode: "SCATTER",
+        prevMode: "SCATTER",
         speed: GHOST_BASE_SPEED,
         target: this.maze.scatterTargets.BLINKY,
         inHouse: gSpawns.BLINKY.inHouse,
@@ -188,13 +188,13 @@ export class GameEngine {
         bouncedInHouse: false,
       },
       PINKY: {
-        type: 'PINKY',
+        type: "PINKY",
         x: gSpawns.PINKY.x * TILE_SIZE + TILE_SIZE / 2,
         y: gSpawns.PINKY.y * TILE_SIZE + TILE_SIZE / 2,
         dir: gSpawns.PINKY.initialDir,
         nextDir: gSpawns.PINKY.initialDir,
-        mode: 'SCATTER',
-        prevMode: 'SCATTER',
+        mode: "SCATTER",
+        prevMode: "SCATTER",
         speed: GHOST_BASE_SPEED,
         target: this.maze.scatterTargets.PINKY,
         inHouse: gSpawns.PINKY.inHouse,
@@ -206,13 +206,13 @@ export class GameEngine {
         bouncedInHouse: false,
       },
       INKY: {
-        type: 'INKY',
+        type: "INKY",
         x: gSpawns.INKY.x * TILE_SIZE + TILE_SIZE / 2,
         y: gSpawns.INKY.y * TILE_SIZE + TILE_SIZE / 2,
         dir: gSpawns.INKY.initialDir,
         nextDir: gSpawns.INKY.initialDir,
-        mode: 'SCATTER',
-        prevMode: 'SCATTER',
+        mode: "SCATTER",
+        prevMode: "SCATTER",
         speed: GHOST_BASE_SPEED,
         target: this.maze.scatterTargets.INKY,
         inHouse: gSpawns.INKY.inHouse,
@@ -224,13 +224,13 @@ export class GameEngine {
         bouncedInHouse: false,
       },
       CLYDE: {
-        type: 'CLYDE',
+        type: "CLYDE",
         x: gSpawns.CLYDE.x * TILE_SIZE + TILE_SIZE / 2,
         y: gSpawns.CLYDE.y * TILE_SIZE + TILE_SIZE / 2,
         dir: gSpawns.CLYDE.initialDir,
         nextDir: gSpawns.CLYDE.initialDir,
-        mode: 'SCATTER',
-        prevMode: 'SCATTER',
+        mode: "SCATTER",
+        prevMode: "SCATTER",
         speed: GHOST_BASE_SPEED,
         target: this.maze.scatterTargets.CLYDE,
         inHouse: gSpawns.CLYDE.inHouse,
@@ -240,15 +240,15 @@ export class GameEngine {
         frightenedTimer: 0,
         feetAnimation: 0,
         bouncedInHouse: false,
-        clydeWanderState: 'CHASE',
+        clydeWanderState: "CHASE",
         clydeSwitchTimer: 3.0,
       },
     };
   }
 
   public setInputDirection(dir: Direction) {
-    if (this.playState === 'READY') {
-      this.playState = 'PLAYING';
+    if (this.playState === "READY") {
+      this.playState = "PLAYING";
     }
     if (this.pacman && !this.pacman.isDying) {
       this.pacman.nextDir = dir;
@@ -260,34 +260,34 @@ export class GameEngine {
   }
 
   public update() {
-    if (this.playState === 'PAUSED' || this.rewindIndex !== -1) {
+    if (this.playState === "PAUSED" || this.rewindIndex !== -1) {
       return;
     }
 
-    if (this.playState === 'READY') {
+    if (this.playState === "READY") {
       this.readyTimer--;
       if (this.readyTimer <= 0) {
-        this.playState = 'PLAYING';
+        this.playState = "PLAYING";
       }
       return;
     }
 
-    if (this.playState === 'LEVEL_CLEAR') {
+    if (this.playState === "LEVEL_CLEAR") {
       this.levelClearTimer--;
       if (this.levelClearTimer <= 0) {
         this.loadLevel(this.level + 1);
-        this.playState = 'READY';
+        this.playState = "READY";
         this.readyTimer = 90;
       }
       return;
     }
 
-    if (this.playState === 'DYING') {
+    if (this.playState === "DYING") {
       this.pacman.deathProgress += 0.015;
       if (this.pacman.deathProgress >= 1) {
         this.lives--;
         if (this.lives <= 0) {
-          this.playState = 'GAME_OVER';
+          this.playState = "GAME_OVER";
           soundEngine.stopSiren();
           if (this.onGameOver) this.onGameOver(this.score);
           if (this.score > this.highScore && this.onNewHighScore) {
@@ -295,14 +295,14 @@ export class GameEngine {
           }
         } else {
           this.resetActorPositions();
-          this.playState = 'READY';
+          this.playState = "READY";
           this.readyTimer = 90;
         }
       }
       return;
     }
 
-    if (this.playState !== 'PLAYING') {
+    if (this.playState !== "PLAYING") {
       return;
     }
 
@@ -344,7 +344,7 @@ export class GameEngine {
         // Revert frightened ghosts to scatter/chase
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
-          if (g.mode === 'FRIGHTENED') {
+          if (g.mode === "FRIGHTENED") {
             g.mode = g.prevMode;
           }
         });
@@ -358,12 +358,12 @@ export class GameEngine {
           this.waveTimer = 0;
           this.waveIndex++;
           const nextWave = SCATTER_CHASE_SCHEDULE[this.waveIndex];
-          const newMode = (nextWave?.mode || 'CHASE') as GhostBehavior;
+          const newMode = (nextWave?.mode || "CHASE") as GhostBehavior;
 
           // Reversing direction when switching between scatter and chase
           (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
             const g = this.ghosts[type];
-            if (g.mode !== 'EATEN' && g.mode !== 'FRIGHTENED' && !g.inHouse) {
+            if (g.mode !== "EATEN" && g.mode !== "FRIGHTENED" && !g.inHouse) {
               g.prevMode = g.mode;
               g.mode = newMode;
               g.dir = getOppositeDirection(g.dir);
@@ -389,11 +389,11 @@ export class GameEngine {
     }
 
     // Try buffered next direction turn
-    if (this.pacman.nextDir !== this.pacman.dir && this.pacman.nextDir !== 'NONE') {
+    if (this.pacman.nextDir !== this.pacman.dir && this.pacman.nextDir !== "NONE") {
       if (this.canPacmanMove(this.pacman.x, this.pacman.y, this.pacman.nextDir)) {
         // Snap to center of tile axis for clean corner rounding
         const halfTile = TILE_SIZE / 2;
-        if (this.pacman.nextDir === 'UP' || this.pacman.nextDir === 'DOWN') {
+        if (this.pacman.nextDir === "UP" || this.pacman.nextDir === "DOWN") {
           const targetX = Math.floor(this.pacman.x / TILE_SIZE) * TILE_SIZE + halfTile;
           if (Math.abs(this.pacman.x - targetX) < 4) {
             this.pacman.x = targetX;
@@ -448,7 +448,7 @@ export class GameEngine {
 
     const tile = this.maze.tiles[row][col];
     // Pac-Man cannot enter walls, gate, or ghost house
-    return tile !== 'WALL' && tile !== 'GATE' && tile !== 'GHOST_HOUSE';
+    return tile !== "WALL" && tile !== "GATE" && tile !== "GHOST_HOUSE";
   }
 
   private handleTunnelWrap(entity: { x: number; y: number }) {
@@ -477,7 +477,7 @@ export class GameEngine {
       }
 
       // Check if eaten eyes have returned through the gate into the pen interior to revive
-      if (g.mode === 'EATEN') {
+      if (g.mode === "EATEN") {
         const doorX = 13 * TILE_SIZE + TILE_SIZE / 2; // 216
         const ghostRow = Math.floor(g.y / TILE_SIZE);
         const ghostCol = Math.floor(g.x / TILE_SIZE);
@@ -486,28 +486,28 @@ export class GameEngine {
         if (
           (ghostCol === 13 || ghostCol === 14) &&
           ghostRow >= 17 &&
-          g.dir === 'DOWN' &&
+          g.dir === "DOWN" &&
           Math.abs(g.x - doorX) <= 16
         ) {
           // Successfully arrived inside the pen! Revive!
           g.x = doorX;
           g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
           g.inHouse = true;
-          g.mode = 'CHASE';
+          g.mode = "CHASE";
           g.houseTimer = 60; // brief recovery before exiting
-          g.dir = 'UP';
-          g.nextDir = 'UP';
+          g.dir = "UP";
+          g.nextDir = "UP";
           return;
         }
       }
 
       // Flash state when frightened is running out (< 2 seconds left)
-      if (g.mode === 'FRIGHTENED') {
+      if (g.mode === "FRIGHTENED") {
         g.flashState = this.frightenedGlobalTimer <= 2 && Math.floor(this.frightenedGlobalTimer * 4) % 2 === 0;
       }
 
-      // Clyde's far-distance random behavior switching
-      if (type === 'CLYDE') {
+      // Clyde"s far-distance random behavior switching
+      if (type === "CLYDE") {
         const pacCol = Math.floor(this.pacman.x / TILE_SIZE);
         const pacRow = Math.floor(this.pacman.y / TILE_SIZE);
         const ghostCol = Math.floor(g.x / TILE_SIZE);
@@ -519,13 +519,13 @@ export class GameEngine {
           g.clydeSwitchTimer = (g.clydeSwitchTimer || 0) - (1 / 60) * this.settings.gameSpeed;
           if (g.clydeSwitchTimer <= 0) {
             // Randomly switch state: 60% chance to chase, 40% chance to flee
-            g.clydeWanderState = Math.random() < 0.6 ? 'CHASE' : 'FLEE';
+            g.clydeWanderState = Math.random() < 0.6 ? "CHASE" : "FLEE";
             // Random duration between 2.5 and 5.0 seconds
             g.clydeSwitchTimer = 2.5 + Math.random() * 2.5;
           }
         } else {
           // Closer than 8 tiles: Clyde immediately flees
-          g.clydeWanderState = 'FLEE';
+          g.clydeWanderState = "FLEE";
         }
       }
 
@@ -540,7 +540,7 @@ export class GameEngine {
       this.moveGhost(g, g.speed);
 
       // Check if eaten eyes reached the inside of the pen following movement
-      if (g.mode === 'EATEN') {
+      if (g.mode === "EATEN") {
         const doorX = 13 * TILE_SIZE + TILE_SIZE / 2;
         const ghostRow = Math.floor(g.y / TILE_SIZE);
         const ghostCol = Math.floor(g.x / TILE_SIZE);
@@ -548,16 +548,16 @@ export class GameEngine {
         if (
           (ghostCol === 13 || ghostCol === 14) &&
           ghostRow >= 17 &&
-          g.dir === 'DOWN' &&
+          g.dir === "DOWN" &&
           Math.abs(g.x - doorX) <= 16
         ) {
           g.x = doorX;
           g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
           g.inHouse = true;
-          g.mode = 'CHASE';
+          g.mode = "CHASE";
           g.houseTimer = 60;
-          g.dir = 'UP';
-          g.nextDir = 'UP';
+          g.dir = "UP";
+          g.nextDir = "UP";
         }
       }
     });
@@ -580,7 +580,7 @@ export class GameEngine {
   }
 
   private moveGhost(g: GhostState, speed: number) {
-    if (g.dir === 'NONE' || speed <= 0) return;
+    if (g.dir === "NONE" || speed <= 0) return;
 
     const half = TILE_SIZE / 2;
     let remaining = speed;
@@ -730,7 +730,7 @@ export class GameEngine {
       if (g.y <= topY) g.bouncedInHouse = true;
       if (g.y >= botY) g.bouncedInHouse = false;
       g.y += (g.bouncedInHouse ? 0.6 : -0.6) * this.settings.gameSpeed;
-      g.dir = g.bouncedInHouse ? 'DOWN' : 'UP';
+      g.dir = g.bouncedInHouse ? "DOWN" : "UP";
     } else {
       // Move toward center door and exit
       const targetDoorX = 13 * TILE_SIZE + TILE_SIZE / 2; // Exact center of col 13 (216)
@@ -738,17 +738,17 @@ export class GameEngine {
 
       if (Math.abs(g.x - targetDoorX) > 2) {
         g.x += Math.sign(targetDoorX - g.x) * 0.8 * this.settings.gameSpeed;
-        g.dir = targetDoorX > g.x ? 'RIGHT' : 'LEFT';
+        g.dir = targetDoorX > g.x ? "RIGHT" : "LEFT";
       } else {
         g.x = targetDoorX;
         g.y -= 0.8 * this.settings.gameSpeed;
-        g.dir = 'UP';
+        g.dir = "UP";
         if (g.y <= targetDoorY) {
           g.x = targetDoorX;
           g.y = targetDoorY;
           g.inHouse = false;
-          g.dir = 'LEFT';
-          g.nextDir = 'LEFT';
+          g.dir = "LEFT";
+          g.nextDir = "LEFT";
         }
       }
     }
@@ -763,8 +763,8 @@ export class GameEngine {
     if (pacRow >= 0 && pacRow < this.maze.height && pacCol >= 0 && pacCol < this.maze.width) {
       const tile = this.maze.tiles[pacRow][pacCol];
 
-      if (tile === 'DOT') {
-        this.maze.tiles[pacRow][pacCol] = 'EMPTY';
+      if (tile === "DOT") {
+        this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.score += 10;
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
@@ -772,8 +772,8 @@ export class GameEngine {
         soundEngine.playWaka();
         this.checkFruitSpawn();
         this.checkLevelClear();
-      } else if (tile === 'ENERGIZER') {
-        this.maze.tiles[pacRow][pacCol] = 'EMPTY';
+      } else if (tile === "ENERGIZER") {
+        this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.score += 50;
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
@@ -792,9 +792,9 @@ export class GameEngine {
 
       const dist = Math.hypot(this.pacman.x - g.x, this.pacman.y - g.y);
       if (dist < TILE_SIZE * 0.75) {
-        if (g.mode === 'FRIGHTENED') {
+        if (g.mode === "FRIGHTENED") {
           // Eat Ghost!
-          g.mode = 'EATEN';
+          g.mode = "EATEN";
           this.eatenGhostsInEnergizer++;
           const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
           this.score += points;
@@ -808,13 +808,13 @@ export class GameEngine {
             x: g.x,
             y: g.y,
             life: 45,
-            color: '#00ffff',
+            color: "#00ffff",
           });
-        } else if (g.mode === 'CHASE' || g.mode === 'SCATTER') {
+        } else if (g.mode === "CHASE" || g.mode === "SCATTER") {
           if (!this.settings.invincible && !this.pacman.invincible) {
             // Pac-Man Dies!
             this.pacman.isDying = true;
-            this.playState = 'DYING';
+            this.playState = "DYING";
             soundEngine.playDeath();
           }
         }
@@ -837,7 +837,7 @@ export class GameEngine {
           x: fruitX,
           y: fruitY,
           life: 50,
-          color: '#ffcc00',
+          color: "#ffcc00",
         });
       }
     }
@@ -854,9 +854,9 @@ export class GameEngine {
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      if (g.mode !== 'EATEN' && !g.inHouse) {
+      if (g.mode !== "EATEN" && !g.inHouse) {
         g.prevMode = g.mode;
-        g.mode = 'FRIGHTENED';
+        g.mode = "FRIGHTENED";
         g.dir = getOppositeDirection(g.dir);
       }
     });
@@ -871,9 +871,9 @@ export class GameEngine {
 
   public spawnFruit() {
     let fruitMeta = CLASSIC_FRUITS[Math.min(this.level - 1, CLASSIC_FRUITS.length - 1)];
-    if (this.mode === 'COOKIE_MAN') {
+    if (this.mode === "COOKIE_MAN") {
       fruitMeta = COOKIE_MAN_TREATS[Math.min(this.level - 1, COOKIE_MAN_TREATS.length - 1)];
-    } else if (this.mode === 'CRAZY_OTTO') {
+    } else if (this.mode === "CRAZY_OTTO") {
       fruitMeta = CRAZY_OTTO_TREATS[Math.min(this.level - 1, CRAZY_OTTO_TREATS.length - 1)];
     }
 
@@ -886,7 +886,7 @@ export class GameEngine {
       duration: 600, // ~10 seconds
       color: fruitMeta.color,
       symbol: fruitMeta.symbol,
-      bouncing: this.mode === 'MS_PACMAN' || this.mode === 'CRAZY_OTTO',
+      bouncing: this.mode === "MS_PACMAN" || this.mode === "CRAZY_OTTO",
       bounceY: 0,
       bounceDir: 1,
     };
@@ -917,28 +917,28 @@ export class GameEngine {
 
   private checkLevelClear() {
     if (this.dotsRemaining <= 0) {
-      this.playState = 'LEVEL_CLEAR';
+      this.playState = "LEVEL_CLEAR";
       this.levelClearTimer = 120; // 2 seconds flash
       soundEngine.stopSiren();
     }
   }
 
   private updateAudioSiren() {
-    if (!this.settings.soundEnabled || this.playState !== 'PLAYING') {
+    if (!this.settings.soundEnabled || this.playState !== "PLAYING") {
       soundEngine.stopSiren();
       return;
     }
 
-    const anyFrightened = Object.values(this.ghosts).some((g) => g.mode === 'FRIGHTENED');
-    const anyEaten = Object.values(this.ghosts).some((g) => g.mode === 'EATEN');
+    const anyFrightened = Object.values(this.ghosts).some((g) => g.mode === "FRIGHTENED");
+    const anyEaten = Object.values(this.ghosts).some((g) => g.mode === "EATEN");
 
     if (anyEaten) {
-      soundEngine.updateSiren('EYES');
+      soundEngine.updateSiren("EYES");
     } else if (anyFrightened) {
-      soundEngine.updateSiren('FRIGHTENED');
+      soundEngine.updateSiren("FRIGHTENED");
     } else {
       const dotsRatio = this.totalDots > 0 ? this.dotsRemaining / this.totalDots : 1;
-      soundEngine.updateSiren('NORMAL', dotsRatio);
+      soundEngine.updateSiren("NORMAL", dotsRatio);
     }
   }
 
@@ -995,7 +995,7 @@ export class GameEngine {
       // Truncate buffer to current frame and resume live play
       this.rewindBuffer = this.rewindBuffer.slice(0, this.rewindIndex + 1);
       this.rewindIndex = -1;
-      this.playState = 'PLAYING';
+      this.playState = "PLAYING";
       if (this.onStateChange) this.onStateChange();
     }
   }
@@ -1024,7 +1024,7 @@ export class GameEngine {
       g.dir = gSpawns[type].initialDir;
       g.inHouse = gSpawns[type].inHouse;
       g.houseTimer = 30;
-      g.mode = 'SCATTER';
+      g.mode = "SCATTER";
     });
   }
 

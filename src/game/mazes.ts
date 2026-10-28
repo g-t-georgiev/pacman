@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { GameMode, MazeData, TileType } from '../types/game';
-import { generateProceduralMaze } from './proceduralMaze';
+import type { GameMode, MazeData, TileType } from "../types/game";
+import { generateProceduralMaze } from "./proceduralMaze";
 
 /**
  * Classic Arcade Pac-Man Maze (28 cols x 36 rows):
@@ -14,44 +14,44 @@ import { generateProceduralMaze } from './proceduralMaze';
  */
 const CLASSIC_PACMAN_MAP = [
   // 0 - 2 (Top UI rows)
-  '                            ',
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
+  "                            ",
   // 3 - 33 (Active maze)
-  '############################',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#o####.#####.##.#####.####o#',
-  '#.####.#####.##.#####.####.#',
-  '#..........................#',
-  '#.####.##.########.##.####.#',
-  '#.####.##.########.##.####.#',
-  '#......##....##....##......#',
-  '######.##### ## #####.######',
-  '     #.##### ## #####.#     ',
-  '     #.##    X     ##.#     ',
-  '     #.## ###--### ##.#     ',
-  '######.## #HHHHHH# ##.######',
-  'TTTTTT.   #HHHHHH#   .TTTTTT',
-  '######.## #HHHHHH# ##.######',
-  '     #.## ######## ##.#     ',
-  '     #.##          ##.#     ',
-  '     #.## ######## ##.#     ',
-  '######.## ######## ##.######',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#.####.#####.##.#####.####.#',
-  '#o..##.......  .......##..o#',
-  '###.##.##.########.##.##.###',
-  '###.##.##.########.##.##.###',
-  '#......##....##....##......#',
-  '#.##########.##.##########.#',
-  '#.##########.##.##########.#',
-  '#..........................#',
-  '############################',
+  "############################",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#o####.#####.##.#####.####o#",
+  "#.####.#####.##.#####.####.#",
+  "#..........................#",
+  "#.####.##.########.##.####.#",
+  "#.####.##.########.##.####.#",
+  "#......##....##....##......#",
+  "######.##### ## #####.######",
+  "     #.##### ## #####.#     ",
+  "     #.##    X     ##.#     ",
+  "     #.## ###--### ##.#     ",
+  "######.## #HHHHHH# ##.######",
+  "TTTTTT.   #HHHHHH#   .TTTTTT",
+  "######.## #HHHHHH# ##.######",
+  "     #.## ######## ##.#     ",
+  "     #.##          ##.#     ",
+  "     #.## ######## ##.#     ",
+  "######.## ######## ##.######",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#.####.#####.##.#####.####.#",
+  "#o..##.......  .......##..o#",
+  "###.##.##.########.##.##.###",
+  "###.##.##.########.##.##.###",
+  "#......##....##....##......#",
+  "#.##########.##.##########.#",
+  "#.##########.##.##########.#",
+  "#..........................#",
+  "############################",
   // 34 - 35 (Bottom UI rows)
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
 ];
 
 /**
@@ -61,44 +61,44 @@ const CLASSIC_PACMAN_MAP = [
  */
 const MS_PACMAN_MAP = [
   // 0 - 2 (Top UI rows)
-  '                            ',
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
+  "                            ",
   // 3 - 33 (Active maze)
-  '############################',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#o####.#####.##.#####.####o#',
-  '#.####.#####.##.#####.####.#',
-  '#..........................#',
-  '#.####.##.########.##.####.#',
-  'TTTTTT.##.########.##.TTTTTT',
-  '######.##....##....##.######',
-  '     #.##### ## #####.#     ',
-  '     #.##### ## #####.#     ',
-  '     #.##    X     ##.#     ',
-  '######.## ###--### ##.######',
-  '#......## #HHHHHH# ##......#',
-  '#.####.   #HHHHHH#   .####.#',
-  '#.####.## #HHHHHH# ##.####.#',
-  '#.####.## ######## ##.####.#',
-  'TTTTTT.##          ##.TTTTTT',
-  '######.## ######## ##.######',
-  '######.## ######## ##.######',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#.####.#####.##.#####.####.#',
-  '#o..##.......  .......##..o#',
-  '###.##.##.########.##.##.###',
-  '###.##.##.########.##.##.###',
-  '#......##....##....##......#',
-  '#.##########.##.##########.#',
-  '#.##########.##.##########.#',
-  '#..........................#',
-  '############################',
+  "############################",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#o####.#####.##.#####.####o#",
+  "#.####.#####.##.#####.####.#",
+  "#..........................#",
+  "#.####.##.########.##.####.#",
+  "TTTTTT.##.########.##.TTTTTT",
+  "######.##....##....##.######",
+  "     #.##### ## #####.#     ",
+  "     #.##### ## #####.#     ",
+  "     #.##    X     ##.#     ",
+  "######.## ###--### ##.######",
+  "#......## #HHHHHH# ##......#",
+  "#.####.   #HHHHHH#   .####.#",
+  "#.####.## #HHHHHH# ##.####.#",
+  "#.####.## ######## ##.####.#",
+  "TTTTTT.##          ##.TTTTTT",
+  "######.## ######## ##.######",
+  "######.## ######## ##.######",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#.####.#####.##.#####.####.#",
+  "#o..##.......  .......##..o#",
+  "###.##.##.########.##.##.###",
+  "###.##.##.########.##.##.###",
+  "#......##....##....##......#",
+  "#.##########.##.##########.#",
+  "#.##########.##.##########.#",
+  "#..........................#",
+  "############################",
   // 34 - 35 (Bottom UI rows)
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
 ];
 
 /**
@@ -107,66 +107,66 @@ const MS_PACMAN_MAP = [
  */
 const CRAZY_OTTO_MAP = [
   // 0 - 2 (Top UI rows)
-  '                            ',
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
+  "                            ",
   // 3 - 33 (Active maze)
-  '############################',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#o####.#####.##.#####.####o#',
-  '#.####.#####.##.#####.####.#',
-  '#..........................#',
-  '#.####.##.########.##.####.#',
-  '#.####.##.########.##.####.#',
-  '#......##....##....##......#',
-  '######.##### ## #####.######',
-  '     #.##### ## #####.#     ',
-  '     #.##    X     ##.#     ',
-  '     #.## ###--### ##.#     ',
-  '######.## #HHHHHH# ##.######',
-  'TTTTTT.   #HHHHHH#   .TTTTTT',
-  '######.## #HHHHHH# ##.######',
-  '     #.## ######## ##.#     ',
-  '     #.##          ##.#     ',
-  '     #.## ######## ##.#     ',
-  '######.## ######## ##.######',
-  '#............##............#',
-  '#.####.#####.##.#####.####.#',
-  '#.####.#####.##.#####.####.#',
-  '#o..##.......  .......##..o#',
-  '###.##.##.########.##.##.###',
-  '###.##.##.########.##.##.###',
-  '#......##....##....##......#',
-  '#.##########.##.##########.#',
-  '#.##########.##.##########.#',
-  '#..........................#',
-  '############################',
+  "############################",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#o####.#####.##.#####.####o#",
+  "#.####.#####.##.#####.####.#",
+  "#..........................#",
+  "#.####.##.########.##.####.#",
+  "#.####.##.########.##.####.#",
+  "#......##....##....##......#",
+  "######.##### ## #####.######",
+  "     #.##### ## #####.#     ",
+  "     #.##    X     ##.#     ",
+  "     #.## ###--### ##.#     ",
+  "######.## #HHHHHH# ##.######",
+  "TTTTTT.   #HHHHHH#   .TTTTTT",
+  "######.## #HHHHHH# ##.######",
+  "     #.## ######## ##.#     ",
+  "     #.##          ##.#     ",
+  "     #.## ######## ##.#     ",
+  "######.## ######## ##.######",
+  "#............##............#",
+  "#.####.#####.##.#####.####.#",
+  "#.####.#####.##.#####.####.#",
+  "#o..##.......  .......##..o#",
+  "###.##.##.########.##.##.###",
+  "###.##.##.########.##.##.###",
+  "#......##....##....##......#",
+  "#.##########.##.##########.#",
+  "#.##########.##.##########.#",
+  "#..........................#",
+  "############################",
   // 34 - 35 (Bottom UI rows)
-  '                            ',
-  '                            ',
+  "                            ",
+  "                            ",
 ];
 
 function parseMapString(map: string[]): TileType[][] {
   return map.map((row) => {
-    return row.split('').map((char): TileType => {
+    return row.split("").map((char): TileType => {
       switch (char) {
-        case '#':
-          return 'WALL';
-        case '.':
-          return 'DOT';
-        case 'o':
-          return 'ENERGIZER';
-        case '-':
-          return 'GATE';
-        case 'H':
-          return 'GHOST_HOUSE';
-        case 'T':
-          return 'TUNNEL';
-        case 'X':
-          return 'NO_UP_ZONE';
+        case "#":
+          return "WALL";
+        case ".":
+          return "DOT";
+        case "o":
+          return "ENERGIZER";
+        case "-":
+          return "GATE";
+        case "H":
+          return "GHOST_HOUSE";
+        case "T":
+          return "TUNNEL";
+        case "X":
+          return "NO_UP_ZONE";
         default:
-          return 'EMPTY';
+          return "EMPTY";
       }
     });
   });
@@ -174,17 +174,17 @@ function parseMapString(map: string[]): TileType[][] {
 
 export function getMazeData(mode: GameMode, level: number = 1, seed?: number): MazeData {
   switch (mode) {
-    case 'PACMAN': {
+    case "PACMAN": {
       return {
         width: 28,
         height: 36,
         tiles: parseMapString(CLASSIC_PACMAN_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: 'LEFT' },
+        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: 'LEFT' },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: 'UP' },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: 'UP' },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: 'UP' },
+          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
+          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
+          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
+          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
           BLINKY: { col: 25, row: 0 },
@@ -193,25 +193,25 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           CLYDE: { col: 0, row: 34 },
         },
         tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
-        wallColor: '#2121ff', // Iconic arcade blue neon
-        dotColor: '#ffb8ae', // Arcade warm peach/yellow dots
-        bgColor: '#000000',
-        gateColor: '#ffb8ff',
+        wallColor: "#2121ff", // Iconic arcade blue neon
+        dotColor: "#ffb8ae", // Arcade warm peach/yellow dots
+        bgColor: "#000000",
+        gateColor: "#ffb8ff",
       };
     }
-    case 'MS_PACMAN': {
+    case "MS_PACMAN": {
       // Ms. Pac-Man alternated colors every few levels (Pink/Salmon, Light Blue, Brown, etc.)
       const isLevelEven = level % 2 === 0;
       return {
         width: 28,
         height: 36,
         tiles: parseMapString(MS_PACMAN_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: 'LEFT' },
+        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: 'LEFT' },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: 'UP' },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: 'UP' },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: 'UP' },
+          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
+          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
+          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
+          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
           BLINKY: { col: 25, row: 0 },
@@ -224,23 +224,23 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           { y: 10, leftExit: 0, rightExit: 27 },
           { y: 20, leftExit: 0, rightExit: 27 },
         ],
-        wallColor: isLevelEven ? '#00e5ff' : '#ff7b90', // Vibrant pink or cyan
-        dotColor: '#ffffff',
-        bgColor: '#000000',
-        gateColor: '#ffb8ff',
+        wallColor: isLevelEven ? "#00e5ff" : "#ff7b90", // Vibrant pink or cyan
+        dotColor: "#ffffff",
+        bgColor: "#000000",
+        gateColor: "#ffb8ff",
       };
     }
-    case 'CRAZY_OTTO': {
+    case "CRAZY_OTTO": {
       return {
         width: 28,
         height: 36,
         tiles: parseMapString(CRAZY_OTTO_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: 'LEFT' },
+        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: 'LEFT' },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: 'UP' },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: 'UP' },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: 'UP' },
+          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
+          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
+          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
+          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
           BLINKY: { col: 25, row: 0 },
@@ -249,13 +249,13 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           CLYDE: { col: 0, row: 34 },
         },
         tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
-        wallColor: '#00cc88', // Emerald proto green
-        dotColor: '#ffff00', // Bright yellow dots
-        bgColor: '#050a12',
-        gateColor: '#ff4444',
+        wallColor: "#00cc88", // Emerald proto green
+        dotColor: "#ffff00", // Bright yellow dots
+        bgColor: "#050a12",
+        gateColor: "#ff4444",
       };
     }
-    case 'COOKIE_MAN': {
+    case "COOKIE_MAN": {
       return generateProceduralMaze(seed);
     }
   }

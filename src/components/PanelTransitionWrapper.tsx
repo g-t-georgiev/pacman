@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { PanelId, getPanelConfig } from '../config/ui.config';
+import React, { useEffect, useRef, useState } from "react";
+import { PanelId, getPanelConfig } from "../config/ui.config";
 
 export interface PanelTransitionWrapperProps {
   panelId: PanelId;
@@ -20,8 +20,8 @@ export const PanelTransitionWrapper: React.FC<PanelTransitionWrapperProps> = ({
   isOpen,
   onClose,
   children,
-  className = '',
-  backdropClassName = '',
+  className = "",
+  backdropClassName = "",
 }) => {
   const config = getPanelConfig(panelId);
   const [isMounted, setIsMounted] = useState<boolean>(isOpen);
@@ -57,23 +57,23 @@ export const PanelTransitionWrapper: React.FC<PanelTransitionWrapperProps> = ({
     if (!isMounted || !config.closeOnBackdropClick) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMounted, config.closeOnBackdropClick, onClose]);
 
   if (!isMounted) return null;
 
   const positionClass =
-    config.position === 'top-viewport'
-      ? 'panel-pos-top'
-      : config.position === 'bottom-viewport'
-      ? 'panel-pos-bottom'
-      : 'panel-pos-center';
+    config.position === "top-viewport"
+      ? "panel-pos-top"
+      : config.position === "bottom-viewport"
+      ? "panel-pos-bottom"
+      : "panel-pos-center";
 
   const animClass = isExiting
     ? `anim-${config.effect}-exit`
@@ -90,8 +90,8 @@ export const PanelTransitionWrapper: React.FC<PanelTransitionWrapperProps> = ({
       className={`panel-viewport-overlay ${positionClass} ${backdropClassName}`}
       style={{
         backgroundColor: config.backdropColor,
-        backdropFilter: config.backdropBlur ? 'blur(6px)' : 'none',
-        WebkitBackdropFilter: config.backdropBlur ? 'blur(6px)' : 'none',
+        backdropFilter: config.backdropBlur ? "blur(6px)" : "none",
+        WebkitBackdropFilter: config.backdropBlur ? "blur(6px)" : "none",
       }}
       onClick={handleBackdropClick}
       role="dialog"
@@ -101,8 +101,8 @@ export const PanelTransitionWrapper: React.FC<PanelTransitionWrapperProps> = ({
         className={`panel-transition-container ${animClass} ${className}`}
         style={
           {
-            '--panel-duration': `${config.durationMs}ms`,
-            '--panel-easing': config.easing,
+            "--panel-duration": `${config.durationMs}ms`,
+            "--panel-easing": config.easing,
           } as React.CSSProperties
         }
         onClick={(e) => e.stopPropagation()}

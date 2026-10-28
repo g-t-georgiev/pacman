@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { CLASSIC_FRUITS } from '../game/constants';
-import { GameMode } from '../types/game';
+import React from "react";
+import { CLASSIC_FRUITS } from "../game/constants";
+import { GameMode } from "../types/game";
 
 export interface RestartPanelProps {
   score: number;
@@ -33,13 +33,13 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
   const fruitMeta = CLASSIC_FRUITS[Math.min(level - 1, CLASSIC_FRUITS.length - 1)];
 
   const modeName =
-    mode === 'PACMAN'
-      ? 'Classic Pac-Man (1980)'
-      : mode === 'MS_PACMAN'
-      ? 'Ms. Pac-Man'
-      : mode === 'CRAZY_OTTO'
-      ? 'Crazy Otto (1981)'
-      : 'Procedural Cookie Man';
+    mode === "PACMAN"
+      ? "Classic Pac-Man (1980)"
+      : mode === "MS_PACMAN"
+      ? "Ms. Pac-Man"
+      : mode === "CRAZY_OTTO"
+      ? "Crazy Otto (1981)"
+      : "Procedural Cookie Man";
 
   return (
     <div className="w-full max-w-[420px] bg-neutral-950/95 border-2 border-red-600/80 rounded-2xl p-6 text-white shadow-2xl backdrop-blur-md font-sans flex flex-col gap-5 select-none ring-1 ring-red-500/30">
@@ -47,11 +47,11 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
       <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
         <div className="flex items-center gap-2.5">
           <span className="text-2xl animate-bounce">
-            {isGameOver ? '💀' : '🔄'}
+            {isGameOver ? "💀" : "🔄"}
           </span>
           <div>
             <h2 className="text-xl font-black tracking-widest text-red-500 font-mono">
-              {isGameOver ? 'GAME OVER' : 'RESTART GAME'}
+              {isGameOver ? "GAME OVER" : "RESTART GAME"}
             </h2>
             <span className="text-xs text-neutral-400 font-mono">
               {modeName}

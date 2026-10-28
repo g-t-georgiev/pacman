@@ -3,21 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { soundEngine } from '../audio/soundEngine';
-import { uiConfig } from '../config/ui.config';
-import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from '../game/constants';
-import { GameEngine } from '../game/gameEngine';
-import { GameRenderer } from '../game/renderer';
-import { Direction, GameMode } from '../types/game';
-import { HighScoresModal, getStoredHighScores } from './HighScoresModal';
-import { HUD } from './HUD';
-import { LearnModeOverlay } from './LearnModeOverlay';
-import { ModeSelector } from './ModeSelector';
-import { PanelTransitionWrapper } from './PanelTransitionWrapper';
-import { PracticePanel } from './PracticePanel';
-import { RestartPanel } from './RestartPanel';
-import { VirtualDpad } from './VirtualDpad';
+import React, { useEffect, useRef, useState } from "react";
+import { soundEngine } from "../audio/soundEngine";
+import { uiConfig } from "../config/ui.config";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
+import { GameEngine } from "../game/gameEngine";
+import { GameRenderer } from "../game/renderer";
+import { Direction, GameMode } from "../types/game";
+import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
+import { HUD } from "./HUD";
+import { LearnModeOverlay } from "./LearnModeOverlay";
+import { ModeSelector } from "./ModeSelector";
+import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
+import { PracticePanel } from "./PracticePanel";
+import { RestartPanel } from "./RestartPanel";
+import { VirtualDpad } from "./VirtualDpad";
 
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,7 +28,7 @@ export const ArcadeCabinet: React.FC = () => {
   const rendererRef = useRef<GameRenderer | null>(null);
 
   // UI state for reactive HUD updates
-  const [currentMode, setCurrentMode] = useState<GameMode>('PACMAN');
+  const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
   const [score, setScore] = useState<number>(0);
   const [highScore, setHighScore] = useState<number>(10000);
   const [lives, setLives] = useState<number>(3);
@@ -55,12 +55,12 @@ export const ArcadeCabinet: React.FC = () => {
     const highest = stored.length > 0 ? stored[0].score : 10000;
     setHighScore(highest);
 
-    const engine = new GameEngine('PACMAN', highest);
+    const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
     setLearnVisualsActive(engine.settings.learnVisualsEnabled ?? true);
 
     // Detect mobile touch capability to show D-pad automatically
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
       setShowDpad(true);
     }
@@ -102,7 +102,7 @@ export const ArcadeCabinet: React.FC = () => {
     // Setup Canvas
     const canvas = canvasRef.current;
     if (canvas) {
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         // High DPI setup
         const dpr = window.devicePixelRatio || 1;
@@ -149,53 +149,53 @@ export const ArcadeCabinet: React.FC = () => {
       if (!engine) return;
 
       // Prevent scrolling on arrow keys or space
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
         e.preventDefault();
       }
 
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          engine.setInputDirection('UP');
+        case "ArrowUp":
+        case "w":
+        case "W":
+          engine.setInputDirection("UP");
           break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          engine.setInputDirection('DOWN');
+        case "ArrowDown":
+        case "s":
+        case "S":
+          engine.setInputDirection("DOWN");
           break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          engine.setInputDirection('LEFT');
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          engine.setInputDirection("LEFT");
           break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          engine.setInputDirection('RIGHT');
+        case "ArrowRight":
+        case "d":
+        case "D":
+          engine.setInputDirection("RIGHT");
           break;
-        case ' ':
-        case 'Escape':
-          if (engine.playState === 'PLAYING') {
-            engine.playState = 'PAUSED';
-          } else if (engine.playState === 'PAUSED') {
-            engine.playState = 'PLAYING';
+        case " ":
+        case "Escape":
+          if (engine.playState === "PLAYING") {
+            engine.playState = "PAUSED";
+          } else if (engine.playState === "PAUSED") {
+            engine.playState = "PLAYING";
           }
           break;
-        case 't':
-        case 'T':
+        case "t":
+        case "T":
           handleToggleTurbo();
           break;
-        case 'l':
-        case 'L':
+        case "l":
+        case "L":
           handleToggleLearnMode();
           break;
-        case 'p':
-        case 'P':
+        case "p":
+        case "P":
           handleTogglePracticeMode();
           break;
-        case 'r':
-        case 'R':
+        case "r":
+        case "R":
           if (engine.settings.practiceMode) {
             engine.rewindSeconds(2);
           }
@@ -203,8 +203,8 @@ export const ArcadeCabinet: React.FC = () => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Touch Swipe Gesture Detection
@@ -227,37 +227,37 @@ export const ArcadeCabinet: React.FC = () => {
     if (Math.max(absX, absY) > threshold) {
       if (absX > absY) {
         // Horizontal swipe
-        engineRef.current?.setInputDirection(dx > 0 ? 'RIGHT' : 'LEFT');
+        engineRef.current?.setInputDirection(dx > 0 ? "RIGHT" : "LEFT");
       } else {
         // Vertical swipe
-        engineRef.current?.setInputDirection(dy > 0 ? 'DOWN' : 'UP');
+        engineRef.current?.setInputDirection(dy > 0 ? "DOWN" : "UP");
       }
     }
     touchStartRef.current = null;
   };
 
   // Gamepad Polling
-  const lastGamepadDirRef = useRef<Direction>('NONE');
+  const lastGamepadDirRef = useRef<Direction>("NONE");
   const pollGamepads = (engine: GameEngine) => {
-    if (typeof navigator.getGamepads !== 'function') return;
+    if (typeof navigator.getGamepads !== "function") return;
     const gamepads = navigator.getGamepads();
     if (!gamepads) return;
 
     for (const gp of gamepads) {
       if (!gp) continue;
 
-      let dir: Direction = 'NONE';
+      let dir: Direction = "NONE";
       // D-pad buttons: 12 (up), 13 (down), 14 (left), 15 (right)
-      if (gp.buttons[12]?.pressed || gp.axes[1] < -0.4) dir = 'UP';
-      else if (gp.buttons[13]?.pressed || gp.axes[1] > 0.4) dir = 'DOWN';
-      else if (gp.buttons[14]?.pressed || gp.axes[0] < -0.4) dir = 'LEFT';
-      else if (gp.buttons[15]?.pressed || gp.axes[0] > 0.4) dir = 'RIGHT';
+      if (gp.buttons[12]?.pressed || gp.axes[1] < -0.4) dir = "UP";
+      else if (gp.buttons[13]?.pressed || gp.axes[1] > 0.4) dir = "DOWN";
+      else if (gp.buttons[14]?.pressed || gp.axes[0] < -0.4) dir = "LEFT";
+      else if (gp.buttons[15]?.pressed || gp.axes[0] > 0.4) dir = "RIGHT";
 
-      if (dir !== 'NONE' && dir !== lastGamepadDirRef.current) {
+      if (dir !== "NONE" && dir !== lastGamepadDirRef.current) {
         lastGamepadDirRef.current = dir;
         engine.setInputDirection(dir);
-      } else if (dir === 'NONE') {
-        lastGamepadDirRef.current = 'NONE';
+      } else if (dir === "NONE") {
+        lastGamepadDirRef.current = "NONE";
       }
     }
   };
@@ -319,7 +319,7 @@ export const ArcadeCabinet: React.FC = () => {
     }
     engineRef.current.loadLevel(engineRef.current.level);
     engineRef.current.lives = 3;
-    engineRef.current.playState = 'READY';
+    engineRef.current.playState = "READY";
     engineRef.current.readyTimer = uiConfig.timings.readyBannerFrames;
     setLives(3);
     setShowRestartPanel(false);
@@ -343,7 +343,7 @@ export const ArcadeCabinet: React.FC = () => {
   };
 
   const handleOpenRestartPanel = () => {
-    const isOver = engineRef.current?.playState === 'GAME_OVER';
+    const isOver = engineRef.current?.playState === "GAME_OVER";
     setIsGameOverState(isOver);
     setShowRestartPanel(true);
   };
@@ -359,13 +359,13 @@ export const ArcadeCabinet: React.FC = () => {
           <span className="font-bold tracking-wider text-white text-sm">PAC-MAN ARCADE LAB</span>
           <span className="hidden sm:inline text-neutral-400">·</span>
           <span className="hidden sm:inline text-neutral-400">
-            {currentMode === 'PACMAN'
-              ? 'Classic 1980'
-              : currentMode === 'MS_PACMAN'
-              ? 'Ms. Pac-Man'
-              : currentMode === 'CRAZY_OTTO'
-              ? 'Crazy Otto 1981'
-              : 'Cookie Man'}
+            {currentMode === "PACMAN"
+              ? "Classic 1980"
+              : currentMode === "MS_PACMAN"
+              ? "Ms. Pac-Man"
+              : currentMode === "CRAZY_OTTO"
+              ? "Crazy Otto 1981"
+              : "Cookie Man"}
           </span>
         </div>
 
@@ -418,7 +418,7 @@ export const ArcadeCabinet: React.FC = () => {
         >
           <canvas
             ref={canvasRef}
-            style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }}
+            style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
             className="block"
           />
         </div>
@@ -444,10 +444,10 @@ export const ArcadeCabinet: React.FC = () => {
             <button
               onClick={() => setShowDpad(!showDpad)}
               className={`text-[11px] px-2 py-0.5 rounded font-mono transition-colors cursor-pointer ${
-                showDpad ? 'bg-yellow-400 text-black font-bold' : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                showDpad ? "bg-yellow-400 text-black font-bold" : "bg-neutral-800 text-neutral-400 hover:text-white"
               }`}
             >
-              {showDpad ? 'Hide D-Pad' : 'Show D-Pad'}
+              {showDpad ? "Hide D-Pad" : "Show D-Pad"}
             </button>
           </div>
         </div>

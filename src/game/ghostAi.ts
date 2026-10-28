@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Direction, GhostBehavior, GhostState, GhostType, MazeData, PacmanState, TileCoord, TileType } from '../types/game';
+import { Direction, GhostBehavior, GhostState, GhostType, MazeData, PacmanState, TileCoord, TileType } from "../types/game";
 import {
   ELROY_1_SPEED,
   ELROY_2_SPEED,
@@ -13,32 +13,32 @@ import {
   GHOST_HOUSE_SPEED,
   GHOST_TUNNEL_SPEED,
   TILE_SIZE,
-} from './constants';
+} from "./constants";
 
 export function getOppositeDirection(dir: Direction): Direction {
   switch (dir) {
-    case 'UP':
-      return 'DOWN';
-    case 'DOWN':
-      return 'UP';
-    case 'LEFT':
-      return 'RIGHT';
-    case 'RIGHT':
-      return 'LEFT';
+    case "UP":
+      return "DOWN";
+    case "DOWN":
+      return "UP";
+    case "LEFT":
+      return "RIGHT";
+    case "RIGHT":
+      return "LEFT";
     default:
-      return 'NONE';
+      return "NONE";
   }
 }
 
 export function getDirectionVector(dir: Direction): { dx: number; dy: number } {
   switch (dir) {
-    case 'UP':
+    case "UP":
       return { dx: 0, dy: -1 };
-    case 'DOWN':
+    case "DOWN":
       return { dx: 0, dy: 1 };
-    case 'LEFT':
+    case "LEFT":
       return { dx: -1, dy: 0 };
-    case 'RIGHT':
+    case "RIGHT":
       return { dx: 1, dy: 0 };
     default:
       return { dx: 0, dy: 0 };
@@ -61,7 +61,7 @@ export function calculateGhostTarget(
   const ghostRow = Math.floor(ghost.y / TILE_SIZE);
 
   // EATEN (Eyes): Target ghost house entrance and pen interior
-  if (ghost.mode === 'EATEN') {
+  if (ghost.mode === "EATEN") {
     // If the eyes have reached the doorstep (row 14, cols 13-14) or are entering the gate (rows 15-16),
     // target the center of the pen interior (col 13, row 17) to descend into the ghost house.
     if ((ghostCol === 13 || ghostCol === 14) && ghostRow >= 14 && ghostRow <= 16) {
@@ -74,8 +74,8 @@ export function calculateGhostTarget(
   }
 
   // SCATTER mode: Retreat to home corners (unless Blinky is in Cruise Elroy)
-  if (ghost.mode === 'SCATTER') {
-    if (ghost.type === 'BLINKY' && dotsRemaining <= 20) {
+  if (ghost.mode === "SCATTER") {
+    if (ghost.type === "BLINKY" && dotsRemaining <= 20) {
       // Cruise Elroy Blinky ignores scatter and stays in chase!
     } else {
       return maze.scatterTargets[ghost.type];
@@ -83,7 +83,7 @@ export function calculateGhostTarget(
   }
 
   // FRIGHTENED mode: Wanders randomly; target is pseudo-random or dummy
-  if (ghost.mode === 'FRIGHTENED') {
+  if (ghost.mode === "FRIGHTENED") {
     return {
       col: Math.floor(Math.sin(ghost.x * 0.1) * 10) + 14,
       row: Math.floor(Math.cos(ghost.y * 0.1) * 10) + 17,
@@ -92,54 +92,54 @@ export function calculateGhostTarget(
 
   // CHASE mode: Distinct arcade personalities
   switch (ghost.type) {
-    case 'BLINKY': {
+    case "BLINKY": {
       // 1. Blinky (Shadow / Chaser):
-      // Actively pursues Pac-Man by directly targeting Pac-Man's current tile.
+      // Actively pursues Pac-Man by directly targeting Pac-Man"s current tile.
       return { col: pacCol, row: pacRow };
     }
 
-    case 'PINKY': {
+    case "PINKY": {
       // 2. Pinky (Speedy / Ambusher):
-      // Attempts to ambush Pac-Man by targeting 4 tiles ahead of Pac-Man's path.
+      // Attempts to ambush Pac-Man by targeting 4 tiles ahead of Pac-Man"s path.
       // Classic Arcade Quirk: Facing UP in the original code also offset 4 tiles LEFT!
       let targetCol = pacCol;
       let targetRow = pacRow;
       switch (pacman.dir) {
-        case 'UP':
+        case "UP":
           targetRow -= 4;
           targetCol -= 4; // Classic arcade 1980 overflow bug
           break;
-        case 'DOWN':
+        case "DOWN":
           targetRow += 4;
           break;
-        case 'LEFT':
+        case "LEFT":
           targetCol -= 4;
           break;
-        case 'RIGHT':
+        case "RIGHT":
           targetCol += 4;
           break;
       }
       return { col: targetCol, row: targetRow };
     }
 
-    case 'INKY': {
+    case "INKY": {
       // 3. Inky (Bashful / Flanker):
-      // Uses a combination of Pac-Man's position and Blinky's position.
+      // Uses a combination of Pac-Man"s position and Blinky"s position.
       // 1) Find the intermediate tile 2 tiles ahead of Pac-Man (with the classic UP bug).
       let pivotCol = pacCol;
       let pivotRow = pacRow;
       switch (pacman.dir) {
-        case 'UP':
+        case "UP":
           pivotRow -= 2;
           pivotCol -= 2; // Classic arcade overflow bug
           break;
-        case 'DOWN':
+        case "DOWN":
           pivotRow += 2;
           break;
-        case 'LEFT':
+        case "LEFT":
           pivotCol -= 2;
           break;
-        case 'RIGHT':
+        case "RIGHT":
           pivotCol += 2;
           break;
       }
@@ -156,7 +156,7 @@ export function calculateGhostTarget(
       return { col: targetCol, row: targetRow };
     }
 
-    case 'CLYDE': {
+    case "CLYDE": {
       // 4. Clyde (Pokey / Coward):
       // Calculates distance to Pac-Man:
       const distSq = (pacCol - ghostCol) ** 2 + (pacRow - ghostRow) ** 2;
@@ -168,8 +168,8 @@ export function calculateGhostTarget(
       } else {
         // When far away (>= 8 tiles), Clyde randomly switches between actively chasing
         // Pac-Man and wandering/fleeing back toward his scatter corner
-        const wanderState = ghost.clydeWanderState || 'CHASE';
-        if (wanderState === 'CHASE') {
+        const wanderState = ghost.clydeWanderState || "CHASE";
+        if (wanderState === "CHASE") {
           return { col: pacCol, row: pacRow };
         } else {
           return maze.scatterTargets.CLYDE;
@@ -198,16 +198,16 @@ export function isTileWalkableForGhost(
 
   const tile = maze.tiles[row][col];
 
-  if (tile === 'WALL') return false;
+  if (tile === "WALL") return false;
 
   // Gate check: only passable when in house or entering house as eaten eyes
-  if (tile === 'GATE') {
-    return ghost.inHouse || ghost.mode === 'EATEN';
+  if (tile === "GATE") {
+    return ghost.inHouse || ghost.mode === "EATEN";
   }
 
   // Ghost house interior
-  if (tile === 'GHOST_HOUSE') {
-    return ghost.inHouse || ghost.mode === 'EATEN';
+  if (tile === "GHOST_HOUSE") {
+    return ghost.inHouse || ghost.mode === "EATEN";
   }
 
   return true;
@@ -231,19 +231,19 @@ export function chooseNextGhostDirection(
   const evalDir = currentDir !== undefined ? currentDir : ghost.dir;
 
   // Directions evaluated in strict arcade tie-breaker order: UP, LEFT, DOWN, RIGHT
-  const directions: Direction[] = ['UP', 'LEFT', 'DOWN', 'RIGHT'];
+  const directions: Direction[] = ["UP", "LEFT", "DOWN", "RIGHT"];
   const opposite = getOppositeDirection(evalDir);
 
   const currentTileType =
     evalRow >= 0 && evalRow < maze.height && evalCol >= 0 && evalCol < maze.width
       ? maze.tiles[evalRow][evalCol]
-      : 'EMPTY';
+      : "EMPTY";
 
   // 1. Gather all walkable candidate directions (excluding 180° opposite unless dead-end)
   const candidates: Direction[] = [];
   for (const dir of directions) {
-    if (dir === opposite && evalDir !== 'NONE') continue;
-    if (dir === 'UP' && currentTileType === 'NO_UP_ZONE' && ghost.mode !== 'EATEN') continue;
+    if (dir === opposite && evalDir !== "NONE") continue;
+    if (dir === "UP" && currentTileType === "NO_UP_ZONE" && ghost.mode !== "EATEN") continue;
     const { dx, dy } = getDirectionVector(dir);
     if (isTileWalkableForGhost(evalCol + dx, evalRow + dy, ghost, maze)) {
       candidates.push(dir);
@@ -266,7 +266,7 @@ export function chooseNextGhostDirection(
   }
 
   // Frightened ghost uses pseudo-random selection among valid candidates
-  if (ghost.mode === 'FRIGHTENED') {
+  if (ghost.mode === "FRIGHTENED") {
     const randIdx = Math.floor(Math.random() * candidates.length);
     return candidates[randIdx];
   }
@@ -297,7 +297,7 @@ export function getGhostSpeed(
   dotsRemaining: number,
   turboMultiplier: number = 1.0
 ): number {
-  if (ghost.mode === 'EATEN') {
+  if (ghost.mode === "EATEN") {
     return GHOST_EATEN_SPEED * turboMultiplier;
   }
 
@@ -314,12 +314,12 @@ export function getGhostSpeed(
     return GHOST_TUNNEL_SPEED * turboMultiplier;
   }
 
-  if (ghost.mode === 'FRIGHTENED') {
+  if (ghost.mode === "FRIGHTENED") {
     return GHOST_FRIGHTENED_SPEED * turboMultiplier;
   }
 
   // Cruise Elroy for Blinky
-  if (ghost.type === 'BLINKY') {
+  if (ghost.type === "BLINKY") {
     if (dotsRemaining <= 10) {
       return ELROY_2_SPEED * turboMultiplier;
     }

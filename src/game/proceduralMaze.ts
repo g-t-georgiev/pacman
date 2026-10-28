@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { MazeData, TileType } from '../types/game';
-import { MAZE_COLS, MAZE_ROWS } from './constants';
+import type { MazeData, TileType } from "../types/game";
+import { MAZE_COLS, MAZE_ROWS } from "./constants";
 
 /**
  * Procedural maze generator for Cookie Man mode:
@@ -19,18 +19,18 @@ export function generateProceduralMaze(seed?: number): MazeData {
 
   // Initialize all as WALL
   const tiles: TileType[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => 'WALL' as TileType)
+    Array.from({ length: width }, () => "WALL" as TileType)
   );
 
   // Clear top and bottom UI rows
   for (let r = 0; r < activeTop; r++) {
     for (let c = 0; c < width; c++) {
-      tiles[r][c] = 'EMPTY';
+      tiles[r][c] = "EMPTY";
     }
   }
   for (let r = activeBottom + 1; r < height; r++) {
     for (let c = 0; c < width; c++) {
-      tiles[r][c] = 'EMPTY';
+      tiles[r][c] = "EMPTY";
     }
   }
 
@@ -44,11 +44,11 @@ export function generateProceduralMaze(seed?: number): MazeData {
   for (let r = houseTop; r <= houseBottom; r++) {
     for (let c = houseLeft; c <= houseRight; c++) {
       if (r === houseTop && (c === 13 || c === 14)) {
-        tiles[r][c] = 'GATE';
+        tiles[r][c] = "GATE";
       } else if (r === houseTop || r === houseBottom || c === houseLeft || c === houseRight) {
-        tiles[r][c] = 'WALL';
+        tiles[r][c] = "WALL";
       } else {
-        tiles[r][c] = 'GHOST_HOUSE';
+        tiles[r][c] = "GHOST_HOUSE";
       }
     }
   }
@@ -63,16 +63,16 @@ export function generateProceduralMaze(seed?: number): MazeData {
   // Carve base grid
   for (const r of hCorridors) {
     for (let c = 1; c <= 13; c++) {
-      tiles[r][c] = 'DOT';
+      tiles[r][c] = "DOT";
     }
   }
   for (const c of vCorridors) {
     for (let r = activeTop + 1; r <= activeBottom - 1; r++) {
-      // Don't overwrite ghost house
+      // Don"t overwrite ghost house
       if (r >= houseTop - 1 && r <= houseBottom + 1 && c >= houseLeft - 1 && c <= houseRight + 1) {
         continue;
       }
-      tiles[r][c] = 'DOT';
+      tiles[r][c] = "DOT";
     }
   }
 
@@ -107,7 +107,7 @@ export function generateProceduralMaze(seed?: number): MazeData {
           const rr = b.r + ro;
           const cc = b.c + co;
           if (rr >= activeTop + 1 && rr <= activeBottom - 1 && cc >= 1 && cc <= 13) {
-            tiles[rr][cc] = 'WALL';
+            tiles[rr][cc] = "WALL";
           }
         }
       }
@@ -116,19 +116,19 @@ export function generateProceduralMaze(seed?: number): MazeData {
 
   // Ensure corridor right above ghost house gate is open
   for (let c = 11; c <= 16; c++) {
-    tiles[houseTop - 1][c] = 'DOT';
+    tiles[houseTop - 1][c] = "DOT";
   }
 
   // Tunnels (row 17)
   const tunnelRow = 17;
   for (let c = 0; c <= 5; c++) {
-    tiles[tunnelRow][c] = 'TUNNEL';
+    tiles[tunnelRow][c] = "TUNNEL";
   }
 
   // Mirror left half [1..13] to right half [14..26]
   for (let r = activeTop; r <= activeBottom; r++) {
     for (let c = 1; c <= 13; c++) {
-      // Don't mirror into ghost house
+      // Don"t mirror into ghost house
       if (r >= houseTop && r <= houseBottom && c >= houseLeft) {
         continue;
       }
@@ -141,7 +141,7 @@ export function generateProceduralMaze(seed?: number): MazeData {
 
   // Mirror tunnels to right exit
   for (let c = width - 6; c < width; c++) {
-    tiles[tunnelRow][c] = 'TUNNEL';
+    tiles[tunnelRow][c] = "TUNNEL";
   }
 
   // Set energizers at 4 key locations
@@ -152,23 +152,23 @@ export function generateProceduralMaze(seed?: number): MazeData {
     { r: activeBottom - 4, c: width - 2 },
   ];
   energizerCoords.forEach(({ r, c }) => {
-    tiles[r][c] = 'ENERGIZER';
+    tiles[r][c] = "ENERGIZER";
   });
 
   // Pac-Man spawn point: row 26, col 13.5
-  tiles[26][13] = 'EMPTY';
-  tiles[26][14] = 'EMPTY';
+  tiles[26][13] = "EMPTY";
+  tiles[26][14] = "EMPTY";
 
   return {
     width,
     height,
     tiles,
-    pacmanSpawn: { x: 13, y: 26, dir: 'LEFT' },
+    pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
     ghostSpawns: {
-      BLINKY: { x: 13, y: 14, inHouse: false, initialDir: 'LEFT' },
-      PINKY: { x: 13, y: 17, inHouse: true, initialDir: 'UP' },
-      INKY: { x: 11, y: 17, inHouse: true, initialDir: 'UP' },
-      CLYDE: { x: 15, y: 17, inHouse: true, initialDir: 'UP' },
+      BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
+      PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
+      INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
+      CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
     },
     scatterTargets: {
       BLINKY: { col: 25, row: 0 },
@@ -177,9 +177,9 @@ export function generateProceduralMaze(seed?: number): MazeData {
       CLYDE: { col: 0, row: 34 },
     },
     tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
-    wallColor: '#8B4513', // Warm cookie gingerbread brown
-    dotColor: '#D2B48C', // Chocolate chip beige
-    bgColor: '#1A0F0A', // Deep dark espresso oven
-    gateColor: '#FF69B4', // Strawberry icing pink gate
+    wallColor: "#8B4513", // Warm cookie gingerbread brown
+    dotColor: "#D2B48C", // Chocolate chip beige
+    bgColor: "#1A0F0A", // Deep dark espresso oven
+    gateColor: "#FF69B4", // Strawberry icing pink gate
   };
 }

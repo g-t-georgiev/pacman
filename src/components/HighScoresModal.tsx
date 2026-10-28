@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { GameMode, HighScoreRecord } from '../types/game';
+import React, { useState } from "react";
+import { GameMode, HighScoreRecord } from "../types/game";
 
-const STORAGE_KEY = 'arcade_pacman_high_scores_v1';
+const STORAGE_KEY = "arcade_pacman_high_scores_v1";
 
 const DEFAULT_SCORES: HighScoreRecord[] = [
-  { id: '1', name: 'PAC', score: 10000, mode: 'PACMAN', level: 3, date: '1980-05-22' },
-  { id: '2', name: 'MID', score: 8400, mode: 'MS_PACMAN', level: 2, date: '1982-01-13' },
-  { id: '3', name: 'OTT', score: 6200, mode: 'CRAZY_OTTO', level: 2, date: '1981-10-15' },
-  { id: '4', name: 'BAK', score: 5500, mode: 'COOKIE_MAN', level: 2, date: '2026-03-01' },
-  { id: '5', name: 'ARC', score: 3200, mode: 'PACMAN', level: 1, date: '1980-06-01' },
+  { id: "1", name: "PAC", score: 10000, mode: "PACMAN", level: 3, date: "1980-05-22" },
+  { id: "2", name: "MID", score: 8400, mode: "MS_PACMAN", level: 2, date: "1982-01-13" },
+  { id: "3", name: "OTT", score: 6200, mode: "CRAZY_OTTO", level: 2, date: "1981-10-15" },
+  { id: "4", name: "BAK", score: 5500, mode: "COOKIE_MAN", level: 2, date: "2026-03-01" },
+  { id: "5", name: "ARC", score: 3200, mode: "PACMAN", level: 1, date: "1980-06-01" },
 ];
 
 export function getStoredHighScores(): HighScoreRecord[] {
@@ -27,12 +27,12 @@ export function getStoredHighScores(): HighScoreRecord[] {
   }
 }
 
-export function saveHighScore(record: Omit<HighScoreRecord, 'id' | 'date'>): HighScoreRecord[] {
+export function saveHighScore(record: Omit<HighScoreRecord, "id" | "date">): HighScoreRecord[] {
   const current = getStoredHighScores();
   const newRecord: HighScoreRecord = {
     ...record,
     id: `score_${Date.now()}`,
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
   };
 
   const updated = [...current, newRecord]
@@ -60,14 +60,14 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
   onScoreSubmitted,
 }) => {
   const [scores, setScores] = useState<HighScoreRecord[]>(getStoredHighScores());
-  const [filterMode, setFilterMode] = useState<GameMode | 'ALL'>('ALL');
-  const [initials, setInitials] = useState<string>('PAC');
+  const [filterMode, setFilterMode] = useState<GameMode | "ALL">("ALL");
+  const [initials, setInitials] = useState<string>("PAC");
 
   const handleSaveNewScore = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pendingNewScore) return;
 
-    const trimmed = (initials.trim() || 'AAA').toUpperCase().slice(0, 3);
+    const trimmed = (initials.trim() || "AAA").toUpperCase().slice(0, 3);
     const updated = saveHighScore({
       name: trimmed,
       score: pendingNewScore.score,
@@ -89,7 +89,7 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
     setScores(DEFAULT_SCORES);
   };
 
-  const filtered = filterMode === 'ALL' ? scores : scores.filter((s) => s.mode === filterMode);
+  const filtered = filterMode === "ALL" ? scores : scores.filter((s) => s.mode === filterMode);
 
   return (
     <div className="w-full max-w-md bg-neutral-950 border border-yellow-500/60 rounded-2xl p-5 shadow-2xl flex flex-col gap-4 font-mono text-white">
@@ -140,23 +140,23 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
 
         {/* Filter Tabs */}
         <div className="flex items-center justify-between gap-1 p-1 bg-neutral-900 rounded-lg text-[10px]">
-          {(['ALL', 'PACMAN', 'MS_PACMAN', 'CRAZY_OTTO', 'COOKIE_MAN'] as const).map((m) => (
+          {(["ALL", "PACMAN", "MS_PACMAN", "CRAZY_OTTO", "COOKIE_MAN"] as const).map((m) => (
             <button
               key={m}
               onClick={() => setFilterMode(m)}
               className={`px-2 py-1 rounded transition-colors whitespace-nowrap ${
-                filterMode === m ? 'bg-yellow-500 text-black font-bold' : 'text-neutral-400 hover:text-white'
+                filterMode === m ? "bg-yellow-500 text-black font-bold" : "text-neutral-400 hover:text-white"
               }`}
             >
-              {m === 'ALL'
-                ? 'ALL'
-                : m === 'PACMAN'
-                ? 'PAC-MAN'
-                : m === 'MS_PACMAN'
-                ? 'MS. PAC'
-                : m === 'CRAZY_OTTO'
-                ? 'OTTO'
-                : 'COOKIE'}
+              {m === "ALL"
+                ? "ALL"
+                : m === "PACMAN"
+                ? "PAC-MAN"
+                : m === "MS_PACMAN"
+                ? "MS. PAC"
+                : m === "CRAZY_OTTO"
+                ? "OTTO"
+                : "COOKIE"}
             </button>
           ))}
         </div>
@@ -179,7 +179,7 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
                 <div
                   key={record.id}
                   className={`grid grid-cols-12 text-xs items-center px-2 py-1 rounded ${
-                    isTop ? 'bg-yellow-500/10 text-yellow-300 font-bold' : 'text-neutral-300 hover:bg-neutral-900'
+                    isTop ? "bg-yellow-500/10 text-yellow-300 font-bold" : "text-neutral-300 hover:bg-neutral-900"
                   }`}
                 >
                   <span className="col-span-2 text-neutral-500">#{idx + 1}</span>

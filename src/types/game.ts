@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type GameMode = 'PACMAN' | 'MS_PACMAN' | 'CRAZY_OTTO' | 'COOKIE_MAN';
+export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
 
-export type GhostType = 'BLINKY' | 'PINKY' | 'INKY' | 'CLYDE';
+export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
-export type GhostBehavior = 'CHASE' | 'SCATTER' | 'FRIGHTENED' | 'EATEN' | 'IN_HOUSE';
+export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
 
-export type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'NONE';
+export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT" | "NONE";
 
 export interface Point {
   x: number;
@@ -22,14 +22,14 @@ export interface TileCoord {
 }
 
 export type TileType =
-  | 'EMPTY'
-  | 'WALL'
-  | 'DOT'
-  | 'ENERGIZER'
-  | 'GATE'
-  | 'GHOST_HOUSE'
-  | 'TUNNEL'
-  | 'NO_UP_ZONE'; // Classic restriction: ghosts cannot turn UP here
+  | "EMPTY"
+  | "WALL"
+  | "DOT"
+  | "ENERGIZER"
+  | "GATE"
+  | "GHOST_HOUSE"
+  | "TUNNEL"
+  | "NO_UP_ZONE"; // Classic restriction: ghosts cannot turn UP here
 
 export interface MazeData {
   width: number; // usually 28 tiles
@@ -76,7 +76,7 @@ export interface GhostState {
   frightenedTimer: number;
   feetAnimation: number;
   bouncedInHouse: boolean;
-  clydeWanderState?: 'CHASE' | 'FLEE';
+  clydeWanderState?: "CHASE" | "FLEE";
   clydeSwitchTimer?: number;
   intermediateTarget?: TileCoord;
 }
@@ -131,7 +131,7 @@ export interface HighScoreRecord {
   date: string;
 }
 
-export type PlayState = 'MENU' | 'READY' | 'PLAYING' | 'PAUSED' | 'DYING' | 'LEVEL_CLEAR' | 'GAME_OVER';
+export type PlayState = "MENU" | "READY" | "PLAYING" | "PAUSED" | "DYING" | "LEVEL_CLEAR" | "GAME_OVER";
 
 export interface SnapshotState {
   pacman: PacmanState;

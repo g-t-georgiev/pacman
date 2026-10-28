@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { GameEngine } from '../game/gameEngine';
+import React, { useState } from "react";
+import { GameEngine } from "../game/gameEngine";
 
 interface PracticePanelProps {
   engine: GameEngine;
@@ -18,7 +18,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
   const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
   const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const [isPaused, setIsPaused] = useState<boolean>(engine.playState === 'PAUSED' || engine.rewindIndex !== -1);
+  const [isPaused, setIsPaused] = useState<boolean>(engine.playState === "PAUSED" || engine.rewindIndex !== -1);
 
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
@@ -70,17 +70,17 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
 
   const handleResume = () => {
     engine.resumeFromScrub();
-    setIsPaused(engine.playState === 'PAUSED');
+    setIsPaused(engine.playState === "PAUSED");
     onUpdate();
   };
 
   const togglePause = () => {
-    if (engine.playState === 'PAUSED') {
-      engine.playState = 'PLAYING';
-    } else if (engine.playState === 'PLAYING') {
-      engine.playState = 'PAUSED';
+    if (engine.playState === "PAUSED") {
+      engine.playState = "PLAYING";
+    } else if (engine.playState === "PLAYING") {
+      engine.playState = "PAUSED";
     }
-    setIsPaused(engine.playState === 'PAUSED' || engine.rewindIndex !== -1);
+    setIsPaused(engine.playState === "PAUSED" || engine.rewindIndex !== -1);
     onUpdate();
   };
 
@@ -123,7 +123,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           <button
             onClick={() => handleSpeedChange(0.25)}
             className={`px-2 py-1 rounded transition-colors ${
-              speed === 0.25 ? 'bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700'
+              speed === 0.25 ? "bg-emerald-600 text-white" : "bg-neutral-800 hover:bg-neutral-700"
             }`}
           >
             0.25x Slow
@@ -131,7 +131,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           <button
             onClick={() => handleSpeedChange(0.5)}
             className={`px-2 py-1 rounded transition-colors ${
-              speed === 0.5 ? 'bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700'
+              speed === 0.5 ? "bg-emerald-600 text-white" : "bg-neutral-800 hover:bg-neutral-700"
             }`}
           >
             0.50x
@@ -139,7 +139,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           <button
             onClick={() => handleSpeedChange(1.0)}
             className={`px-2 py-1 rounded transition-colors ${
-              speed === 1.0 ? 'bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700'
+              speed === 1.0 ? "bg-emerald-600 text-white" : "bg-neutral-800 hover:bg-neutral-700"
             }`}
           >
             1.0x Normal
@@ -147,7 +147,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           <button
             onClick={() => handleSpeedChange(1.5)}
             className={`px-2 py-1 rounded transition-colors ${
-              speed === 1.5 ? 'bg-emerald-600 text-white' : 'bg-neutral-800 hover:bg-neutral-700'
+              speed === 1.5 ? "bg-emerald-600 text-white" : "bg-neutral-800 hover:bg-neutral-700"
             }`}
           >
             1.5x Fast
@@ -190,10 +190,10 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
             <button
               onClick={togglePause}
               className={`px-2.5 py-1 rounded font-bold transition-colors ${
-                isPaused ? 'bg-amber-500 text-black' : 'bg-neutral-800 hover:bg-neutral-700 text-white'
+                isPaused ? "bg-amber-500 text-black" : "bg-neutral-800 hover:bg-neutral-700 text-white"
               }`}
             >
-              {isPaused ? '▶ PLAY' : '⏸ PAUSE'}
+              {isPaused ? "▶ PLAY" : "⏸ PAUSE"}
             </button>
           </div>
 
@@ -233,8 +233,8 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           onClick={handleToggleInvincible}
           className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
             invincible
-              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 ring-1 ring-amber-300'
-              : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+              ? "bg-amber-500 text-black shadow-md shadow-amber-500/20 ring-1 ring-amber-300"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
           }`}
         >
           <div className="flex items-center justify-between w-full">
@@ -242,11 +242,11 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>🛡️</span>
               <span>Invincibility</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'}`}>
-              {invincible ? 'ON' : 'OFF'}
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? "bg-black/20 text-black" : "bg-neutral-800 text-neutral-400"}`}>
+              {invincible ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${invincible ? 'text-black/80' : 'text-neutral-400'}`}>
+          <span className={`text-[9px] font-normal leading-tight ${invincible ? "text-black/80" : "text-neutral-400"}`}>
             Pac-Man impervious to ghost contact
           </span>
         </button>
@@ -256,8 +256,8 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           onClick={handleToggleGhostPaths}
           className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
             showGhostPaths
-              ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/20 ring-1 ring-cyan-400'
-              : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+              ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/20 ring-1 ring-cyan-400"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
           }`}
         >
           <div className="flex items-center justify-between w-full">
@@ -265,11 +265,11 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>🧭</span>
               <span>Ghost Paths</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? 'bg-cyan-900 text-cyan-100' : 'bg-neutral-800 text-neutral-400'}`}>
-              {showGhostPaths ? 'ON' : 'OFF'}
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? "bg-cyan-900 text-cyan-100" : "bg-neutral-800 text-neutral-400"}`}>
+              {showGhostPaths ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showGhostPaths ? 'text-cyan-100/90' : 'text-neutral-400'}`}>
+          <span className={`text-[9px] font-normal leading-tight ${showGhostPaths ? "text-cyan-100/90" : "text-neutral-400"}`}>
             Multi-step corridor lookahead & turn arrows
           </span>
         </button>
@@ -279,8 +279,8 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           onClick={handleToggleTargetLines}
           className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
             showTargetLines
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-400'
-              : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-400"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
           }`}
         >
           <div className="flex items-center justify-between w-full">
@@ -288,11 +288,11 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>📏</span>
               <span>Target Radar</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? 'bg-purple-900 text-purple-100' : 'bg-neutral-800 text-neutral-400'}`}>
-              {showTargetLines ? 'ON' : 'OFF'}
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}>
+              {showTargetLines ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showTargetLines ? 'text-purple-100/90' : 'text-neutral-400'}`}>
+          <span className={`text-[9px] font-normal leading-tight ${showTargetLines ? "text-purple-100/90" : "text-neutral-400"}`}>
             Laser vector, tile distance & proximity alert
           </span>
         </button>
@@ -302,8 +302,8 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           onClick={handleToggleGrid}
           className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
             showGrid
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-400'
-              : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-400"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
           }`}
         >
           <div className="flex items-center justify-between w-full">
@@ -311,11 +311,11 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>📐</span>
               <span>Tile Grid</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? 'bg-blue-900 text-blue-100' : 'bg-neutral-800 text-neutral-400'}`}>
-              {showGrid ? 'ON' : 'OFF'}
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? "bg-blue-900 text-blue-100" : "bg-neutral-800 text-neutral-400"}`}>
+              {showGrid ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showGrid ? 'text-blue-100/90' : 'text-neutral-400'}`}>
+          <span className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}>
             Maze tile grid & decision intersections
           </span>
         </button>
@@ -353,7 +353,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           🏠 Reset Ghosts
         </button>
 
-        {engine.mode === 'COOKIE_MAN' && (
+        {engine.mode === "COOKIE_MAN" && (
           <button
             onClick={() => {
               engine.loadLevel(engine.level);

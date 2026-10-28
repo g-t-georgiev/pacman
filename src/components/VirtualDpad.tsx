@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Direction } from '../types/game';
+import React from "react";
+import { Direction } from "../types/game";
 
 interface VirtualDpadProps {
   onDirection: (dir: Direction) => void;
@@ -13,7 +13,7 @@ interface VirtualDpadProps {
 
 export const VirtualDpad: React.FC<VirtualDpadProps> = ({ onDirection, currentDir }) => {
   const triggerDir = (dir: Direction) => {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       try {
         navigator.vibrate(12);
       } catch {
@@ -30,10 +30,10 @@ export const VirtualDpad: React.FC<VirtualDpadProps> = ({ onDirection, currentDi
         type="button"
         onPointerDown={(e) => {
           e.preventDefault();
-          triggerDir('UP');
+          triggerDir("UP");
         }}
         className={`w-14 h-12 rounded-t-xl bg-neutral-800 border-t-2 border-x-2 border-neutral-700 flex items-center justify-center text-lg active:bg-yellow-500 active:text-black active:scale-95 transition-all ${
-          currentDir === 'UP' ? 'bg-yellow-400 text-black border-yellow-300' : 'text-neutral-300'
+          currentDir === "UP" ? "bg-yellow-400 text-black border-yellow-300" : "text-neutral-300"
         }`}
         aria-label="Move Up"
       >
@@ -46,10 +46,10 @@ export const VirtualDpad: React.FC<VirtualDpadProps> = ({ onDirection, currentDi
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
-            triggerDir('LEFT');
+            triggerDir("LEFT");
           }}
           className={`w-14 h-12 rounded-l-xl bg-neutral-800 border-l-2 border-y-2 border-neutral-700 flex items-center justify-center text-lg active:bg-yellow-500 active:text-black active:scale-95 transition-all ${
-            currentDir === 'LEFT' ? 'bg-yellow-400 text-black border-yellow-300' : 'text-neutral-300'
+            currentDir === "LEFT" ? "bg-yellow-400 text-black border-yellow-300" : "text-neutral-300"
           }`}
           aria-label="Move Left"
         >
@@ -65,10 +65,10 @@ export const VirtualDpad: React.FC<VirtualDpadProps> = ({ onDirection, currentDi
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
-            triggerDir('RIGHT');
+            triggerDir("RIGHT");
           }}
           className={`w-14 h-12 rounded-r-xl bg-neutral-800 border-r-2 border-y-2 border-neutral-700 flex items-center justify-center text-lg active:bg-yellow-500 active:text-black active:scale-95 transition-all ${
-            currentDir === 'RIGHT' ? 'bg-yellow-400 text-black border-yellow-300' : 'text-neutral-300'
+            currentDir === "RIGHT" ? "bg-yellow-400 text-black border-yellow-300" : "text-neutral-300"
           }`}
           aria-label="Move Right"
         >
@@ -81,10 +81,10 @@ export const VirtualDpad: React.FC<VirtualDpadProps> = ({ onDirection, currentDi
         type="button"
         onPointerDown={(e) => {
           e.preventDefault();
-          triggerDir('DOWN');
+          triggerDir("DOWN");
         }}
         className={`w-14 h-12 rounded-b-xl bg-neutral-800 border-b-2 border-x-2 border-neutral-700 flex items-center justify-center text-lg active:bg-yellow-500 active:text-black active:scale-95 transition-all ${
-          currentDir === 'DOWN' ? 'bg-yellow-400 text-black border-yellow-300' : 'text-neutral-300'
+          currentDir === "DOWN" ? "bg-yellow-400 text-black border-yellow-300" : "text-neutral-300"
         }`}
         aria-label="Move Down"
       >

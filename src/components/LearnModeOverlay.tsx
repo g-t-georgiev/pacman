@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { GHOST_COLORS, SCATTER_CHASE_SCHEDULE } from '../game/constants';
-import { GameEngine } from '../game/gameEngine';
-import { GhostType } from '../types/game';
+import React, { useState } from "react";
+import { GHOST_COLORS, SCATTER_CHASE_SCHEDULE } from "../game/constants";
+import { GameEngine } from "../game/gameEngine";
+import { GhostType } from "../types/game";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -27,7 +27,7 @@ const GhostAvatar: React.FC<{ type: GhostType; size?: number; active: boolean }>
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      className={`transition-transform ${active ? 'scale-100 opacity-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]' : 'scale-90 opacity-40 grayscale'}`}
+      className={`transition-transform ${active ? "scale-100 opacity-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]" : "scale-90 opacity-40 grayscale"}`}
     >
       {/* Ghost Dome & Tentacles Body */}
       <path
@@ -92,7 +92,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
-  const ghostList: GhostType[] = ['BLINKY', 'PINKY', 'INKY', 'CLYDE'];
+  const ghostList: GhostType[] = ["BLINKY", "PINKY", "INKY", "CLYDE"];
   const allActive = ghostList.every((g) => ghostFilters[g]);
   const noneActive = ghostList.every((g) => !ghostFilters[g]);
 
@@ -130,22 +130,22 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span
               className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
                 visualsEnabled
-                  ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                  : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                  : "bg-neutral-800 text-neutral-400 border border-neutral-700"
               }`}
             >
-              {visualsEnabled ? 'ENABLED' : 'PAUSED'}
+              {visualsEnabled ? "ENABLED" : "PAUSED"}
             </span>
           </div>
           <button
             onClick={handleToggleMasterVisuals}
             className={`px-3 py-1 rounded-lg font-bold text-[10px] transition-colors cursor-pointer ${
               visualsEnabled
-                ? 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-md'
-                : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                ? "bg-cyan-500 hover:bg-cyan-400 text-black shadow-md"
+                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
             }`}
           >
-            {visualsEnabled ? 'Visible On Maze' : 'Hidden On Maze'}
+            {visualsEnabled ? "Visible On Maze" : "Hidden On Maze"}
           </button>
         </div>
 
@@ -187,8 +187,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
                   onClick={() => handleToggleGhost(ghostKey)}
                   className={`p-2 rounded-xl flex items-center gap-2 border transition-all cursor-pointer ${
                     active
-                      ? 'bg-neutral-850 border-neutral-650 shadow-sm'
-                      : 'bg-neutral-900/60 border-neutral-800/60 opacity-60'
+                      ? "bg-neutral-850 border-neutral-650 shadow-sm"
+                      : "bg-neutral-900/60 border-neutral-800/60 opacity-60"
                   }`}
                   style={{
                     borderColor: active ? info.body : undefined,
@@ -197,11 +197,11 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
                 >
                   <GhostAvatar type={ghostKey} size={22} active={active} />
                   <div className="flex flex-col text-left overflow-hidden">
-                    <span className="font-bold text-[11px] leading-tight" style={{ color: active ? info.body : '#999' }}>
+                    <span className="font-bold text-[11px] leading-tight" style={{ color: active ? info.body : "#999" }}>
                       {info.name}
                     </span>
                     <span className="text-[9px] text-neutral-400">
-                      {active ? '☑ Active' : '☐ Muted'}
+                      {active ? "☑ Active" : "☐ Muted"}
                     </span>
                   </div>
                 </button>
@@ -221,8 +221,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             </span>
           ) : (
             <span className="text-white font-bold text-xs sm:text-sm">
-              {wave?.mode === 'SCATTER' ? '🛡️ SCATTER MODE' : '⚔️ CHASE MODE'}{' '}
-              {wave?.duration !== Infinity ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)` : '(Permanent)'}
+              {wave?.mode === "SCATTER" ? "🛡️ SCATTER MODE" : "⚔️ CHASE MODE"}{" "}
+              {wave?.duration !== Infinity ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)` : "(Permanent)"}
             </span>
           )}
         </div>
@@ -237,7 +237,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         {/* Blinky */}
         <div
           className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.BLINKY ? 'border-red-900/80' : 'border-neutral-800 opacity-60'
+            ghostFilters.BLINKY ? "border-red-900/80" : "border-neutral-800 opacity-60"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             )}
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
-            Direct pursuer. Targets Pac-Man's exact tile. Speeds up when dots &le; 20 (Cruise Elroy) and ignores scatter!
+            Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le; 20 (Cruise Elroy) and ignores scatter!
           </p>
           <div className="text-[10px] text-red-300">
             Target: ({engine.ghosts.BLINKY.target.col}, {engine.ghosts.BLINKY.target.row})
@@ -261,7 +261,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         {/* Pinky */}
         <div
           className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.PINKY ? 'border-pink-900/80' : 'border-neutral-800 opacity-60'
+            ghostFilters.PINKY ? "border-pink-900/80" : "border-neutral-800 opacity-60"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         {/* Inky */}
         <div
           className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.INKY ? 'border-cyan-900/80' : 'border-neutral-800 opacity-60'
+            ghostFilters.INKY ? "border-cyan-900/80" : "border-neutral-800 opacity-60"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -297,19 +297,19 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         {/* Clyde */}
         <div
           className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.CLYDE ? 'border-amber-900/80' : 'border-neutral-800 opacity-60'
+            ghostFilters.CLYDE ? "border-amber-900/80" : "border-neutral-800 opacity-60"
           }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghosts.CLYDE.clydeWanderState === 'CHASE'
-                  ? 'bg-emerald-900 text-emerald-300'
-                  : 'bg-amber-900 text-amber-300'
+                engine.ghosts.CLYDE.clydeWanderState === "CHASE"
+                  ? "bg-emerald-900 text-emerald-300"
+                  : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghosts.CLYDE.clydeWanderState === 'CHASE' ? 'CHASING' : 'FLEEING'}
+              {engine.ghosts.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">

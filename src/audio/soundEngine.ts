@@ -13,7 +13,7 @@ class ArcadeSoundEngine {
   // Continuous sound oscillators / nodes
   private sirenOsc: OscillatorNode | null = null;
   private sirenGain: GainNode | null = null;
-  private sirenType: 'NORMAL' | 'FRIGHTENED' | 'EYES' | 'NONE' = 'NONE';
+  private sirenType: "NORMAL" | "FRIGHTENED" | "EYES" | "NONE" = "NONE";
   private wakaFlip: boolean = false;
   private lastWakaTime: number = 0;
 
@@ -31,7 +31,7 @@ class ArcadeSoundEngine {
         this.masterGain.connect(this.ctx.destination);
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === "suspended") {
       this.ctx.resume().catch(() => {});
     }
   }
@@ -111,7 +111,7 @@ class ArcadeSoundEngine {
     notes.forEach((n) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(n.f, t);
 
       gain.gain.setValueAtTime(0.25, t);
@@ -141,7 +141,7 @@ class ArcadeSoundEngine {
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
+    osc.type = "triangle";
 
     this.wakaFlip = !this.wakaFlip;
     const startFreq = this.wakaFlip ? 360 : 480;
@@ -169,7 +169,7 @@ class ArcadeSoundEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'square';
+    osc.type = "square";
     osc.frequency.setValueAtTime(200, now);
     osc.frequency.linearRampToValueAtTime(800, now + 0.35);
 
@@ -195,7 +195,7 @@ class ArcadeSoundEngine {
       const gain = this.ctx!.createGain();
       const t = now + idx * 0.06;
 
-      osc.type = 'sine';
+      osc.type = "sine";
       osc.frequency.setValueAtTime(freq, t);
 
       gain.gain.setValueAtTime(0.2, t);
@@ -220,7 +220,7 @@ class ArcadeSoundEngine {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'triangle';
+    osc.type = "triangle";
     // Classic Pac-Man death descending pitch sweep with stepped slides
     osc.frequency.setValueAtTime(800, now);
     osc.frequency.exponentialRampToValueAtTime(100, now + 1.2);
@@ -240,7 +240,7 @@ class ArcadeSoundEngine {
       const popOsc = this.ctx.createOscillator();
       const popGain = this.ctx.createGain();
       const popNow = this.ctx.currentTime;
-      popOsc.type = 'sine';
+      popOsc.type = "sine";
       popOsc.frequency.setValueAtTime(120, popNow);
       popOsc.frequency.exponentialRampToValueAtTime(40, popNow + 0.15);
       popGain.gain.setValueAtTime(0.35, popNow);
@@ -267,7 +267,7 @@ class ArcadeSoundEngine {
       const gain = this.ctx!.createGain();
       const t = now + idx * 0.08;
 
-      osc.type = 'triangle';
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(freq, t);
 
       gain.gain.setValueAtTime(0.25, t);
@@ -282,7 +282,7 @@ class ArcadeSoundEngine {
   }
 
   // Background Siren management
-  public updateSiren(mode: 'NORMAL' | 'FRIGHTENED' | 'EYES' | 'NONE', dotsRatio: number = 1) {
+  public updateSiren(mode: "NORMAL" | "FRIGHTENED" | "EYES" | "NONE", dotsRatio: number = 1) {
     if (!this.enabled) {
       this.stopSiren();
       return;
@@ -290,7 +290,7 @@ class ArcadeSoundEngine {
     this.initCtx();
     if (!this.ctx || !this.masterGain) return;
 
-    if (mode === 'NONE') {
+    if (mode === "NONE") {
       this.stopSiren();
       return;
     }
@@ -302,18 +302,18 @@ class ArcadeSoundEngine {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      if (mode === 'NORMAL') {
-        osc.type = 'sawtooth';
+      if (mode === "NORMAL") {
+        osc.type = "sawtooth";
         // Base frequency scales up as dots decrease (from 140Hz up to 260Hz)
         const baseFreq = 140 + (1 - dotsRatio) * 120;
         osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
         gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
-      } else if (mode === 'FRIGHTENED') {
-        osc.type = 'triangle';
+      } else if (mode === "FRIGHTENED") {
+        osc.type = "triangle";
         osc.frequency.setValueAtTime(240, this.ctx.currentTime);
         gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-      } else if (mode === 'EYES') {
-        osc.type = 'square';
+      } else if (mode === "EYES") {
+        osc.type = "square";
         osc.frequency.setValueAtTime(600, this.ctx.currentTime);
         gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
       }
@@ -324,7 +324,7 @@ class ArcadeSoundEngine {
 
       this.sirenOsc = osc;
       this.sirenGain = gain;
-    } else if (mode === 'NORMAL' && this.sirenOsc) {
+    } else if (mode === "NORMAL" && this.sirenOsc) {
       // Modulate frequency dynamically with remaining dots
       const baseFreq = 140 + (1 - dotsRatio) * 120;
       this.sirenOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.2);
@@ -349,7 +349,7 @@ class ArcadeSoundEngine {
       }
       this.sirenGain = null;
     }
-    this.sirenType = 'NONE';
+    this.sirenType = "NONE";
   }
 }
 

@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { GameMode } from '../types/game';
+import React from "react";
+import { GameMode } from "../types/game";
 
 interface ModeSelectorProps {
   currentMode: GameMode;
@@ -33,40 +33,40 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     description: string;
   }> = [
     {
-      id: 'PACMAN',
-      title: 'Pac-Man',
-      subtitle: 'Original 1980 Arcade Classic',
-      badge: 'CLASSIC',
-      icon: '🟡',
-      accent: 'border-yellow-500/60 text-yellow-400',
-      description: 'The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.',
+      id: "PACMAN",
+      title: "Pac-Man",
+      subtitle: "Original 1980 Arcade Classic",
+      badge: "CLASSIC",
+      icon: "🟡",
+      accent: "border-yellow-500/60 text-yellow-400",
+      description: "The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.",
     },
     {
-      id: 'MS_PACMAN',
-      title: 'Ms. Pac-Man',
-      subtitle: '1982 Midway Sequel',
-      badge: 'DUAL TUNNELS',
-      icon: '🎀',
-      accent: 'border-pink-500/60 text-pink-400',
-      description: 'Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.',
+      id: "MS_PACMAN",
+      title: "Ms. Pac-Man",
+      subtitle: "1982 Midway Sequel",
+      badge: "DUAL TUNNELS",
+      icon: "🎀",
+      accent: "border-pink-500/60 text-pink-400",
+      description: "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
     },
     {
-      id: 'CRAZY_OTTO',
-      title: 'Crazy Otto',
-      subtitle: '1981 GCC Historical Prototype',
-      badge: 'PROTOTYPE',
-      icon: '👟',
-      accent: 'border-cyan-500/60 text-cyan-400',
-      description: 'The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.',
+      id: "CRAZY_OTTO",
+      title: "Crazy Otto",
+      subtitle: "1981 GCC Historical Prototype",
+      badge: "PROTOTYPE",
+      icon: "👟",
+      accent: "border-cyan-500/60 text-cyan-400",
+      description: "The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.",
     },
     {
-      id: 'COOKIE_MAN',
-      title: 'Cookie Man',
-      subtitle: 'Procedural Solvable Mazes',
-      badge: 'INFINITE MAZES',
-      icon: '🍪',
-      accent: 'border-amber-600/60 text-amber-400',
-      description: 'Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.',
+      id: "COOKIE_MAN",
+      title: "Cookie Man",
+      subtitle: "Procedural Solvable Mazes",
+      badge: "INFINITE MAZES",
+      icon: "🍪",
+      accent: "border-amber-600/60 text-amber-400",
+      description: "Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.",
     },
   ];
 
@@ -93,7 +93,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
               className={`p-3 rounded-xl border text-left transition-all duration-150 flex items-start gap-3.5 ${
                 isSelected
                   ? `bg-neutral-900 shadow-md ${m.accent} ring-2 ring-yellow-400/40`
-                  : 'bg-neutral-900/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-neutral-300'
+                  : "bg-neutral-900/60 border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700 text-neutral-300"
               }`}
             >
               <div className="text-2xl p-2 rounded-lg bg-black/40 shrink-0 border border-neutral-800/80">
@@ -133,11 +133,11 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           onClick={onToggleTurbo}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
             turbo
-              ? 'bg-amber-500 text-black shadow-md ring-2 ring-amber-300'
-              : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              ? "bg-amber-500 text-black shadow-md ring-2 ring-amber-300"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
         >
-          {turbo ? 'TURBO ON' : 'NORMAL 1.0x'}
+          {turbo ? "TURBO ON" : "NORMAL 1.0x"}
         </button>
       </div>
 

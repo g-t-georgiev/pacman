@@ -4,20 +4,20 @@
  */
 
 export type PanelId =
-  | 'RESTART_PANEL'
-  | 'LEARN_PANEL'
-  | 'PRACTICE_PANEL'
-  | 'MODE_SELECTOR'
-  | 'HIGH_SCORES';
+  | "RESTART_PANEL"
+  | "LEARN_PANEL"
+  | "PRACTICE_PANEL"
+  | "MODE_SELECTOR"
+  | "HIGH_SCORES";
 
 export type TransitionEffect =
-  | 'fade-slide-up'
-  | 'scale-fade'
-  | 'fade-drop'
-  | 'slide-in-right'
-  | 'subtle-fade';
+  | "fade-slide-up"
+  | "scale-fade"
+  | "fade-drop"
+  | "slide-in-right"
+  | "subtle-fade";
 
-export type PanelPosition = 'center-viewport' | 'top-viewport' | 'bottom-viewport';
+export type PanelPosition = "center-viewport" | "top-viewport" | "bottom-viewport";
 
 export interface PanelTransitionConfig {
   effect: TransitionEffect;
@@ -52,48 +52,48 @@ export const uiConfig: UIConfig = {
   },
   panels: {
     RESTART_PANEL: {
-      effect: 'fade-slide-up',
+      effect: "fade-slide-up",
       durationMs: 300,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.75)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.75)",
+      position: "center-viewport",
       closeOnBackdropClick: false, // Prevent accidental dismissal on game over
     },
     LEARN_PANEL: {
-      effect: 'fade-slide-up',
+      effect: "fade-slide-up",
       durationMs: 250,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.7)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.7)",
+      position: "center-viewport",
       closeOnBackdropClick: true,
     },
     PRACTICE_PANEL: {
-      effect: 'scale-fade',
+      effect: "scale-fade",
       durationMs: 250,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.7)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.7)",
+      position: "center-viewport",
       closeOnBackdropClick: true,
     },
     MODE_SELECTOR: {
-      effect: 'scale-fade',
+      effect: "scale-fade",
       durationMs: 280,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.8)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.8)",
+      position: "center-viewport",
       closeOnBackdropClick: true,
     },
     HIGH_SCORES: {
-      effect: 'fade-drop',
+      effect: "fade-drop",
       durationMs: 260,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.8)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.8)",
+      position: "center-viewport",
       closeOnBackdropClick: true,
     },
   },
@@ -102,12 +102,12 @@ export const uiConfig: UIConfig = {
 export function getPanelConfig(panelId: PanelId): PanelTransitionConfig {
   return (
     uiConfig.panels[panelId] || {
-      effect: 'fade-slide-up',
+      effect: "fade-slide-up",
       durationMs: 250,
-      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
-      backdropColor: 'rgba(0, 0, 0, 0.7)',
-      position: 'center-viewport',
+      backdropColor: "rgba(0, 0, 0, 0.7)",
+      position: "center-viewport",
       closeOnBackdropClick: true,
     }
   );
