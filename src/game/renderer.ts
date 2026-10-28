@@ -466,7 +466,7 @@ export class GameRenderer {
         ctx.setLineDash([]);
       }
 
-      // 2. Target Reticle Crosshair
+      // 2. Target Reticle Crosshair & Target Tile Coordinates
       ctx.strokeStyle = ghostColor;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -478,6 +478,16 @@ export class GameRenderer {
       ctx.moveTo(targetX, targetY - 5);
       ctx.lineTo(targetX, targetY + 5);
       ctx.stroke();
+
+      // Target Coordinate Pill at Reticle
+      ctx.save();
+      const coordTag = `[${g.target.col},${g.target.row}]`;
+      ctx.font = 'bold 8px monospace';
+      ctx.fillStyle = ghostColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(coordTag, targetX, g.target.row * TILE_SIZE);
+      ctx.restore();
 
       // Inky Pincer Vector Visualization
       if (type === 'INKY' && g.intermediateTarget && showCues) {
@@ -503,7 +513,7 @@ export class GameRenderer {
         ctx.fill();
       }
 
-      // Clyde 8-tile radius circle and state label visualization
+      // Clyde 8-tile radius circle visualization
       if (type === 'CLYDE' && showCues) {
         ctx.strokeStyle = 'rgba(255, 184, 82, 0.45)';
         ctx.lineWidth = 1;
@@ -512,16 +522,69 @@ export class GameRenderer {
         ctx.arc(g.x, g.y, 8 * TILE_SIZE, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+      }
 
-        // Current Clyde mode tag
-        ctx.font = 'bold 9px monospace';
-        ctx.fillStyle = g.clydeWanderState === 'CHASE' ? '#55ff55' : '#ffaa33';
+      // 3. Overhead Ghost Status Badge (Name, Mode, Target Tile Coordinates)
+      if (showCues) {
+        const ghostName =
+          engine.mode === 'MS_PACMAN' && GHOST_COLORS[type].msName
+            ? GHOST_COLORS[type].msName.toUpperCase()
+            : GHOST_COLORS[type].name.toUpperCase();
+
+        let modeStr = g.mode as string;
+        if (g.mode === 'CHASE') {
+          if (type === 'CLYDE') {
+            modeStr = g.clydeWanderState === 'CHASE' ? 'CHASE' : 'FLEE';
+          } else {
+            modeStr = 'CHASE';
+          }
+        } else if (g.mode === 'SCATTER') {
+          modeStr = 'SCATTER';
+        } else if (g.mode === 'FRIGHTENED') {
+          modeStr = 'FRIGHT';
+        } else if (g.mode === 'EATEN') {
+          modeStr = 'EYES';
+        }
+
+        const label = `${ghostName} · ${modeStr} [${g.target.col},${g.target.row}]`;
+
+        ctx.save();
+        ctx.font = 'bold 8.5px monospace';
+        const textMetrics = ctx.measureText(label);
+        const textWidth = textMetrics.width;
+        const badgeW = textWidth + 8;
+        const badgeH = 13;
+
+        // Position badge above ghost dome, flip below skirt if too close to top of canvas
+        let badgeY = g.y - 18;
+        if (badgeY < 6) {
+          badgeY = g.y + 12;
+        }
+
+        // Clamp horizontally so badge never clips outside canvas edges
+        const badgeX = Math.max(4, Math.min(CANVAS_WIDTH - badgeW - 4, g.x - badgeW / 2));
+
+        // Dark rounded pill background with ghost color border
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctx.strokeStyle = ghostColor;
+        ctx.lineWidth = 1;
+
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath();
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 2.5);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+        }
+
+        // Text
+        ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(
-          g.clydeWanderState === 'CHASE' ? 'CLYDE: CHASE' : 'CLYDE: FLEE',
-          g.x,
-          g.y - 12
-        );
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, badgeX + badgeW / 2, badgeY + badgeH / 2);
+        ctx.restore();
       }
     });
   }

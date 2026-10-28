@@ -71,3 +71,43 @@ This plan outlines the architecture and execution steps for adding a centralized
 
 - **Game-Over Delay**: When Pac-Man loses all lives, "GAME OVER" text displays and after `uiConfig.timings.gameOverRestartDelayMs` (1.2s), the Restart Panel smoothly slides up.
 - **Ghost Visualization Persistence**: Players can close the Learn panel, and target lines, reticles, Clyde's 8-tile radius, and Inky's pincer vector remain actively drawn on the game screen for any selected ghost(s).
+
+---
+
+## 5. Learn Mode Ghost Status Badges & Target Coordinates
+
+- **Overhead Status Badges for All Active Ghosts**:
+  - Each ghost (Blinky, Pinky, Inky, Clyde) now displays a crisp overhead pill badge:
+    `[NAME] · [MODE] [targetCol, targetRow]`
+    (e.g., `BLINKY · CHASE [14, 23]`, `PINKY · CHASE [18, 19]`, `INKY · SCATTER [27, 34]`, `CLYDE · FLEE [0, 34]`).
+  - Adapts name in Ms. Pac-Man mode (e.g. `SUE`).
+  - Dynamically flips below the ghost if near the top edge of the maze, and clamps horizontally so it never clips off-screen.
+- **Reticle Coordinate Tag**:
+  - The target reticle on the maze now additionally renders the target coordinates `[col, row]` directly above the crosshair in that ghost's color.
+- **Separate from Practice Mode**:
+  - Learn Mode displays the AI mechanics (identity, behavioral mode, and exact tile target).
+  - Practice Mode displays tactical proximity radar (Euclidean distance meters and proximity warnings).
+
+---
+
+## 6. Eaten Eyes Pen Return & Back Wall Penetration Fix
+
+### Root Cause
+1. **Unbounded Lower-Half Revival Check in `gameEngine.ts`**:
+   - The pen arrival check previously evaluated `if (Math.abs(g.x - doorX) <= 12 && g.y >= houseInsideY)`.
+   - Because `houseInsideY` was `15.5 * TILE_SIZE`, whenever eaten eyes were in the lower half of the maze (rows 16–34) and crossed column 13 (`doorX`), `g.y >= houseInsideY` evaluated as `true` (e.g. `320px >= 248px` at row 20).
+   - This caused the engine to instantly teleport the eyes upwards from the lower corridor into row 17, appearing to penetrate straight through the back wall.
+2. **Targeting Coordinate Mismatch in `ghostAi.ts`**:
+   - `calculateGhostTarget` for `mode === 'EATEN'` was previously hardcoded to `{ col: 13, row: 17 }` (inside the pen).
+   - For eyes in the lower half, the shortest Euclidean distance to row 17 pulled them towards the back wall instead of routing them around the perimeter to the front door at row 14.
+
+### Solution Implemented
+1. **Two-Stage Doorstep & Pen Targeting (`src/game/ghostAi.ts`)**:
+   - When outside the house entrance, the eyes now strictly target the **doorstep tile right above the door (`col: 13, row: 14`)**.
+   - Because this tile is on the upper corridor, the shortest walkable path from the lower half forces the eyes to route around the side avenues (col 6 or 21) and enter from the front.
+   - Only when the eyes arrive at the doorstep (row 14, cols 13–14) or pass through the gate (rows 15–16) does the target switch to `{ col: 13, row: 17 }` to descend into the pen.
+2. **Directional Entry & Row Constraint (`src/game/gameEngine.ts`)**:
+   - The revival trigger now strictly verifies that the eyes are aligned with the door columns (`cols 13–14`), are moving **`DOWN`**, and have descended into the pen interior (`row 17`).
+   - Eyes moving in the lower half can never trigger revival and must travel around and enter through the front gate as intended in the classic arcade game.
+
+

@@ -60,9 +60,17 @@ export function calculateGhostTarget(
   const ghostCol = Math.floor(ghost.x / TILE_SIZE);
   const ghostRow = Math.floor(ghost.y / TILE_SIZE);
 
-  // EATEN (Eyes): Target ghost house interior to enter the pen
+  // EATEN (Eyes): Target ghost house entrance and pen interior
   if (ghost.mode === 'EATEN') {
-    return { col: 13, row: 17 };
+    // If the eyes have reached the doorstep (row 14, cols 13-14) or are entering the gate (rows 15-16),
+    // target the center of the pen interior (col 13, row 17) to descend into the ghost house.
+    if ((ghostCol === 13 || ghostCol === 14) && ghostRow >= 14 && ghostRow <= 16) {
+      return { col: 13, row: 17 };
+    }
+
+    // Anywhere else in the maze (upper or lower half), the eyes target the doorstep tile
+    // right above the gate (col 13, row 14) so they navigate along open corridors around to the front door!
+    return { col: 13, row: 14 };
   }
 
   // SCATTER mode: Retreat to home corners (unless Blinky is in Cruise Elroy)

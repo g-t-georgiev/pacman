@@ -477,12 +477,20 @@ export class GameEngine {
         return;
       }
 
-      // Eaten eyes returning to house entrance & pen interior
+      // Check if eaten eyes have returned through the gate into the pen interior to revive
       if (g.mode === 'EATEN') {
         const doorX = 13 * TILE_SIZE + TILE_SIZE / 2; // 216
-        const houseInsideY = 15.5 * TILE_SIZE; // inside the gate
-        if (Math.abs(g.x - doorX) <= 12 && g.y >= houseInsideY) {
-          // Re-enter house and revive!
+        const ghostRow = Math.floor(g.y / TILE_SIZE);
+        const ghostCol = Math.floor(g.x / TILE_SIZE);
+
+        // Eyes must have entered through the front door (cols 13-14), moving DOWN and reached the pen interior (row 17)
+        if (
+          (ghostCol === 13 || ghostCol === 14) &&
+          ghostRow >= 17 &&
+          g.dir === 'DOWN' &&
+          Math.abs(g.x - doorX) <= 16
+        ) {
+          // Successfully arrived inside the pen! Revive!
           g.x = doorX;
           g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
           g.inHouse = true;
@@ -531,6 +539,28 @@ export class GameEngine {
 
       // Airtight movement: never penetrates walls, stays centered on tile axis
       this.moveGhost(g, g.speed);
+
+      // Check if eaten eyes reached the inside of the pen following movement
+      if (g.mode === 'EATEN') {
+        const doorX = 13 * TILE_SIZE + TILE_SIZE / 2;
+        const ghostRow = Math.floor(g.y / TILE_SIZE);
+        const ghostCol = Math.floor(g.x / TILE_SIZE);
+
+        if (
+          (ghostCol === 13 || ghostCol === 14) &&
+          ghostRow >= 17 &&
+          g.dir === 'DOWN' &&
+          Math.abs(g.x - doorX) <= 16
+        ) {
+          g.x = doorX;
+          g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
+          g.inHouse = true;
+          g.mode = 'CHASE';
+          g.houseTimer = 60;
+          g.dir = 'UP';
+          g.nextDir = 'UP';
+        }
+      }
     });
   }
 
