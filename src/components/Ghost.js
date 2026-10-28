@@ -62,7 +62,7 @@ export const GHOSTS_IDS = {
 };
 
 /**
- * @param {number} tileSize 
+ * @param {number} tileSize
  * @returns {Record<GhostAliases, import("../constants.js").ActorData>}
  */
 export const getGhostsData = (tileSize) => {
@@ -403,12 +403,12 @@ export default class Ghost extends Actor {
 }
 
 /**
- * @param {CanvasRenderingContext2D} ctx 
- * @param {number} centerX 
- * @param {number} centerY 
- * @param {number} radius 
- * @param {number} radius 
- * @param {string} color 
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} centerX
+ * @param {number} centerY
+ * @param {number} radius
+ * @param {number} radius
+ * @param {string} color
  */
 function drawGhostBodyState1(ctx, centerX, centerY, radius, color) {
   ctx.fillStyle = color;
@@ -424,12 +424,12 @@ function drawGhostBodyState1(ctx, centerX, centerY, radius, color) {
 }
 
 /**
- * @param {CanvasRenderingContext2D} ctx 
- * @param {number} centerX 
- * @param {number} centerY 
- * @param {number} radius 
- * @param {number} radius 
- * @param {string} color 
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} centerX
+ * @param {number} centerY
+ * @param {number} radius
+ * @param {number} radius
+ * @param {string} color
  */
 function drawGhostBodyState2(ctx, centerX, centerY, radius, color) {
   ctx.fillStyle = color;
@@ -445,8 +445,8 @@ function drawGhostBodyState2(ctx, centerX, centerY, radius, color) {
 }
 
 /**
- * @param {CanvasRenderingContext2D} ctx 
- * @param {Ghost} ghost 
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Ghost} ghost
  */
 function drawGhostEyes(ctx, ghost) {
   const {
@@ -487,8 +487,8 @@ function drawGhostEyes(ctx, ghost) {
 }
 
 /**
- * @param {CanvasRenderingContext2D} ctx 
- * @param {Ghost} ghost 
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Ghost} ghost
  */
 function drawScaredGhostFace(ctx, ghost) {
 
@@ -522,8 +522,8 @@ function drawScaredGhostFace(ctx, ghost) {
 }
 
 /**
- * @param {number[][]} points 
- * @param {"up", "down", "left", "right"} direction 
+ * @param {number[][]} points
+ * @param {"up", "down", "left", "right"} direction
  * @returns {number[][]}
  */
 function syncEyeBallPointsWithDirection(points, direction) {
@@ -542,8 +542,8 @@ function syncEyeBallPointsWithDirection(points, direction) {
 }
 
 /**
- * @param {number[][]} points 
- * @param {"up", "down", "left", "right"} direction 
+ * @param {number[][]} points
+ * @param {"up", "down", "left", "right"} direction
  * @returns {number[][]}
  */
 function syncEyePupilPointsWithDirection(points, direction) {
