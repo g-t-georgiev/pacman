@@ -1,0 +1,146 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Viewport Normalization */
+.panel-viewport-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  padding: 1rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.panel-pos-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-pos-top {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2rem;
+}
+
+.panel-pos-bottom {
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2rem;
+}
+
+/* Base Transition Container */
+.panel-transition-container {
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+/* --- Effect: fade-slide-up --- */
+.anim-fade-slide-up-enter {
+  animation: panelFadeSlideUpEnter var(--panel-duration, 280ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.anim-fade-slide-up-exit {
+  animation: panelFadeSlideUpExit var(--panel-duration, 200ms) ease-in forwards;
+}
+
+@keyframes panelFadeSlideUpEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes panelFadeSlideUpExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* --- Effect: scale-fade --- */
+.anim-scale-fade-enter {
+  animation: panelScaleFadeEnter var(--panel-duration, 260ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.anim-scale-fade-exit {
+  animation: panelScaleFadeExit var(--panel-duration, 180ms) ease-in forwards;
+}
+
+@keyframes panelScaleFadeEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes panelScaleFadeExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* --- Effect: fade-drop --- */
+.anim-fade-drop-enter {
+  animation: panelFadeDropEnter var(--panel-duration, 260ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.anim-fade-drop-exit {
+  animation: panelFadeDropExit var(--panel-duration, 180ms) ease-in forwards;
+}
+
+@keyframes panelFadeDropEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes panelFadeDropExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+/* --- Effect: subtle-fade --- */
+.anim-subtle-fade-enter {
+  animation: panelSubtleFadeEnter var(--panel-duration, 220ms) ease-out forwards;
+}
+.anim-subtle-fade-exit {
+  animation: panelSubtleFadeExit var(--panel-duration, 180ms) ease-in forwards;
+}
+
+@keyframes panelSubtleFadeEnter {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes panelSubtleFadeExit {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}

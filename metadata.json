@@ -1,0 +1,6 @@
+{
+  "name": "Arcade Pac-Man Classics & Lab",
+  "description": "Authentic arcade Pac-Man with Ms. Pac-Man, Crazy Otto, procedural Cookie Man, ghost AI visualizer, rewind sandbox, and turbo speed.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
