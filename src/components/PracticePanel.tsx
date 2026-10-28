@@ -14,6 +14,12 @@ interface PracticePanelProps {
 
 export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, onClose }) => {
   const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
+  const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
+  const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
+  const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
+  const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
+  const [isPaused, setIsPaused] = useState<boolean>(engine.playState === 'PAUSED' || engine.rewindIndex !== -1);
+
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
 
@@ -23,18 +29,48 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
     onUpdate();
   };
 
+  const handleToggleInvincible = () => {
+    engine.toggleInvincible();
+    setInvincible(engine.settings.invincible);
+    onUpdate();
+  };
+
+  const handleToggleGhostPaths = () => {
+    const nextVal = !engine.settings.showGhostPaths;
+    engine.settings.showGhostPaths = nextVal;
+    setShowGhostPaths(nextVal);
+    onUpdate();
+  };
+
+  const handleToggleTargetLines = () => {
+    const nextVal = !engine.settings.showTargetLines;
+    engine.settings.showTargetLines = nextVal;
+    setShowTargetLines(nextVal);
+    onUpdate();
+  };
+
+  const handleToggleGrid = () => {
+    const nextVal = !engine.settings.showGrid;
+    engine.settings.showGrid = nextVal;
+    setShowGrid(nextVal);
+    onUpdate();
+  };
+
   const handleRewindSeconds = (secs: number) => {
     engine.rewindSeconds(secs);
+    setIsPaused(true);
     onUpdate();
   };
 
   const handleScrub = (idx: number) => {
     engine.scrubToFrame(idx);
+    setIsPaused(true);
     onUpdate();
   };
 
   const handleResume = () => {
     engine.resumeFromScrub();
+    setIsPaused(engine.playState === 'PAUSED');
     onUpdate();
   };
 
@@ -44,10 +80,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
     } else if (engine.playState === 'PLAYING') {
       engine.playState = 'PAUSED';
     }
+    setIsPaused(engine.playState === 'PAUSED' || engine.rewindIndex !== -1);
     onUpdate();
   };
-
-  const isPaused = engine.playState === 'PAUSED' || engine.rewindIndex !== -1;
 
   return (
     <div className="w-full max-w-[480px] bg-neutral-950/95 border border-emerald-800/80 rounded-xl p-4 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3">
@@ -195,66 +230,94 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
       <div className="grid grid-cols-2 gap-2 text-[11px]">
         {/* Invincibility Toggle */}
         <button
-          onClick={() => {
-            engine.toggleInvincible();
-            onUpdate();
-          }}
-          className={`p-2 rounded flex items-center justify-between font-semibold transition-colors ${
-            engine.settings.invincible
-              ? 'bg-amber-500 text-black ring-1 ring-amber-300'
+          onClick={handleToggleInvincible}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            invincible
+              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 ring-1 ring-amber-300'
               : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
           }`}
         >
-          <span>🛡️ Invincibility</span>
-          <span>{engine.settings.invincible ? 'ON' : 'OFF'}</span>
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>🛡️</span>
+              <span>Invincibility</span>
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? 'bg-black/20 text-black' : 'bg-neutral-800 text-neutral-400'}`}>
+              {invincible ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <span className={`text-[9px] font-normal leading-tight ${invincible ? 'text-black/80' : 'text-neutral-400'}`}>
+            Pac-Man impervious to ghost contact
+          </span>
         </button>
 
         {/* Ghost Paths Toggle */}
         <button
-          onClick={() => {
-            engine.settings.showGhostPaths = !engine.settings.showGhostPaths;
-            onUpdate();
-          }}
-          className={`p-2 rounded flex items-center justify-between font-semibold transition-colors ${
-            engine.settings.showGhostPaths
-              ? 'bg-cyan-600 text-white'
+          onClick={handleToggleGhostPaths}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            showGhostPaths
+              ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/20 ring-1 ring-cyan-400'
               : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
           }`}
         >
-          <span>🧭 Ghost Paths</span>
-          <span>{engine.settings.showGhostPaths ? 'ON' : 'OFF'}</span>
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>🧭</span>
+              <span>Ghost Paths</span>
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? 'bg-cyan-900 text-cyan-100' : 'bg-neutral-800 text-neutral-400'}`}>
+              {showGhostPaths ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <span className={`text-[9px] font-normal leading-tight ${showGhostPaths ? 'text-cyan-100/90' : 'text-neutral-400'}`}>
+            Multi-step corridor lookahead & turn arrows
+          </span>
         </button>
 
         {/* Target Lines Toggle */}
         <button
-          onClick={() => {
-            engine.settings.showTargetLines = !engine.settings.showTargetLines;
-            onUpdate();
-          }}
-          className={`p-2 rounded flex items-center justify-between font-semibold transition-colors ${
-            engine.settings.showTargetLines
-              ? 'bg-purple-600 text-white'
+          onClick={handleToggleTargetLines}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            showTargetLines
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-400'
               : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
           }`}
         >
-          <span>📏 Target Lines</span>
-          <span>{engine.settings.showTargetLines ? 'ON' : 'OFF'}</span>
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>📏</span>
+              <span>Target Radar</span>
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? 'bg-purple-900 text-purple-100' : 'bg-neutral-800 text-neutral-400'}`}>
+              {showTargetLines ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <span className={`text-[9px] font-normal leading-tight ${showTargetLines ? 'text-purple-100/90' : 'text-neutral-400'}`}>
+            Laser vector, tile distance & proximity alert
+          </span>
         </button>
 
         {/* Show Grid Toggle */}
         <button
-          onClick={() => {
-            engine.settings.showGrid = !engine.settings.showGrid;
-            onUpdate();
-          }}
-          className={`p-2 rounded flex items-center justify-between font-semibold transition-colors ${
-            engine.settings.showGrid
-              ? 'bg-blue-600 text-white'
+          onClick={handleToggleGrid}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            showGrid
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-400'
               : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800'
           }`}
         >
-          <span>📐 Tile Grid</span>
-          <span>{engine.settings.showGrid ? 'ON' : 'OFF'}</span>
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>📐</span>
+              <span>Tile Grid</span>
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? 'bg-blue-900 text-blue-100' : 'bg-neutral-800 text-neutral-400'}`}>
+              {showGrid ? 'ON' : 'OFF'}
+            </span>
+          </div>
+          <span className={`text-[9px] font-normal leading-tight ${showGrid ? 'text-blue-100/90' : 'text-neutral-400'}`}>
+            Maze tile grid & decision intersections
+          </span>
         </button>
       </div>
 

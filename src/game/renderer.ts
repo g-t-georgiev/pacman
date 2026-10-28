@@ -6,6 +6,7 @@
 import { Direction, GameMode, GhostState, GhostType, MazeData } from '../types/game';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, GHOST_COLORS, TILE_SIZE } from './constants';
 import { GameEngine } from './gameEngine';
+import { chooseNextGhostDirection, getDirectionVector } from './ghostAi';
 
 export class GameRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -25,12 +26,27 @@ export class GameRenderer {
     // 1. Render Maze Walls, Dots, and Gates
     this.renderMaze(engine);
 
+    // 1b. Render Tile Grid & Decision Intersections if enabled (Practice Mode)
+    if (engine.settings.showGrid) {
+      this.renderGrid(engine);
+    }
+
     // 2. Render Fruit / Treats
     this.renderFruit(engine);
 
-    // 3. Render Learn Mode Overlays (Target lines, target reticles, Clyde radius)
-    if (engine.settings.learnMode || engine.settings.learnVisualsEnabled || engine.settings.practiceMode) {
+    // 3. Render Learn Mode Overlays (Target reticles, Inky vector, Clyde 8-tile radius)
+    if (engine.settings.learnMode || engine.settings.learnVisualsEnabled) {
       this.renderLearnMode(engine);
+    }
+
+    // 3b. Render Practice Ghost Paths (Multi-Step Lookahead Corridor Trajectories)
+    if (engine.settings.showGhostPaths) {
+      this.renderPracticeGhostPaths(engine);
+    }
+
+    // 3c. Render Practice Target Lines (Tactical Distance Meters & Proximity Radar)
+    if (engine.settings.showTargetLines) {
+      this.renderPracticeTargetLines(engine);
     }
 
     // 4. Render Ghosts
@@ -439,7 +455,7 @@ export class GameRenderer {
       const targetY = g.target.row * TILE_SIZE + TILE_SIZE / 2;
 
       // 1. Target Connecting Lines (dashed)
-      if (engine.settings.showTargetLines || showCues) {
+      if (showCues) {
         ctx.strokeStyle = ghostColor;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
@@ -464,7 +480,7 @@ export class GameRenderer {
       ctx.stroke();
 
       // Inky Pincer Vector Visualization
-      if (type === 'INKY' && g.intermediateTarget && (showCues || engine.settings.practiceMode)) {
+      if (type === 'INKY' && g.intermediateTarget && showCues) {
         const pivotX = g.intermediateTarget.col * TILE_SIZE + TILE_SIZE / 2;
         const pivotY = g.intermediateTarget.row * TILE_SIZE + TILE_SIZE / 2;
         const blinky = engine.ghosts.BLINKY;
@@ -488,7 +504,7 @@ export class GameRenderer {
       }
 
       // Clyde 8-tile radius circle and state label visualization
-      if (type === 'CLYDE' && (showCues || engine.settings.practiceMode)) {
+      if (type === 'CLYDE' && showCues) {
         ctx.strokeStyle = 'rgba(255, 184, 82, 0.45)';
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 5]);
@@ -507,16 +523,230 @@ export class GameRenderer {
           g.y - 12
         );
       }
+    });
+  }
 
-      // 3. Predicted next path step
-      if (engine.settings.showGhostPaths || showCues) {
-        ctx.fillStyle = ghostColor;
-        const arrowX = g.x + (dirToX(g.dir) * TILE_SIZE) / 2;
-        const arrowY = g.y + (dirToY(g.dir) * TILE_SIZE) / 2;
-        ctx.beginPath();
-        ctx.arc(arrowX, arrowY, 2.5, 0, Math.PI * 2);
-        ctx.fill();
+  /**
+   * Practice Mode: Grid Overlay & Decision Intersections
+   */
+  private renderGrid(engine: GameEngine) {
+    const ctx = this.ctx;
+    const maze = engine.maze;
+    ctx.save();
+
+    // 1. Maze Tile Grid Lines
+    ctx.strokeStyle = 'rgba(0, 220, 255, 0.12)';
+    ctx.lineWidth = 0.5;
+
+    for (let c = 0; c <= maze.width; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * TILE_SIZE, 0);
+      ctx.lineTo(c * TILE_SIZE, maze.height * TILE_SIZE);
+      ctx.stroke();
+    }
+    for (let r = 0; r <= maze.height; r++) {
+      ctx.beginPath();
+      ctx.moveTo(0, r * TILE_SIZE);
+      ctx.lineTo(maze.width * TILE_SIZE, r * TILE_SIZE);
+      ctx.stroke();
+    }
+
+    // 2. Highlight Decision Intersection Tiles (>= 3 walkable exits)
+    ctx.fillStyle = 'rgba(0, 255, 180, 0.1)';
+    for (let r = 1; r < maze.height - 1; r++) {
+      for (let c = 1; c < maze.width - 1; c++) {
+        if (maze.tiles[r][c] !== 'WALL') {
+          let walkableExits = 0;
+          if (maze.tiles[r - 1][c] !== 'WALL') walkableExits++;
+          if (maze.tiles[r + 1][c] !== 'WALL') walkableExits++;
+          if (maze.tiles[r][c - 1] !== 'WALL') walkableExits++;
+          if (maze.tiles[r][c + 1] !== 'WALL') walkableExits++;
+          if (walkableExits >= 3) {
+            ctx.fillRect(c * TILE_SIZE + 1, r * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+          }
+        }
       }
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Practice Mode: Multi-Step Lookahead Corridor Trajectory
+   * Simulates upcoming corridor path 6-8 tiles forward using ghost AI turn decisions!
+   */
+  private renderPracticeGhostPaths(engine: GameEngine) {
+    const ctx = this.ctx;
+    const maze = engine.maze;
+
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+      const g = engine.ghosts[type];
+      if (g.inHouse) return;
+
+      const ghostColor = GHOST_COLORS[type].body;
+      const startCol = Math.floor(g.x / TILE_SIZE);
+      const startRow = Math.floor(g.y / TILE_SIZE);
+
+      // Simulate forward corridor trajectory for next 7 steps
+      const pathPoints: Array<{ col: number; row: number; dir: Direction }> = [];
+      let curCol = startCol;
+      let curRow = startRow;
+      let curDir = g.dir;
+
+      for (let step = 0; step < 7; step++) {
+        const nextDir = chooseNextGhostDirection(g, g.target, maze, curCol, curRow, curDir);
+        const { dx, dy } = getDirectionVector(nextDir);
+        curCol += dx;
+        curRow += dy;
+        curDir = nextDir;
+
+        // Boundary checks
+        if (curCol < 0 || curCol >= maze.width || curRow < 0 || curRow >= maze.height) break;
+        if (maze.tiles[curRow][curCol] === 'WALL') break;
+
+        pathPoints.push({ col: curCol, row: curRow, dir: nextDir });
+      }
+
+      if (pathPoints.length === 0) return;
+
+      ctx.save();
+
+      // Glowing corridor line connecting predicted tiles
+      ctx.strokeStyle = ghostColor;
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([3, 3]);
+      ctx.globalAlpha = 0.85;
+
+      ctx.beginPath();
+      ctx.moveTo(g.x, g.y);
+      for (const pt of pathPoints) {
+        ctx.lineTo(pt.col * TILE_SIZE + TILE_SIZE / 2, pt.row * TILE_SIZE + TILE_SIZE / 2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw breadcrumb steps with turn markers
+      pathPoints.forEach((pt, idx) => {
+        const px = pt.col * TILE_SIZE + TILE_SIZE / 2;
+        const py = pt.row * TILE_SIZE + TILE_SIZE / 2;
+        const radius = Math.max(1.8, 3.8 - idx * 0.35);
+
+        // Breadcrumb circle
+        ctx.fillStyle = ghostColor;
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Direction chevron indicator at turns or end
+        const isTurn = idx > 0 && pt.dir !== pathPoints[idx - 1].dir;
+        if (isTurn || idx === pathPoints.length - 1) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.4;
+          const { dx, dy } = getDirectionVector(pt.dir);
+          ctx.beginPath();
+          ctx.moveTo(px - dx * 2.5, py - dy * 2.5);
+          ctx.lineTo(px + dx * 3.5, py + dy * 3.5);
+          ctx.stroke();
+        }
+      });
+
+      ctx.restore();
+    });
+  }
+
+  /**
+   * Practice Mode: Tactical Target Lines & Proximity Radar
+   * High-tech vector line with real-time tile distance meters and danger warnings!
+   */
+  private renderPracticeTargetLines(engine: GameEngine) {
+    const ctx = this.ctx;
+    const pacman = engine.pacman;
+
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+      const g = engine.ghosts[type];
+      if (g.inHouse) return;
+
+      const ghostColor = GHOST_COLORS[type].body;
+      const targetX = g.target.col * TILE_SIZE + TILE_SIZE / 2;
+      const targetY = g.target.row * TILE_SIZE + TILE_SIZE / 2;
+
+      // Distance to target in tiles
+      const targetDistTiles = (Math.hypot(g.x - targetX, g.y - targetY) / TILE_SIZE).toFixed(1);
+
+      // Distance to Pac-Man in tiles
+      const pacDistTiles = Math.hypot(g.x - pacman.x, g.y - pacman.y) / TILE_SIZE;
+      const isDangerous = pacDistTiles <= 5.0 && g.mode !== 'FRIGHTENED' && g.mode !== 'EATEN';
+
+      ctx.save();
+
+      // Vector ray to target
+      ctx.strokeStyle = isDangerous ? '#ff3344' : ghostColor;
+      ctx.lineWidth = isDangerous ? 2 : 1.2;
+      ctx.setLineDash(isDangerous ? [6, 2] : [4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(g.x, g.y);
+      ctx.lineTo(targetX, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Floating tactical badge at midpoint
+      const midX = (g.x + targetX) / 2;
+      const midY = (g.y + targetY) / 2;
+
+      const label = `${GHOST_COLORS[type].name.toUpperCase()}: ${targetDistTiles}t`;
+      ctx.font = 'bold 9px monospace';
+      const textWidth = ctx.measureText(label).width;
+
+      // Badge background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+      ctx.strokeStyle = isDangerous ? '#ff3344' : ghostColor;
+      ctx.lineWidth = 1;
+      const bx = midX - textWidth / 2 - 4;
+      const by = midY - 7;
+      const bw = textWidth + 8;
+      const bh = 14;
+
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 3);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeRect(bx, by, bw, bh);
+      }
+
+      // Badge text
+      ctx.fillStyle = isDangerous ? '#ffdddd' : '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, midX, midY);
+
+      // Proximity Danger Alert if ghost is within 5 tiles of Pac-Man
+      if (isDangerous) {
+        const alertLabel = `⚠️ ${pacDistTiles.toFixed(1)}t PROXIMITY`;
+        ctx.font = 'bold 9px monospace';
+        const alertWidth = ctx.measureText(alertLabel).width;
+        const abx = g.x - alertWidth / 2 - 3;
+        const aby = g.y - 20;
+        const abw = alertWidth + 6;
+        const abh = 13;
+
+        ctx.fillStyle = 'rgba(255, 20, 50, 0.9)';
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath();
+          ctx.roundRect(abx, aby, abw, abh, 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(abx, aby, abw, abh);
+        }
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(alertLabel, g.x, aby + abh / 2);
+      }
+
+      ctx.restore();
     });
   }
 

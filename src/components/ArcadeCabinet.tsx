@@ -45,6 +45,7 @@ export const ArcadeCabinet: React.FC = () => {
   const [showRestartPanel, setShowRestartPanel] = useState<boolean>(false);
   const [isGameOverState, setIsGameOverState] = useState<boolean>(false);
   const [pendingScore, setPendingScore] = useState<{ score: number; mode: GameMode; level: number } | null>(null);
+  const [, setUiTick] = useState<number>(0);
 
   const gameOverTimerRef = useRef<number | null>(null);
 
@@ -290,6 +291,7 @@ export const ArcadeCabinet: React.FC = () => {
     if (!engineRef.current) return;
     const nextPractice = !practiceMode;
     setPracticeMode(nextPractice);
+    engineRef.current.settings.practiceMode = nextPractice;
   };
 
   const handleToggleSound = () => {
@@ -505,7 +507,12 @@ export const ArcadeCabinet: React.FC = () => {
       <PanelTransitionWrapper
         panelId="PRACTICE_PANEL"
         isOpen={practiceMode}
-        onClose={() => setPracticeMode(false)}
+        onClose={() => {
+          setPracticeMode(false);
+          if (engineRef.current) {
+            engineRef.current.settings.practiceMode = false;
+          }
+        }}
       >
         {engineRef.current && (
           <PracticePanel
@@ -513,9 +520,15 @@ export const ArcadeCabinet: React.FC = () => {
             onUpdate={() => {
               if (engineRef.current) {
                 setScore(engineRef.current.score);
+                setUiTick((t) => t + 1);
               }
             }}
-            onClose={() => setPracticeMode(false)}
+            onClose={() => {
+              setPracticeMode(false);
+              if (engineRef.current) {
+                engineRef.current.settings.practiceMode = false;
+              }
+            }}
           />
         )}
       </PanelTransitionWrapper>

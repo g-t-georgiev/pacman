@@ -53,10 +53,21 @@ This plan outlines the architecture and execution steps for adding a centralized
 
 ---
 
-## 3. Verification & Results
+## 4. Practice Mode Toggle Reactivity & Complementary Architecture
 
-- **`compile_applet`**: Build succeeded cleanly with Vite and TypeScript.
-- **`lint_applet`**: Passed with 0 errors (`tsc --noEmit`).
-- **Timing & Transitions**: Modals appear centered in the visible viewport with smooth fade-slide-up transitions, and can be customized per panel ID in `ui.config.ts`.
+### Why Toggles Previously Appeared Delayed
+- `PracticePanel.tsx` previously did not maintain local React state for `invincible`, `showGhostPaths`, `showTargetLines`, or `showGrid`.
+- Clicking a button updated `engine.settings`, but the parent callback `onUpdate()` only called `setScore(engine.score)`. When score hadn't changed, React skipped re-rendering `PracticePanel`, causing toggles to only update visually when the panel was closed.
+- **Fix**: Added local `useState` hooks for all toggles inside `PracticePanel` (`invincible`, `showGhostPaths`, `showTargetLines`, `showGrid`, `isPaused`) and wired them to immediate toggle handlers with instant visual state feedback and parent re-render triggering.
+
+### Clarification: Practice Mode vs. Learn Mode (Complementary Roles)
+- **Learn Mode ("AI Intelligence Lab - Conceptual Breakdown")**:
+  - Focuses on **AI Rules & Targeting Mechanics**: Reticle crosshairs on the target tiles, Inky's pivot line and vector calculation, Clyde's 8-tile radius threshold circle, and personality dossier breakdowns with per-ghost toggles (Blinky, Pinky, Inky, Clyde).
+- **Practice Mode ("Tactical Sandbox - Real-Time Trajectories & Radar")**:
+  - **Tile Grid (`showGrid`)**: Renders the complete spatial tile grid and highlights decision intersection tiles (tiles with 3+ walkable exits where ghosts make turn choices).
+  - **Ghost Paths (`showGhostPaths`)**: Replaces the former invisible 2.5px dot with a genuine **multi-step lookahead corridor trajectory (6-8 steps forward)**. Simulates future tiles and turn chevrons through upcoming intersections using `chooseNextGhostDirection`, letting players see exactly where ghosts will turn before they reach corners.
+  - **Target Lines / Radar (`showTargetLines`)**: Transforms target lines into a **Tactical Distance & Proximity HUD**. Draws a high-tech vector laser with real-time Euclidean tile distance badges (`BLINKY: 5.2t`) and displays an emergency pulsing proximity alert (`⚠️ 3.4t PROXIMITY`) when any ghost gets within 5 tiles of Pac-Man.
+  - Both modes can run independently or concurrently without conflict.
+
 - **Game-Over Delay**: When Pac-Man loses all lives, "GAME OVER" text displays and after `uiConfig.timings.gameOverRestartDelayMs` (1.2s), the Restart Panel smoothly slides up.
 - **Ghost Visualization Persistence**: Players can close the Learn panel, and target lines, reticles, Clyde's 8-tile radius, and Inky's pincer vector remain actively drawn on the game screen for any selected ghost(s).
