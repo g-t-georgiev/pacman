@@ -3,13 +3,14 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { lanQrPluginInit } from './lanQrPlugin.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), lanQrPluginInit()],
     resolve: {
       alias: {
         '@': resolve(__dirname, '.'),
