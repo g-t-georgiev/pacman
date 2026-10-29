@@ -1,15 +1,16 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useEffect, useRef, useState } from "react";
 import { soundEngine } from "../audio/soundEngine";
 import { uiConfig } from "../config/ui.config";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  CLASSIC_FRUITS,
+  COOKIE_MAN_TREATS,
+  CRAZY_OTTO_TREATS
+} from "../game/constants";
 import { GameEngine } from "../game/gameEngine";
 import { GameRenderer } from "../game/renderer";
-import { Direction, GameMode } from "../types/game";
+import type { Direction, GameMode } from "../types";
 import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
 import { LearnModeOverlay } from "./LearnModeOverlay";
@@ -18,6 +19,7 @@ import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
 import { PracticePanel } from "./PracticePanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
+import { getFruitDataPerLevel } from "../utils";
 
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -72,7 +74,7 @@ export const ArcadeCabinet: React.FC = () => {
       setLevel(engine.level);
     };
 
-    engine.onGameOver = (finalScore) => {
+    engine.onGameOver = (finalScore: number) => {
       setIsGameOverState(true);
 
       // Trigger Restart Panel with configurable delay so player comprehends game over
@@ -95,7 +97,7 @@ export const ArcadeCabinet: React.FC = () => {
       }
     };
 
-    engine.onNewHighScore = (newHigh) => {
+    engine.onNewHighScore = (newHigh: number) => {
       setHighScore(newHigh);
     };
 
@@ -267,6 +269,9 @@ export const ArcadeCabinet: React.FC = () => {
     setCurrentMode(mode);
     if (engineRef.current) {
       engineRef.current.initGame(mode, 1);
+      setScore(0);
+      setLevel(1);
+      setLives(3);
       setShowMenu(false);
       setShowRestartPanel(false);
       setIsGameOverState(false);
@@ -290,8 +295,8 @@ export const ArcadeCabinet: React.FC = () => {
   const handleTogglePracticeMode = () => {
     if (!engineRef.current) return;
     const nextPractice = !practiceMode;
-    setPracticeMode(nextPractice);
     engineRef.current.settings.practiceMode = nextPractice;
+    setPracticeMode(nextPractice);
   };
 
   const handleToggleSound = () => {
@@ -343,12 +348,16 @@ export const ArcadeCabinet: React.FC = () => {
   };
 
   const handleOpenRestartPanel = () => {
-    const isOver = engineRef.current?.playState === "GAME_OVER";
+    const isOver = isGameOverState || engineRef.current?.playState === "GAME_OVER";
     setIsGameOverState(isOver);
     setShowRestartPanel(true);
   };
 
-  const fruitMeta = CLASSIC_FRUITS[Math.min(level - 1, CLASSIC_FRUITS.length - 1)];
+  const fruitMeta = currentMode === "COOKIE_MAN"
+    ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
+    : currentMode === "CRAZY_OTTO"
+    ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
+    : getFruitDataPerLevel(CLASSIC_FRUITS, level);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">
@@ -407,6 +416,7 @@ export const ArcadeCabinet: React.FC = () => {
           onToggleCrt={handleToggleCrt}
           onOpenRestart={handleOpenRestartPanel}
           restartPanelOpen={showRestartPanel}
+          isGameOver={isGameOverState}
         />
 
         {/* Canvas Screen Container */}
@@ -456,7 +466,7 @@ export const ArcadeCabinet: React.FC = () => {
         {showDpad && engineRef.current && (
           <div className="mt-3">
             <VirtualDpad
-              onDirection={(dir) => engineRef.current?.setInputDirection(dir)}
+              onDirection={(dir: Direction) => engineRef.current?.setInputDirection(dir)}
               currentDir={engineRef.current.pacman.dir}
             />
           </div>
@@ -546,7 +556,10 @@ export const ArcadeCabinet: React.FC = () => {
             onSelectMode={handleSelectMode}
             turbo={turbo}
             onToggleTurbo={handleToggleTurbo}
-            onStartGame={() => setShowMenu(false)}
+            onStartGame={() => {
+              setShowMenu(false);
+              if (isGameOverState) handleNewGame();
+            }}
             highScore={highScore}
           />
           <button

@@ -1,19 +1,19 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { Direction, GhostBehavior, GhostState, GhostType, MazeData, PacmanState, TileCoord, TileType } from "../types/game";
+import type {
+  Direction,
+  GhostState,
+  MazeData,
+  PacmanState,
+  TileCoord,
+  LevelSpeedConfig
+} from "../types";
 import {
-  ELROY_1_SPEED,
-  ELROY_2_SPEED,
-  GHOST_BASE_SPEED,
-  GHOST_EATEN_SPEED,
-  GHOST_FRIGHTENED_SPEED,
-  GHOST_HOUSE_SPEED,
-  GHOST_TUNNEL_SPEED,
   TILE_SIZE,
+  GHOST_EATEN_SPEED,
+  GHOST_HOUSE_SPEED,
+  ELROY_1_DOTS_LEFT,
+  ELROY_2_DOTS_LEFT,
 } from "./constants";
+import { getSpeedConfigForLevel } from "../utils";
 
 export function getOppositeDirection(dir: Direction): Direction {
   switch (dir) {
@@ -75,7 +75,7 @@ export function calculateGhostTarget(
 
   // SCATTER mode: Retreat to home corners (unless Blinky is in Cruise Elroy)
   if (ghost.mode === "SCATTER") {
-    if (ghost.type === "BLINKY" && dotsRemaining <= 20) {
+    if (ghost.type === "BLINKY" && dotsRemaining <= ELROY_1_DOTS_LEFT) {
       // Cruise Elroy Blinky ignores scatter and stays in chase!
     } else {
       return maze.scatterTargets[ghost.type];
@@ -289,13 +289,14 @@ export function chooseNextGhostDirection(
 }
 
 /**
- * Calculates current speed of ghost based on location, state, and Cruise Elroy
+ * Calculates current speed of ghost based on location, state, level speed config and "Cruise Elroy".
  */
 export function getGhostSpeed(
   ghost: GhostState,
   maze: MazeData,
   dotsRemaining: number,
-  turboMultiplier: number = 1.0
+  turboMultiplier: number = 1.0,
+  levelOrConfig: number | LevelSpeedConfig = 1
 ): number {
   if (ghost.mode === "EATEN") {
     return GHOST_EATEN_SPEED * turboMultiplier;
@@ -305,28 +306,31 @@ export function getGhostSpeed(
     return GHOST_HOUSE_SPEED * turboMultiplier;
   }
 
+  const speedConfig = 
+    typeof levelOrConfig === "number"? getSpeedConfigForLevel(levelOrConfig) : levelOrConfig;
+
   const col = Math.floor(ghost.x / TILE_SIZE);
   const row = Math.floor(ghost.y / TILE_SIZE);
 
   // Speed reduction in warp tunnels
   const inTunnel = maze.tunnels.some((t) => t.y === row && (col <= 5 || col >= maze.width - 6));
   if (inTunnel) {
-    return GHOST_TUNNEL_SPEED * turboMultiplier;
+    return speedConfig.ghostTunnel * turboMultiplier;
   }
 
   if (ghost.mode === "FRIGHTENED") {
-    return GHOST_FRIGHTENED_SPEED * turboMultiplier;
+    return speedConfig.ghostFrightened * turboMultiplier;
   }
 
   // Cruise Elroy for Blinky
   if (ghost.type === "BLINKY") {
-    if (dotsRemaining <= 10) {
-      return ELROY_2_SPEED * turboMultiplier;
+    if (dotsRemaining <= ELROY_2_DOTS_LEFT) {
+      return speedConfig.elroy2 * turboMultiplier;
     }
-    if (dotsRemaining <= 20) {
-      return ELROY_1_SPEED * turboMultiplier;
+    if (dotsRemaining <= ELROY_1_DOTS_LEFT) {
+      return speedConfig.elroy1 * turboMultiplier;
     }
   }
 
-  return GHOST_BASE_SPEED * turboMultiplier;
+  return speedConfig.ghostNormal * turboMultiplier;
 }

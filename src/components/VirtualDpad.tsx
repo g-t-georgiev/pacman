@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from "react";
-import { Direction } from "../types/game";
+import type { Direction } from "../types";
 
 interface VirtualDpadProps {
   onDirection: (dir: Direction) => void;

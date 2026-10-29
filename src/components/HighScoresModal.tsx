@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from "react";
-import { GameMode, HighScoreRecord } from "../types/game";
+import type { GameMode, HighScoreRecord } from "../types";
 
 const STORAGE_KEY = "arcade_pacman_high_scores_v1";
 

@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { soundEngine } from "../audio/soundEngine";
-import {
+import type {
   Direction,
   FruitItem,
   GameMode,
@@ -18,17 +13,20 @@ import {
   ScorePopup,
   SnapshotState,
   TileType,
-} from "../types/game";
+} from "../types";
+import {
+  getFrightenedDuration,
+  getFrightenedFlashCount,
+  getFruitDataPerLevel,
+  getScatterChaseSchedule,
+  getSpeedConfigForLevel
+} from "../utils";
 import {
   CLASSIC_FRUITS,
   COOKIE_MAN_TREATS,
   CRAZY_OTTO_TREATS,
-  FRIGHTENED_DURATIONS,
-  GHOST_BASE_SPEED,
-  PACMAN_BASE_SPEED,
-  PACMAN_EATING_SPEED,
-  PACMAN_TURBO_SPEED,
-  SCATTER_CHASE_SCHEDULE,
+  ELROY_1_DOTS_LEFT,
+  FRIGHTENED_FLASH_TOGGLE_DURATION,
   TILE_SIZE,
 } from "./constants";
 import {
@@ -151,13 +149,20 @@ export class GameEngine {
   }
 
   public resetActorPositions() {
+    // Scatter/chase timer resets to the beginning whenever Pac-Man loses a life or round starts
+    this.waveIndex = 0;
+    this.waveTimer = 0;
+    this.frightenedGlobalTimer = 0;
+
+    const speedConfig = getSpeedConfigForLevel(this.level);
+
     // Pac-Man initial spawn
     this.pacman = {
       x: this.maze.pacmanSpawn.x * TILE_SIZE + TILE_SIZE / 2,
       y: this.maze.pacmanSpawn.y * TILE_SIZE + TILE_SIZE / 2,
       dir: this.maze.pacmanSpawn.dir,
       nextDir: this.maze.pacmanSpawn.dir,
-      speed: PACMAN_BASE_SPEED,
+      speed: speedConfig.pacmanNormal,
       mouthAngle: 0.2,
       mouthOpening: true,
       isDying: false,
@@ -177,7 +182,7 @@ export class GameEngine {
         nextDir: gSpawns.BLINKY.initialDir,
         mode: "SCATTER",
         prevMode: "SCATTER",
-        speed: GHOST_BASE_SPEED,
+        speed: speedConfig.ghostNormal,
         target: this.maze.scatterTargets.BLINKY,
         inHouse: gSpawns.BLINKY.inHouse,
         houseTimer: 0,
@@ -195,7 +200,7 @@ export class GameEngine {
         nextDir: gSpawns.PINKY.initialDir,
         mode: "SCATTER",
         prevMode: "SCATTER",
-        speed: GHOST_BASE_SPEED,
+        speed: speedConfig.ghostNormal,
         target: this.maze.scatterTargets.PINKY,
         inHouse: gSpawns.PINKY.inHouse,
         houseTimer: 60, // leaves soon after start
@@ -213,7 +218,7 @@ export class GameEngine {
         nextDir: gSpawns.INKY.initialDir,
         mode: "SCATTER",
         prevMode: "SCATTER",
-        speed: GHOST_BASE_SPEED,
+        speed: speedConfig.ghostNormal,
         target: this.maze.scatterTargets.INKY,
         inHouse: gSpawns.INKY.inHouse,
         houseTimer: 180, // leaves after 30 dots or ~3 seconds
@@ -231,7 +236,7 @@ export class GameEngine {
         nextDir: gSpawns.CLYDE.initialDir,
         mode: "SCATTER",
         prevMode: "SCATTER",
-        speed: GHOST_BASE_SPEED,
+        speed: speedConfig.ghostNormal,
         target: this.maze.scatterTargets.CLYDE,
         inHouse: gSpawns.CLYDE.inHouse,
         houseTimer: 300, // leaves after 60 dots or ~5 seconds
@@ -336,34 +341,53 @@ export class GameEngine {
   }
 
   private updateTimers() {
-    // Frightened mode global countdown
+    const dt = (1 / 60) * this.settings.gameSpeed;
+
+    // Frightened mode global countdown (eating a Power Pellet pauses the scatter/chase wave timer)
     if (this.frightenedGlobalTimer > 0) {
-      this.frightenedGlobalTimer -= 1 / 60;
+      this.frightenedGlobalTimer -= dt;
       if (this.frightenedGlobalTimer <= 0) {
         this.frightenedGlobalTimer = 0;
-        // Revert frightened ghosts to scatter/chase
+
+        // Revert frightened ghosts to their previous mode (or current scheduled wave mode)
+        const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
+        const defaultMode = (currentWave?.mode || "CHASE");
+
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
           if (g.mode === "FRIGHTENED") {
-            g.mode = g.prevMode;
+            // Revert safely, preventing cyclic FRIGHTENED state
+            g.mode = (g.prevMode && g.prevMode !== "FRIGHTENED") ? g.prevMode : defaultMode;
+            g.prevMode = g.mode;
           }
+
+          g.flashState = false;
         });
       }
     } else {
-      // Normal Scatter / Chase wave progression
-      const currentWave = SCATTER_CHASE_SCHEDULE[this.waveIndex];
+      // Normal Scatter / Chase wave progression (resumes cleanly when frightened timer expires)
+      const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
       if (currentWave && currentWave.duration !== Infinity) {
-        this.waveTimer += 1 / 60;
+        this.waveTimer += dt;
         if (this.waveTimer >= currentWave.duration) {
           this.waveTimer = 0;
           this.waveIndex++;
-          const nextWave = SCATTER_CHASE_SCHEDULE[this.waveIndex];
+          const nextWave = getScatterChaseSchedule(this.level)[this.waveIndex];
           const newMode = (nextWave?.mode || "CHASE") as GhostBehavior;
 
           // Reversing direction when switching between scatter and chase
           (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
             const g = this.ghosts[type];
             if (g.mode !== "EATEN" && g.mode !== "FRIGHTENED" && !g.inHouse) {
+              // Cruise Elroy Blinky ignores scatter mode and remains in CHASE
+              if (
+                type === "BLINKY" &&
+                this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
+                newMode === "SCATTER"
+              ) {
+                return;
+              }
+
               g.prevMode = g.mode;
               g.mode = newMode;
               g.dir = getOppositeDirection(g.dir);
@@ -375,12 +399,26 @@ export class GameEngine {
   }
 
   private updatePacman() {
-    // Effective speed
+    // Effective speed derived from speed tables
+    const speedConfig = getSpeedConfigForLevel(this.level);
     const isTurbo = this.settings.turbo;
-    let baseSpeed = this.pacman.eatDotCooldown > 0 ? PACMAN_EATING_SPEED : PACMAN_BASE_SPEED;
-    if (isTurbo) {
-      baseSpeed = PACMAN_TURBO_SPEED;
+    const isFrightened = this.frightenedGlobalTimer > 0;
+
+    let baseSpeed: number;
+    if (isFrightened) {
+      baseSpeed = this.pacman.eatDotCooldown > 0
+        ? speedConfig.pacmanFrightEating
+        : speedConfig.pacmanFright;
+    } else {
+      baseSpeed = this.pacman.eatDotCooldown > 0
+        ? speedConfig.pacmanEating
+        : speedConfig.pacmanNormal;
     }
+
+    if (isTurbo) {
+      baseSpeed *= this.settings.turboSpeedMultiplier;
+    }
+  
     const speed = baseSpeed * this.settings.gameSpeed;
     this.pacman.speed = speed;
 
@@ -465,6 +503,7 @@ export class GameEngine {
 
   private updateGhosts() {
     const blinky = this.ghosts.BLINKY;
+    const speedConfig = getSpeedConfigForLevel(this.level);
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
@@ -494,6 +533,8 @@ export class GameEngine {
           g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
           g.inHouse = true;
           g.mode = "CHASE";
+          g.prevMode = "CHASE";
+          g.flashState = false;
           g.houseTimer = 60; // brief recovery before exiting
           g.dir = "UP";
           g.nextDir = "UP";
@@ -501,12 +542,22 @@ export class GameEngine {
         }
       }
 
-      // Flash state when frightened is running out (< 2 seconds left)
-      if (g.mode === "FRIGHTENED") {
-        g.flashState = this.frightenedGlobalTimer <= 2 && Math.floor(this.frightenedGlobalTimer * 4) % 2 === 0;
+      // Warning flash state calculation based on authentic arcade flash counts and 14-frame toggle periods
+      if (g.mode === "FRIGHTENED" && this.frightenedGlobalTimer > 0) {
+        const flashCount = getFrightenedFlashCount(this.level);
+        if (flashCount > 0) {
+          const halfCyclesLeft = Math.floor(this.frightenedGlobalTimer / FRIGHTENED_FLASH_TOGGLE_DURATION);
+          // In arcade Pac-Man, each flash cycle is 28 frames (14 frames white, 14 frames blue).
+          // Odd half-cycles (1, 3, 5, 7, 9...) display WHITE, while even half-cycles display BLUE.
+          g.flashState = halfCyclesLeft < 2 * flashCount && halfCyclesLeft % 2 === 1;
+        } else {
+          g.flashState = false;
+        }
+      } else {
+        g.flashState = false;
       }
 
-      // Clyde"s far-distance random behavior switching
+      // Clyde's far-distance random behavior switching
       if (type === "CLYDE") {
         const pacCol = Math.floor(this.pacman.x / TILE_SIZE);
         const pacRow = Math.floor(this.pacman.y / TILE_SIZE);
@@ -534,7 +585,7 @@ export class GameEngine {
 
       // Speed calculation
       const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
-      g.speed = getGhostSpeed(g, this.maze, this.dotsRemaining, turboMult) * this.settings.gameSpeed;
+      g.speed = getGhostSpeed(g, this.maze, this.dotsRemaining, turboMult, speedConfig) * this.settings.gameSpeed;
 
       // Airtight movement: never penetrates walls, stays centered on tile axis
       this.moveGhost(g, g.speed);
@@ -555,6 +606,8 @@ export class GameEngine {
           g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
           g.inHouse = true;
           g.mode = "CHASE";
+          g.prevMode = "CHASE";
+          g.flashState = false;
           g.houseTimer = 60;
           g.dir = "UP";
           g.nextDir = "UP";
@@ -849,16 +902,30 @@ export class GameEngine {
   }
 
   public triggerFrightenedMode() {
-    const duration = FRIGHTENED_DURATIONS[this.level] || 2;
+    const duration = getFrightenedDuration(this.level);
+
     this.frightenedGlobalTimer = duration;
+  
+    const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
+    const defaultMode = (currentWave?.mode || "CHASE");
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      if (g.mode !== "EATEN" && !g.inHouse) {
-        g.prevMode = g.mode;
-        g.mode = "FRIGHTENED";
-        g.dir = getOppositeDirection(g.dir);
-      }
+
+      if (g.mode === "EATEN" || g.inHouse) return;
+
+      g.dir = getOppositeDirection(g.dir);
+
+      if (duration <= 0) return;
+
+      g.prevMode = g.mode !== "FRIGHTENED"
+        ? g.mode
+        : !g.prevMode || g.prevMode === "FRIGHTENED"
+        ? defaultMode
+        : g.prevMode;
+
+      g.mode = "FRIGHTENED";
+      g.flashState = false;
     });
   }
 
@@ -870,12 +937,11 @@ export class GameEngine {
   }
 
   public spawnFruit() {
-    let fruitMeta = CLASSIC_FRUITS[Math.min(this.level - 1, CLASSIC_FRUITS.length - 1)];
-    if (this.mode === "COOKIE_MAN") {
-      fruitMeta = COOKIE_MAN_TREATS[Math.min(this.level - 1, COOKIE_MAN_TREATS.length - 1)];
-    } else if (this.mode === "CRAZY_OTTO") {
-      fruitMeta = CRAZY_OTTO_TREATS[Math.min(this.level - 1, CRAZY_OTTO_TREATS.length - 1)];
-    }
+    const fruitMeta = this.mode === "COOKIE_MAN"
+      ? getFruitDataPerLevel(COOKIE_MAN_TREATS, this.level)
+      : this.mode === "CRAZY_OTTO"
+      ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, this.level)
+      : getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
 
     this.fruit = {
       name: fruitMeta.name,

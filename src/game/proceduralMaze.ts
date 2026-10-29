@@ -1,21 +1,18 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import type { MazeData, TileType } from "../types/game";
-import { MAZE_COLS, MAZE_ROWS } from "./constants";
+import type { GameMode, MazeData, TileType } from "../types";
+import { DEFAULT_SCATTER_TARGETS, MAZE_COLS, MAZE_ROWS } from "./constants";
 
 /**
  * Procedural maze generator for Cookie Man mode:
  * Generates an authentic horizontally-symmetric arcade-style maze with
  * outer walls, central ghost house, side wrap-around tunnels, and solvable loop connectivity.
  */
-export function generateProceduralMaze(seed?: number): MazeData {
+export function generateProceduralMaze(mode: GameMode, seed?: number): MazeData {
   const width = MAZE_COLS; // 28
   const height = MAZE_ROWS; // 36
   const activeTop = 3;
   const activeBottom = 33;
+
+  const scatterTargets = DEFAULT_SCATTER_TARGETS[mode];
 
   // Initialize all as WALL
   const tiles: TileType[][] = Array.from({ length: height }, () =>
@@ -171,10 +168,10 @@ export function generateProceduralMaze(seed?: number): MazeData {
       CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
     },
     scatterTargets: {
-      BLINKY: { col: 25, row: 0 },
-      PINKY: { col: 2, row: 0 },
-      INKY: { col: 27, row: 34 },
-      CLYDE: { col: 0, row: 34 },
+      BLINKY: scatterTargets.BLINKY,
+      PINKY: scatterTargets.PINKY,
+      INKY: scatterTargets.INKY,
+      CLYDE: scatterTargets.CLYDE,
     },
     tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
     wallColor: "#8B4513", // Warm cookie gingerbread brown

@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from "react";
-import { GameMode } from "../types/game";
+import type { GameMode } from "../types";
 
 interface ModeSelectorProps {
   currentMode: GameMode;

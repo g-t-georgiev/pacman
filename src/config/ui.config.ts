@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export type PanelId =
   | "RESTART_PANEL"
   | "LEARN_PANEL"
@@ -99,16 +94,18 @@ export const uiConfig: UIConfig = {
   },
 };
 
+export const DEFAULT_UI_CONFIG = {
+  effect: "fade-slide-up",
+  durationMs: 250,
+  easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+  backdropBlur: true,
+  backdropColor: "rgba(0, 0, 0, 0.7)",
+  position: "center-viewport",
+  closeOnBackdropClick: true,
+};
+
 export function getPanelConfig(panelId: PanelId): PanelTransitionConfig {
   return (
-    uiConfig.panels[panelId] || {
-      effect: "fade-slide-up",
-      durationMs: 250,
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-      backdropBlur: true,
-      backdropColor: "rgba(0, 0, 0, 0.7)",
-      position: "center-viewport",
-      closeOnBackdropClick: true,
-    }
+    uiConfig.panels[panelId] || DEFAULT_UI_CONFIG
   );
 }

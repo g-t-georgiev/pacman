@@ -1,15 +1,45 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+export type GameMode =
+  | "PACMAN"
+  | "MS_PACMAN"
+  | "CRAZY_OTTO"
+  | "COOKIE_MAN";
 
-export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
+export type GhostType =
+  | "BLINKY"
+  | "PINKY"
+  | "INKY"
+  | "CLYDE";
 
-export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
+export type GhostBehavior =
+  | "CHASE"
+  | "SCATTER"
+  | "FRIGHTENED"
+  | "EATEN"
+  | "IN_HOUSE";
 
-export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
+export interface ScatterChaseSchedule {
+  duration: number;
+  mode: Extract<GhostBehavior, "SCATTER" | "CHASE">;
+}
 
-export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT" | "NONE";
+export interface LevelSpeedConfig {
+  pacmanNormal: number;
+  pacmanEating: number;
+  pacmanFright: number;
+  pacmanFrightEating: number;
+  ghostNormal: number;
+  ghostTunnel: number;
+  ghostFrightened: number;
+  elroy1: number;
+  elroy2: number;
+}
+
+export type Direction =
+  | "UP"
+  | "DOWN"
+  | "LEFT"
+  | "RIGHT"
+  | "NONE";
 
 export interface Point {
   x: number;
@@ -131,7 +161,14 @@ export interface HighScoreRecord {
   date: string;
 }
 
-export type PlayState = "MENU" | "READY" | "PLAYING" | "PAUSED" | "DYING" | "LEVEL_CLEAR" | "GAME_OVER";
+export type PlayState =
+  | "MENU"
+  | "READY"
+  | "PLAYING"
+  | "PAUSED"
+  | "DYING"
+  | "LEVEL_CLEAR"
+  | "GAME_OVER";
 
 export interface SnapshotState {
   pacman: PacmanState;

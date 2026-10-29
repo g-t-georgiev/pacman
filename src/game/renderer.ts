@@ -1,9 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { Direction, GameMode, GhostState, GhostType, MazeData } from "../types/game";
+import type { Direction, GhostType } from "../types";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, GHOST_COLORS, TILE_SIZE } from "./constants";
 import { GameEngine } from "./gameEngine";
 import { chooseNextGhostDirection, getDirectionVector } from "./ghostAi";

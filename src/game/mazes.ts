@@ -1,9 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import type { GameMode, MazeData, TileType } from "../types/game";
+import type { GameMode, MazeData, TileType } from "../types";
+import { DEFAULT_SCATTER_TARGETS } from "./constants";
 import { generateProceduralMaze } from "./proceduralMaze";
 
 /**
@@ -173,6 +169,7 @@ function parseMapString(map: string[]): TileType[][] {
 }
 
 export function getMazeData(mode: GameMode, level: number = 1, seed?: number): MazeData {
+  const scatterTargets = DEFAULT_SCATTER_TARGETS[mode];
   switch (mode) {
     case "PACMAN": {
       return {
@@ -187,10 +184,10 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
-          BLINKY: { col: 25, row: 0 },
-          PINKY: { col: 2, row: 0 },
-          INKY: { col: 27, row: 34 },
-          CLYDE: { col: 0, row: 34 },
+          BLINKY: scatterTargets.BLINKY,
+          PINKY: scatterTargets.PINKY,
+          INKY: scatterTargets.INKY,
+          CLYDE: scatterTargets.CLYDE,
         },
         tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
         wallColor: "#2121ff", // Iconic arcade blue neon
@@ -214,10 +211,10 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
-          BLINKY: { col: 25, row: 0 },
-          PINKY: { col: 2, row: 0 },
-          INKY: { col: 27, row: 34 },
-          CLYDE: { col: 0, row: 34 },
+          BLINKY: scatterTargets.BLINKY,
+          PINKY: scatterTargets.PINKY,
+          INKY: scatterTargets.INKY,
+          CLYDE: scatterTargets.CLYDE,
         },
         // Dual tunnels!
         tunnels: [
@@ -243,10 +240,10 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
           CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
         },
         scatterTargets: {
-          BLINKY: { col: 25, row: 0 },
-          PINKY: { col: 2, row: 0 },
-          INKY: { col: 27, row: 34 },
-          CLYDE: { col: 0, row: 34 },
+          BLINKY: scatterTargets.BLINKY,
+          PINKY: scatterTargets.PINKY,
+          INKY: scatterTargets.INKY,
+          CLYDE: scatterTargets.CLYDE,
         },
         tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
         wallColor: "#00cc88", // Emerald proto green
@@ -256,7 +253,7 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
       };
     }
     case "COOKIE_MAN": {
-      return generateProceduralMaze(seed);
+      return generateProceduralMaze(mode, seed);
     }
   }
 }

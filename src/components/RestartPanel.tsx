@@ -4,8 +4,9 @@
  */
 
 import React from "react";
-import { CLASSIC_FRUITS } from "../game/constants";
-import { GameMode } from "../types/game";
+import { CLASSIC_FRUITS, COOKIE_MAN_TREATS, CRAZY_OTTO_TREATS } from "../game/constants";
+import { GameMode } from "../types";
+import { getFruitDataPerLevel } from "../utils";
 
 export interface RestartPanelProps {
   score: number;
@@ -30,7 +31,11 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
   onChangeMode,
   onClose,
 }) => {
-  const fruitMeta = CLASSIC_FRUITS[Math.min(level - 1, CLASSIC_FRUITS.length - 1)];
+  const fruitMeta = mode === "COOKIE_MAN"
+    ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
+    : mode === "CRAZY_OTTO"
+    ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
+    : getFruitDataPerLevel(CLASSIC_FRUITS, level);
 
   const modeName =
     mode === "PACMAN"
