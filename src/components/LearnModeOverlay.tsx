@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS } from "../game/constants";
-import { GameEngine } from "../game/gameEngine";
+import type { GameEngine } from "../game/gameEngine";
 import type { GhostType } from "../types";
 import { getScatterChaseSchedule } from "../utils";
 
@@ -146,7 +146,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         </div>
 
         <p className="text-[10px] text-neutral-400 leading-tight">
-          Keep target reticles, lines, and Clyde distance radius active on the game screen while playing, even when this panel is closed!
+          Keep target reticles, lines, and Clyde distance radius active on the game screen while
+          playing, even when this panel is closed!
         </p>
 
         {/* Ghost Avatar Selection Row */}
@@ -193,7 +194,10 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
                 >
                   <GhostAvatar type={ghostKey} size={22} active={active} />
                   <div className="flex flex-col text-left overflow-hidden">
-                    <span className="font-bold text-[11px] leading-tight" style={{ color: active ? info.body : "#999" }}>
+                    <span
+                      className="font-bold text-[11px] leading-tight"
+                      style={{ color: active ? info.body : "#999" }}
+                    >
                       {info.name}
                     </span>
                     <span className="text-[9px] text-neutral-400">
@@ -218,13 +222,17 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           ) : (
             <span className="text-white font-bold text-xs sm:text-sm">
               {wave?.mode === "SCATTER" ? "🛡️ SCATTER MODE" : "⚔️ CHASE MODE"}{" "}
-              {wave?.duration !== Infinity ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)` : "(Permanent)"}
+              {wave?.duration !== Infinity
+                ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)`
+                : "(Permanent)"}
             </span>
           )}
         </div>
         <div className="text-right text-[11px]">
           <span className="text-neutral-400 block text-[10px]">Dots Left:</span>
-          <span className="text-yellow-400 font-bold tabular-nums text-sm">{engine.dotsRemaining}</span>
+          <span className="text-yellow-400 font-bold tabular-nums text-sm">
+            {engine.dotsRemaining}
+          </span>
         </div>
       </div>
 
@@ -239,15 +247,20 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-red-400 font-bold text-[11px]">BLINKY (Red / Shadow)</span>
             {isElroy2 ? (
-              <span className="text-[9px] bg-red-600 text-white font-bold px-1 rounded animate-pulse">ELROY 2</span>
+              <span className="text-[9px] bg-red-600 text-white font-bold px-1 rounded animate-pulse">
+                ELROY 2
+              </span>
             ) : isElroy1 ? (
-              <span className="text-[9px] bg-orange-600 text-white font-bold px-1 rounded">ELROY 1</span>
+              <span className="text-[9px] bg-orange-600 text-white font-bold px-1 rounded">
+                ELROY 1
+              </span>
             ) : (
               <span className="text-[9px] text-neutral-400">Normal</span>
             )}
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
-            Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le; {ELROY_1_DOTS_LEFT} (Cruise Elroy) and ignores scatter!
+            Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le;{" "}
+            {ELROY_1_DOTS_LEFT} (Cruise Elroy) and ignores scatter!
           </p>
           <div className="text-[10px] text-red-300">
             Target: ({engine.ghosts.BLINKY.target.col}, {engine.ghosts.BLINKY.target.row})
@@ -265,7 +278,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-[9px] text-pink-300">Ambush</span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
-            Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left (arcade overflow bug)!
+            Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left
+            (arcade overflow bug)!
           </p>
           <div className="text-[10px] text-pink-300">
             Target: ({engine.ghosts.PINKY.target.col}, {engine.ghosts.PINKY.target.row})
@@ -283,7 +297,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-[9px] text-cyan-300">Pincer Vector</span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
-            Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it to trap player!
+            Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it
+            to trap player!
           </p>
           <div className="text-[10px] text-cyan-300">
             Target: ({engine.ghosts.INKY.target.col}, {engine.ghosts.INKY.target.row})
@@ -309,7 +324,8 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
-            When far (&ge; 8 tiles), switches between chasing and fleeing. When within 8 tiles, always retreats to bottom-left!
+            When far (&ge; 8 tiles), switches between chasing and fleeing. When within 8 tiles,
+            always retreats to bottom-left!
           </p>
           <div className="text-[10px] text-amber-300">
             Target: ({engine.ghosts.CLYDE.target.col}, {engine.ghosts.CLYDE.target.row})

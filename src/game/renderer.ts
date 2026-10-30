@@ -1,6 +1,6 @@
 import type { Direction, GhostType } from "../types";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, GHOST_COLORS, TILE_SIZE } from "./constants";
-import { GameEngine } from "./gameEngine";
+import type { GameEngine } from "./gameEngine";
 import { chooseNextGhostDirection, getDirectionVector } from "./ghostAi";
 
 export class GameRenderer {
@@ -67,7 +67,8 @@ export class GameRenderer {
   private renderMaze(engine: GameEngine) {
     const ctx = this.ctx;
     const maze = engine.maze;
-    const isLevelClearFlash = engine.playState === "LEVEL_CLEAR" && Math.floor(engine.levelClearTimer / 10) % 2 === 0;
+    const isLevelClearFlash =
+      engine.playState === "LEVEL_CLEAR" && Math.floor(engine.levelClearTimer / 10) % 2 === 0;
 
     const wallColor = isLevelClearFlash ? "#ffffff" : maze.wallColor;
 
@@ -466,7 +467,12 @@ export class GameRenderer {
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       // Reticle Box
-      ctx.strokeRect(g.target.col * TILE_SIZE + 2, g.target.row * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+      ctx.strokeRect(
+        g.target.col * TILE_SIZE + 2,
+        g.target.row * TILE_SIZE + 2,
+        TILE_SIZE - 4,
+        TILE_SIZE - 4
+      );
       // Crosshairs
       ctx.moveTo(targetX - 5, targetY);
       ctx.lineTo(targetX + 5, targetY);
@@ -811,7 +817,7 @@ export class GameRenderer {
   private renderScorePopups(engine: GameEngine) {
     const ctx = this.ctx;
     ctx.save();
-    ctx.font = "bold 12px \"Courier New\", monospace";
+    ctx.font = 'bold 12px "Courier New", monospace';
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -833,19 +839,19 @@ export class GameRenderer {
     const centerY = 20 * TILE_SIZE;
 
     if (engine.playState === "READY") {
-      ctx.font = "bold 18px \"Courier New\", monospace";
+      ctx.font = 'bold 18px "Courier New", monospace';
       ctx.fillStyle = "#ffff00";
       ctx.fillText("READY!", centerX, centerY);
     } else if (engine.playState === "GAME_OVER") {
-      ctx.font = "bold 20px \"Courier New\", monospace";
+      ctx.font = 'bold 20px "Courier New", monospace';
       ctx.fillStyle = "#ff0000";
       ctx.fillText("GAME OVER", centerX, centerY);
     } else if (engine.playState === "PAUSED") {
-      ctx.font = "bold 20px \"Courier New\", monospace";
+      ctx.font = 'bold 20px "Courier New", monospace';
       ctx.fillStyle = "#00ffff";
       ctx.fillText("PAUSED", centerX, centerY);
     } else if (engine.playState === "LEVEL_CLEAR") {
-      ctx.font = "bold 18px \"Courier New\", monospace";
+      ctx.font = 'bold 18px "Courier New", monospace';
       ctx.fillStyle = "#00ff88";
       ctx.fillText("LEVEL CLEARED!", centerX, centerY);
     }
@@ -875,16 +881,4 @@ export class GameRenderer {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }
-}
-
-function dirToX(dir: Direction): number {
-  if (dir === "LEFT") return -1;
-  if (dir === "RIGHT") return 1;
-  return 0;
-}
-
-function dirToY(dir: Direction): number {
-  if (dir === "UP") return -1;
-  if (dir === "DOWN") return 1;
-  return 0;
 }

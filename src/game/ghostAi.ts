@@ -4,7 +4,7 @@ import type {
   MazeData,
   PacmanState,
   TileCoord,
-  LevelSpeedConfig
+  LevelSpeedConfig,
 } from "../types";
 import {
   TILE_SIZE,
@@ -306,8 +306,8 @@ export function getGhostSpeed(
     return GHOST_HOUSE_SPEED * turboMultiplier;
   }
 
-  const speedConfig = 
-    typeof levelOrConfig === "number"? getSpeedConfigForLevel(levelOrConfig) : levelOrConfig;
+  const speedConfig =
+    typeof levelOrConfig === "number" ? getSpeedConfigForLevel(levelOrConfig) : levelOrConfig;
 
   const col = Math.floor(ghost.x / TILE_SIZE);
   const row = Math.floor(ghost.y / TILE_SIZE);

@@ -14,7 +14,7 @@ export function lanQrPluginInit() {
 
       const ips = Object.values(networkInterfaces())
         .flatMap((interfaces) => interfaces ?? [])
-        .filter((entry) => !entry.internal && (entry.family === "IPv4"))
+        .filter((entry) => !entry.internal && entry.family === "IPv4")
         .map((entry) => entry.address);
 
       if (ips.length === 0) {

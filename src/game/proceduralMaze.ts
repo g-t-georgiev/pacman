@@ -16,7 +16,7 @@ export function generateProceduralMaze(mode: GameMode, seed?: number): MazeData 
 
   // Initialize all as WALL
   const tiles: TileType[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => "WALL" as TileType)
+    Array.from({ length: width }, () => "WALL")
   );
 
   // Clear top and bottom UI rows

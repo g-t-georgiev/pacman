@@ -1,12 +1,9 @@
 import React from "react";
-import type { GameMode } from "../types";
 
 interface HUDProps {
   score: number;
   highScore: number;
-  lives: number;
   level: number;
-  mode: GameMode;
   turbo: boolean;
   onToggleTurbo: () => void;
   learnMode: boolean;
@@ -26,9 +23,7 @@ interface HUDProps {
 export const HUD: React.FC<HUDProps> = ({
   score,
   highScore,
-  lives,
   level,
-  mode,
   turbo,
   onToggleTurbo,
   learnMode,
@@ -42,7 +37,7 @@ export const HUD: React.FC<HUDProps> = ({
   onToggleCrt,
   onOpenRestart,
   restartPanelOpen,
-  isGameOver = false
+  isGameOver = false,
 }) => {
   return (
     <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-t-xl px-3 sm:px-4 py-2.5 flex flex-col gap-2 select-none text-white">
@@ -75,8 +70,8 @@ export const HUD: React.FC<HUDProps> = ({
             restartPanelOpen
               ? "bg-red-900 border-red-700 text-white"
               : isGameOver
-              ? "bg-red-600 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/60 ring-2 ring-red-400 font-bold"
-              : "bg-neutral-800 border-transparent text-neutral-400 hover:text-white"
+                ? "bg-red-600 border-red-400 text-white animate-pulse shadow-lg shadow-red-500/60 ring-2 ring-red-400 font-bold"
+                : "bg-neutral-800 border-transparent text-neutral-400 hover:text-white"
           }`}
           title={isGameOver ? "Game Over - Click to Restart" : "Restart Game / Level / Mode"}
         >
@@ -104,14 +99,17 @@ export const HUD: React.FC<HUDProps> = ({
             learnMode
               ? "bg-cyan-500 text-black shadow-sm ring-1 ring-cyan-300"
               : learnVisualsEnabled
-              ? "bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white"
-              : "bg-neutral-800 text-neutral-400 hover:text-white"
+                ? "bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white"
+                : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
           title="Learn Mode: AI Targeting Lab & Maze Visualizer"
         >
           <span>🎯 LEARN</span>
           {learnVisualsEnabled && !learnMode && (
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" title="Visual cues active on maze" />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"
+              title="Visual cues active on maze"
+            />
           )}
         </button>
 
@@ -157,4 +155,3 @@ export const HUD: React.FC<HUDProps> = ({
     </div>
   );
 };
-

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GameEngine } from "../game/gameEngine";
+import type { GameEngine } from "../game/gameEngine";
 
 interface PracticePanelProps {
   engine: GameEngine;
@@ -13,7 +13,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
   const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
   const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const [isPaused, setIsPaused] = useState<boolean>(engine.playState === "PAUSED" || engine.rewindIndex !== -1);
+  const [isPaused, setIsPaused] = useState<boolean>(
+    engine.playState === "PAUSED" || engine.rewindIndex !== -1
+  );
 
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
@@ -84,7 +86,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-emerald-800/50 pb-2">
         <div className="flex items-center gap-2">
-          <span className="text-emerald-400 font-bold text-sm tracking-wider">🛠️ PRACTICE & REWIND SANDBOX</span>
+          <span className="text-emerald-400 font-bold text-sm tracking-wider">
+            🛠️ PRACTICE & REWIND SANDBOX
+          </span>
           <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">
             PRACTICE
           </span>
@@ -185,7 +189,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
             <button
               onClick={togglePause}
               className={`px-2.5 py-1 rounded font-bold transition-colors ${
-                isPaused ? "bg-amber-500 text-black" : "bg-neutral-800 hover:bg-neutral-700 text-white"
+                isPaused
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 hover:bg-neutral-700 text-white"
               }`}
             >
               {isPaused ? "▶ PLAY" : "⏸ PAUSE"}
@@ -237,11 +243,15 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>🛡️</span>
               <span>Invincibility</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? "bg-black/20 text-black" : "bg-neutral-800 text-neutral-400"}`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? "bg-black/20 text-black" : "bg-neutral-800 text-neutral-400"}`}
+            >
               {invincible ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${invincible ? "text-black/80" : "text-neutral-400"}`}>
+          <span
+            className={`text-[9px] font-normal leading-tight ${invincible ? "text-black/80" : "text-neutral-400"}`}
+          >
             Pac-Man impervious to ghost contact
           </span>
         </button>
@@ -260,11 +270,15 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>🧭</span>
               <span>Ghost Paths</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? "bg-cyan-900 text-cyan-100" : "bg-neutral-800 text-neutral-400"}`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? "bg-cyan-900 text-cyan-100" : "bg-neutral-800 text-neutral-400"}`}
+            >
               {showGhostPaths ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showGhostPaths ? "text-cyan-100/90" : "text-neutral-400"}`}>
+          <span
+            className={`text-[9px] font-normal leading-tight ${showGhostPaths ? "text-cyan-100/90" : "text-neutral-400"}`}
+          >
             Multi-step corridor lookahead & turn arrows
           </span>
         </button>
@@ -283,11 +297,15 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>📏</span>
               <span>Target Radar</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
+            >
               {showTargetLines ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showTargetLines ? "text-purple-100/90" : "text-neutral-400"}`}>
+          <span
+            className={`text-[9px] font-normal leading-tight ${showTargetLines ? "text-purple-100/90" : "text-neutral-400"}`}
+          >
             Laser vector, tile distance & proximity alert
           </span>
         </button>
@@ -306,11 +324,15 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               <span>📐</span>
               <span>Tile Grid</span>
             </span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? "bg-blue-900 text-blue-100" : "bg-neutral-800 text-neutral-400"}`}>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? "bg-blue-900 text-blue-100" : "bg-neutral-800 text-neutral-400"}`}
+            >
               {showGrid ? "ON" : "OFF"}
             </span>
           </div>
-          <span className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}>
+          <span
+            className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}
+          >
             Maze tile grid & decision intersections
           </span>
         </button>

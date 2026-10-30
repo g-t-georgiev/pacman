@@ -17,8 +17,10 @@ class ArcadeSoundEngine {
 
   private initCtx() {
     if (!this.ctx) {
-      const AudioCtxCtor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  
+      const AudioCtxCtor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+
       if (AudioCtxCtor) {
         this.ctx = new AudioCtxCtor();
         this.masterGain = this.ctx.createGain();
@@ -99,7 +101,7 @@ class ArcadeSoundEngine {
       { f: 739.99, d: 0.06 }, // F#5
       { f: 783.99, d: 0.06 }, // G5
       { f: 830.61, d: 0.06 }, // G#5
-      { f: 880.00, d: 0.06 }, // A5
+      { f: 880.0, d: 0.06 }, // A5
       { f: 987.77, d: 0.28 }, // B5
     ];
 

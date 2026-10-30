@@ -7,7 +7,6 @@ interface ModeSelectorProps {
   turbo: boolean;
   onToggleTurbo: () => void;
   onStartGame: () => void;
-  highScore: number;
 }
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({
@@ -16,7 +15,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
   turbo,
   onToggleTurbo,
   onStartGame,
-  highScore,
 }) => {
   const modes: Array<{
     id: GameMode;
@@ -34,7 +32,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       badge: "CLASSIC",
       icon: "🟡",
       accent: "border-yellow-500/60 text-yellow-400",
-      description: "The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.",
+      description:
+        "The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.",
     },
     {
       id: "MS_PACMAN",
@@ -43,7 +42,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       badge: "DUAL TUNNELS",
       icon: "🎀",
       accent: "border-pink-500/60 text-pink-400",
-      description: "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
+      description:
+        "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
     },
     {
       id: "CRAZY_OTTO",
@@ -52,7 +52,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       badge: "PROTOTYPE",
       icon: "👟",
       accent: "border-cyan-500/60 text-cyan-400",
-      description: "The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.",
+      description:
+        "The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.",
     },
     {
       id: "COOKIE_MAN",
@@ -61,7 +62,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       badge: "INFINITE MAZES",
       icon: "🍪",
       accent: "border-amber-600/60 text-amber-400",
-      description: "Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.",
+      description:
+        "Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.",
     },
   ];
 
@@ -72,9 +74,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
         <h2 className="text-xl sm:text-2xl font-bold tracking-widest text-yellow-400 drop-shadow">
           ARCADE ARCIVE
         </h2>
-        <p className="text-xs text-neutral-400">
-          SELECT GAME EDITION & SPEED
-        </p>
+        <p className="text-xs text-neutral-400">SELECT GAME EDITION & SPEED</p>
       </div>
 
       {/* Mode List */}
@@ -104,9 +104,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                     {m.badge}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                  {m.description}
-                </p>
+                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{m.description}</p>
               </div>
             </button>
           );
@@ -118,7 +116,9 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <span className="font-bold text-xs text-amber-400">⚡ TURBO SPEED CHIP</span>
-            <span className="text-[9px] px-1 rounded bg-neutral-800 text-neutral-400">ARCADE MOD</span>
+            <span className="text-[9px] px-1 rounded bg-neutral-800 text-neutral-400">
+              ARCADE MOD
+            </span>
           </div>
           <span className="text-[11px] text-neutral-400 mt-0.5">
             Boosts player & ghost pace to 1.6x speed

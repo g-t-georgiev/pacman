@@ -19,7 +19,7 @@ import {
   getFrightenedFlashCount,
   getFruitDataPerLevel,
   getScatterChaseSchedule,
-  getSpeedConfigForLevel
+  getSpeedConfigForLevel,
 } from "../utils";
 import {
   CLASSIC_FRUITS,
@@ -351,13 +351,13 @@ export class GameEngine {
 
         // Revert frightened ghosts to their previous mode (or current scheduled wave mode)
         const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-        const defaultMode = (currentWave?.mode || "CHASE");
+        const defaultMode = currentWave?.mode || "CHASE";
 
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
           if (g.mode === "FRIGHTENED") {
             // Revert safely, preventing cyclic FRIGHTENED state
-            g.mode = (g.prevMode && g.prevMode !== "FRIGHTENED") ? g.prevMode : defaultMode;
+            g.mode = g.prevMode && g.prevMode !== "FRIGHTENED" ? g.prevMode : defaultMode;
             g.prevMode = g.mode;
           }
 
@@ -406,19 +406,17 @@ export class GameEngine {
 
     let baseSpeed: number;
     if (isFrightened) {
-      baseSpeed = this.pacman.eatDotCooldown > 0
-        ? speedConfig.pacmanFrightEating
-        : speedConfig.pacmanFright;
+      baseSpeed =
+        this.pacman.eatDotCooldown > 0 ? speedConfig.pacmanFrightEating : speedConfig.pacmanFright;
     } else {
-      baseSpeed = this.pacman.eatDotCooldown > 0
-        ? speedConfig.pacmanEating
-        : speedConfig.pacmanNormal;
+      baseSpeed =
+        this.pacman.eatDotCooldown > 0 ? speedConfig.pacmanEating : speedConfig.pacmanNormal;
     }
 
     if (isTurbo) {
       baseSpeed *= this.settings.turboSpeedMultiplier;
     }
-  
+
     const speed = baseSpeed * this.settings.gameSpeed;
     this.pacman.speed = speed;
 
@@ -546,7 +544,9 @@ export class GameEngine {
       if (g.mode === "FRIGHTENED" && this.frightenedGlobalTimer > 0) {
         const flashCount = getFrightenedFlashCount(this.level);
         if (flashCount > 0) {
-          const halfCyclesLeft = Math.floor(this.frightenedGlobalTimer / FRIGHTENED_FLASH_TOGGLE_DURATION);
+          const halfCyclesLeft = Math.floor(
+            this.frightenedGlobalTimer / FRIGHTENED_FLASH_TOGGLE_DURATION
+          );
           // In arcade Pac-Man, each flash cycle is 28 frames (14 frames white, 14 frames blue).
           // Odd half-cycles (1, 3, 5, 7, 9...) display WHITE, while even half-cycles display BLUE.
           g.flashState = halfCyclesLeft < 2 * flashCount && halfCyclesLeft % 2 === 1;
@@ -585,7 +585,9 @@ export class GameEngine {
 
       // Speed calculation
       const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
-      g.speed = getGhostSpeed(g, this.maze, this.dotsRemaining, turboMult, speedConfig) * this.settings.gameSpeed;
+      g.speed =
+        getGhostSpeed(g, this.maze, this.dotsRemaining, turboMult, speedConfig) *
+        this.settings.gameSpeed;
 
       // Airtight movement: never penetrates walls, stays centered on tile axis
       this.moveGhost(g, g.speed);
@@ -868,7 +870,9 @@ export class GameEngine {
             // Pac-Man Dies!
             this.pacman.isDying = true;
             this.playState = "DYING";
-            soundEngine.playDeath();
+            soundEngine.playDeath().catch(() => {
+              /* GG */
+            });
           }
         }
       }
@@ -905,9 +909,9 @@ export class GameEngine {
     const duration = getFrightenedDuration(this.level);
 
     this.frightenedGlobalTimer = duration;
-  
+
     const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-    const defaultMode = (currentWave?.mode || "CHASE");
+    const defaultMode = currentWave?.mode || "CHASE";
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
@@ -918,11 +922,12 @@ export class GameEngine {
 
       if (duration <= 0) return;
 
-      g.prevMode = g.mode !== "FRIGHTENED"
-        ? g.mode
-        : !g.prevMode || g.prevMode === "FRIGHTENED"
-        ? defaultMode
-        : g.prevMode;
+      g.prevMode =
+        g.mode !== "FRIGHTENED"
+          ? g.mode
+          : !g.prevMode || g.prevMode === "FRIGHTENED"
+            ? defaultMode
+            : g.prevMode;
 
       g.mode = "FRIGHTENED";
       g.flashState = false;
@@ -937,11 +942,12 @@ export class GameEngine {
   }
 
   public spawnFruit() {
-    const fruitMeta = this.mode === "COOKIE_MAN"
-      ? getFruitDataPerLevel(COOKIE_MAN_TREATS, this.level)
-      : this.mode === "CRAZY_OTTO"
-      ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, this.level)
-      : getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
+    const fruitMeta =
+      this.mode === "COOKIE_MAN"
+        ? getFruitDataPerLevel(COOKIE_MAN_TREATS, this.level)
+        : this.mode === "CRAZY_OTTO"
+          ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, this.level)
+          : getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
 
     this.fruit = {
       name: fruitMeta.name,
@@ -1013,7 +1019,7 @@ export class GameEngine {
   private recordSnapshot() {
     // Deep clone tiles array state to preserve dot consumption history
     const clonedTiles: TileType[][] = this.maze.tiles.map((row) => [...row]);
-    const clonedGhosts: Record<GhostType, GhostState> = JSON.parse(JSON.stringify(this.ghosts));
+    const clonedGhosts = JSON.parse(JSON.stringify(this.ghosts)) as Record<GhostType, GhostState>;
     const clonedPacman: PacmanState = { ...this.pacman };
 
     const snapshot: SnapshotState = {
@@ -1068,7 +1074,7 @@ export class GameEngine {
 
   public restoreSnapshot(snap: SnapshotState) {
     this.pacman = { ...snap.pacman };
-    this.ghosts = JSON.parse(JSON.stringify(snap.ghosts));
+    this.ghosts = JSON.parse(JSON.stringify(snap.ghosts)) as Record<GhostType, GhostState>;
     this.score = snap.score;
     this.level = snap.level;
     this.lives = snap.lives;

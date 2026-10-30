@@ -105,7 +105,5 @@ export const DEFAULT_UI_CONFIG = {
 };
 
 export function getPanelConfig(panelId: PanelId): PanelTransitionConfig {
-  return (
-    uiConfig.panels[panelId] || DEFAULT_UI_CONFIG
-  );
+  return uiConfig.panels[panelId] || DEFAULT_UI_CONFIG;
 }

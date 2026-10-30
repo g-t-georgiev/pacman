@@ -67,12 +67,10 @@ export const PanelTransitionWrapper: React.FC<PanelTransitionWrapperProps> = ({
     config.position === "top-viewport"
       ? "panel-pos-top"
       : config.position === "bottom-viewport"
-      ? "panel-pos-bottom"
-      : "panel-pos-center";
+        ? "panel-pos-bottom"
+        : "panel-pos-center";
 
-  const animClass = isExiting
-    ? `anim-${config.effect}-exit`
-    : `anim-${config.effect}-enter`;
+  const animClass = isExiting ? `anim-${config.effect}-exit` : `anim-${config.effect}-enter`;
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && config.closeOnBackdropClick) {

@@ -95,42 +95,47 @@ root/
 
 ## 🎮 Controls
 
-| Action | Keyboard | Touch / Gamepad |
-| :--- | :--- | :--- |
-| **Move Pac-Man** | <kbd>Arrow Keys</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> | Swipe Gestures / Virtual D-Pad / Controller D-Pad & Stick |
-| **Restart Game** | <kbd>R</kbd> or Click Header 🔄 | Tap Restart in Menu |
-| **Pause / Resume** | <kbd>P</kbd> or <kbd>Space</kbd> | Tap Pause in HUD |
-| **Turbo Speed Mode** | <kbd>T</kbd> or HUD Toggle | HUD ⚡ Button |
-| **Learn Mode AI Lab**| <kbd>L</kbd> or HUD Toggle | HUD 🧠 Button |
-| **Practice Sandbox** | Click 🛠️ Practice in HUD | HUD 🛠️ Button |
-| **Quick Rewind (2s)**| <kbd>[</kbd> or <kbd>]</kbd> | Practice Panel Slider |
-| **Mute / Unmute Sound** | Click 🔊 in HUD | HUD Sound Button |
+| Action                  | Keyboard                                                                     | Touch / Gamepad                                           |
+| :---------------------- | :--------------------------------------------------------------------------- | :-------------------------------------------------------- |
+| **Move Pac-Man**        | <kbd>Arrow Keys</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> | Swipe Gestures / Virtual D-Pad / Controller D-Pad & Stick |
+| **Restart Game**        | <kbd>R</kbd> or Click Header 🔄                                              | Tap Restart in Menu                                       |
+| **Pause / Resume**      | <kbd>P</kbd> or <kbd>Space</kbd>                                             | Tap Pause in HUD                                          |
+| **Turbo Speed Mode**    | <kbd>T</kbd> or HUD Toggle                                                   | HUD ⚡ Button                                             |
+| **Learn Mode AI Lab**   | <kbd>L</kbd> or HUD Toggle                                                   | HUD 🧠 Button                                             |
+| **Practice Sandbox**    | Click 🛠️ Practice in HUD                                                     | HUD 🛠️ Button                                             |
+| **Quick Rewind (2s)**   | <kbd>[</kbd> or <kbd>]</kbd>                                                 | Practice Panel Slider                                     |
+| **Mute / Unmute Sound** | Click 🔊 in HUD                                                              | HUD Sound Button                                          |
 
 ---
 
 ## 🧠 AI Overview (Ghost Personalities)
 
-The ghost pathfinding faithfully replicates the logic documented in the *Pac-Man Dossier*. Ghosts evaluate their target with a 1-tile lookahead and choose the direction with the shortest Euclidean distance to their target tile (with the strict tie-breaker order: **UP > LEFT > DOWN > RIGHT**). Ghosts cannot reverse direction unless switching behavioral modes.
+The ghost pathfinding faithfully replicates the logic documented in the _Pac-Man Dossier_. Ghosts evaluate their target with a 1-tile lookahead and choose the direction with the shortest Euclidean distance to their target tile (with the strict tie-breaker order: **UP > LEFT > DOWN > RIGHT**). Ghosts cannot reverse direction unless switching behavioral modes.
 
 ### 🔴 Blinky ("Shadow")
+
 - **Target**: Pac-Man's exact current tile.
 - **Behavior**: Relentless direct pursuer.
 - **Cruise Elroy**: As dot count falls below 20 and 10 pellets, Blinky gains a permanent speed boost and continues chasing even during Scatter waves!
 
 ### 🌸 Pinky ("Speedy")
+
 - **Target**: 4 tiles directly ahead of Pac-Man.
 - **Arcade Quirk**: Recreates the classic 1980 overflow bug: when Pac-Man faces UP, Pinky targets 4 tiles UP and 4 tiles LEFT.
 - **Role**: Ambushes Pac-Man by cutting off escape routes.
 
 ### 🔷 Inky ("Bashful")
+
 - **Target**: Calculated by taking the tile 2 tiles ahead of Pac-Man, drawing a vector from Blinky to that tile, and doubling the vector length!
 - **Role**: Flanker. Inky's target varies wildly based on where Blinky is located relative to Pac-Man.
 
 ### 🟠 Clyde / 🎀 Sue ("Pokey")
+
 - **Target (Classic)**: If Clyde is **>= 8 tiles away** from Pac-Man, he targets Pac-Man directly (Chase). If Clyde gets **closer than 8 tiles**, he immediately retreats to his bottom-left scatter corner!
 - **Enhanced Wandering**: At long distances, Clyde alternates between pursuit and exploration before tightening his perimeter.
 
 ### 👻 Eaten Eyes State
+
 - When Pac-Man consumes an energized ghost, the eyes travel back to the doorstep tile `[col 13, row 14]` along open corridors (navigating around outer boundaries rather than penetrating walls).
 - Once directly above the gate, the eyes descend into the ghost house pen `[col 13, row 17]` to revive and emerge back into the maze!
 

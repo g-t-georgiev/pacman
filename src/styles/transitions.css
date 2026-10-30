@@ -34,7 +34,8 @@
 
 /* --- Effect: fade-slide-up --- */
 .anim-fade-slide-up-enter {
-  animation: panelFadeSlideUpEnter var(--panel-duration, 280ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: panelFadeSlideUpEnter var(--panel-duration, 280ms)
+    var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 .anim-fade-slide-up-exit {
   animation: panelFadeSlideUpExit var(--panel-duration, 200ms) ease-in forwards;
@@ -64,7 +65,8 @@
 
 /* --- Effect: scale-fade --- */
 .anim-scale-fade-enter {
-  animation: panelScaleFadeEnter var(--panel-duration, 260ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: panelScaleFadeEnter var(--panel-duration, 260ms)
+    var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 .anim-scale-fade-exit {
   animation: panelScaleFadeExit var(--panel-duration, 180ms) ease-in forwards;
@@ -94,7 +96,8 @@
 
 /* --- Effect: fade-drop --- */
 .anim-fade-drop-enter {
-  animation: panelFadeDropEnter var(--panel-duration, 260ms) var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+  animation: panelFadeDropEnter var(--panel-duration, 260ms)
+    var(--panel-easing, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
 }
 .anim-fade-drop-exit {
   animation: panelFadeDropExit var(--panel-duration, 180ms) ease-in forwards;
@@ -131,11 +134,19 @@
 }
 
 @keyframes panelSubtleFadeEnter {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes panelSubtleFadeExit {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }

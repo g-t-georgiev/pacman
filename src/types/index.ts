@@ -1,21 +1,8 @@
-export type GameMode =
-  | "PACMAN"
-  | "MS_PACMAN"
-  | "CRAZY_OTTO"
-  | "COOKIE_MAN";
+export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
 
-export type GhostType =
-  | "BLINKY"
-  | "PINKY"
-  | "INKY"
-  | "CLYDE";
+export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
-export type GhostBehavior =
-  | "CHASE"
-  | "SCATTER"
-  | "FRIGHTENED"
-  | "EATEN"
-  | "IN_HOUSE";
+export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
 
 export interface ScatterChaseSchedule {
   duration: number;
@@ -34,12 +21,7 @@ export interface LevelSpeedConfig {
   elroy2: number;
 }
 
-export type Direction =
-  | "UP"
-  | "DOWN"
-  | "LEFT"
-  | "RIGHT"
-  | "NONE";
+export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT" | "NONE";
 
 export interface Point {
   x: number;

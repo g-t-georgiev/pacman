@@ -6,7 +6,7 @@ import {
   CANVAS_WIDTH,
   CLASSIC_FRUITS,
   COOKIE_MAN_TREATS,
-  CRAZY_OTTO_TREATS
+  CRAZY_OTTO_TREATS,
 } from "../game/constants";
 import { GameEngine } from "../game/gameEngine";
 import { GameRenderer } from "../game/renderer";
@@ -46,7 +46,11 @@ export const ArcadeCabinet: React.FC = () => {
   const [showHighScores, setShowHighScores] = useState<boolean>(false);
   const [showRestartPanel, setShowRestartPanel] = useState<boolean>(false);
   const [isGameOverState, setIsGameOverState] = useState<boolean>(false);
-  const [pendingScore, setPendingScore] = useState<{ score: number; mode: GameMode; level: number } | null>(null);
+  const [pendingScore, setPendingScore] = useState<{
+    score: number;
+    mode: GameMode;
+    level: number;
+  } | null>(null);
   const [, setUiTick] = useState<number>(0);
 
   const gameOverTimerRef = useRef<number | null>(null);
@@ -116,7 +120,9 @@ export const ArcadeCabinet: React.FC = () => {
     }
 
     // Play intro sound
-    soundEngine.playIntro();
+    soundEngine.playIntro().catch(() => {
+      /* GG */
+    });
 
     // Game loop
     let animId: number;
@@ -275,7 +281,9 @@ export const ArcadeCabinet: React.FC = () => {
       setShowMenu(false);
       setShowRestartPanel(false);
       setIsGameOverState(false);
-      soundEngine.playIntro();
+      soundEngine.playIntro().catch(() => {
+        /* GG */
+      });
     }
   };
 
@@ -329,7 +337,9 @@ export const ArcadeCabinet: React.FC = () => {
     setLives(3);
     setShowRestartPanel(false);
     setIsGameOverState(false);
-    soundEngine.playIntro();
+    soundEngine.playIntro().catch(() => {
+      /* GG */
+    });
   };
 
   const handleNewGame = () => {
@@ -344,7 +354,9 @@ export const ArcadeCabinet: React.FC = () => {
     setLives(3);
     setShowRestartPanel(false);
     setIsGameOverState(false);
-    soundEngine.playIntro();
+    soundEngine.playIntro().catch(() => {
+      /* GG */
+    });
   };
 
   const handleOpenRestartPanel = () => {
@@ -353,11 +365,12 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(true);
   };
 
-  const fruitMeta = currentMode === "COOKIE_MAN"
-    ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
-    : currentMode === "CRAZY_OTTO"
-    ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
-    : getFruitDataPerLevel(CLASSIC_FRUITS, level);
+  const fruitMeta =
+    currentMode === "COOKIE_MAN"
+      ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
+      : currentMode === "CRAZY_OTTO"
+        ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
+        : getFruitDataPerLevel(CLASSIC_FRUITS, level);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">
@@ -371,10 +384,10 @@ export const ArcadeCabinet: React.FC = () => {
             {currentMode === "PACMAN"
               ? "Classic 1980"
               : currentMode === "MS_PACMAN"
-              ? "Ms. Pac-Man"
-              : currentMode === "CRAZY_OTTO"
-              ? "Crazy Otto 1981"
-              : "Cookie Man"}
+                ? "Ms. Pac-Man"
+                : currentMode === "CRAZY_OTTO"
+                  ? "Crazy Otto 1981"
+                  : "Cookie Man"}
           </span>
         </div>
 
@@ -400,9 +413,7 @@ export const ArcadeCabinet: React.FC = () => {
         <HUD
           score={score}
           highScore={highScore}
-          lives={lives}
           level={level}
-          mode={currentMode}
           turbo={turbo}
           onToggleTurbo={handleToggleTurbo}
           learnMode={learnMode}
@@ -454,7 +465,9 @@ export const ArcadeCabinet: React.FC = () => {
             <button
               onClick={() => setShowDpad(!showDpad)}
               className={`text-[11px] px-2 py-0.5 rounded font-mono transition-colors cursor-pointer ${
-                showDpad ? "bg-yellow-400 text-black font-bold" : "bg-neutral-800 text-neutral-400 hover:text-white"
+                showDpad
+                  ? "bg-yellow-400 text-black font-bold"
+                  : "bg-neutral-800 text-neutral-400 hover:text-white"
               }`}
             >
               {showDpad ? "Hide D-Pad" : "Show D-Pad"}
@@ -560,7 +573,6 @@ export const ArcadeCabinet: React.FC = () => {
               setShowMenu(false);
               if (isGameOverState) handleNewGame();
             }}
-            highScore={highScore}
           />
           <button
             onClick={() => setShowMenu(false)}

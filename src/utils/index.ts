@@ -19,14 +19,14 @@ export function getFruitDataPerLevel(data: FruitDataType, level: number) {
 /**
  * Retrieves the frightened state duration (in seconds) for a given level.
  * Automatically handles endgame/infinite levels (Level 20+) by defaulting to 0.
- * 
+ *
  * @param level The current level number (1-indexed).
  * @returns The fright mode duration in seconds.
  */
 export function getFrightenedDuration(level: number): number {
   // Guard clause for safety against invalid inputs
-  if (level < 1) return 0; 
-  
+  if (level < 1) return 0;
+
   // Return the explicit configuration if it exists, otherwise default to 0 for levels 20+
   return FRIGHTENED_DURATIONS[level] ?? 0;
 }
@@ -34,7 +34,7 @@ export function getFrightenedDuration(level: number): number {
 /**
  * Retrieves the exact number of warning flashes a ghost performs at the end of the frightened phase.
  * Automatically defaults to 0 for Level 20+ to match the 0-second duration behavior.
- * 
+ *
  * @param level The current level number (1-indexed).
  * @returns The number of warning flashes before a ghost's frightened phase ends.
  */
@@ -47,19 +47,19 @@ export function getFrightenedFlashCount(level: number): number {
  * Scatter / Chase timing table (in seconds).
  *
  * Level 1:
- * 
+ *
  * - SCATTER: 7s, CHASE: 20s
  * - SCATTER: 7s, CHASE: 20s
  * - SCATTER: 5s, CHASE: 20s
  * - SCATTER: 5s, CHASE: permanent
- * 
+ *
  * Levels 2 - 4:
- * 
+ *
  * - SCATTER: 7s, CHASE: 20s
  * - SCATTER: 7s, CHASE: 20s
  * - SCATTER: 5s, CHASE: 1033s (~17 min)
  * - SCATTER: 1/60s, CHASE: permanent
- * 
+ *
  * Levels 5+:
  *
  * - SCATTER: 5s, CHASE: 20s
@@ -68,7 +68,7 @@ export function getFrightenedFlashCount(level: number): number {
  * - SCATTER: 1/60s, CHASE: permanent
  *
  * *Note: In level 5 and beyond every 3rd scatter drops down to 1 frame here due to an integer underflow in the ROM*
- * 
+ *
  * @param level The current level number (1-indexed).
  * @returns The array of schedule phases for this level tier.
  */
@@ -81,12 +81,12 @@ export function getScatterChaseSchedule(level: number): readonly ScatterChaseSch
 /**
  * Retrieves the authentic arcade movement speed configuration for a given level.
  * Uses pre-allocated static configurations in constants to avoid GC pressure in the render loop.
- * 
+ *
  * - Level 1
  * - Levels 2-4
  * - Levels 5-20
  * - Levels 21+
- * 
+ *
  * @param level The current level number (1-indexed).
  * @returns The LevelSpeedConfig for the corresponding level tier.
  */
