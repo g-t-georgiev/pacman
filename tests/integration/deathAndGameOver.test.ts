@@ -23,8 +23,8 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
     };
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     // Collide with Pac-Man
     engine.pacman.x = blinky.x;
@@ -54,10 +54,9 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
 
     // Pinky emerges
     const pinky = engine.ghosts.PINKY;
-    pinky.houseTimer = 0; // ready to exit
     pinky.x = 13 * TILE_SIZE + TILE_SIZE / 2;
     pinky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
-    pinky.inHouse = false;
+    pinky.location = "ACTIVE";
     pinky.dir = "LEFT";
     pinky.nextDir = "LEFT";
 

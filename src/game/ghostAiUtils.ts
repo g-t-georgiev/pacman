@@ -1,4 +1,5 @@
 import type { Direction, GhostState, MazeData, TileCoord } from "../types";
+import { PRNG_DIRECTIONS } from "../core/PRNG";
 import { TILE_SIZE } from "./constants";
 
 export function getOppositeDirection(dir: Direction): Direction {
@@ -159,4 +160,28 @@ export function chooseNextGhostDirection(
   }
 
   return bestDir;
+}
+
+/**
+ * A frightened ghost's choice at the tile it is about to enter (Dossier "Frightening Behavior",
+ * RGME). Start from the PRNG's direction code (0 = right, 1 = down, 2 = left, 3 = up) and, if that
+ * way is blocked or would reverse, try the next direction clockwise. No-up zones do not apply.
+ *
+ * @param code Direction code from PRNG.next().
+ * @param dir The ghost's current direction (its reverse is never chosen).
+ * @param isOpen Whether the ghost can move from the upcoming tile in a direction.
+ * @returns The chosen direction, or `dir` if nothing is open.
+ */
+export function pickFrightenedDirection(
+  code: number,
+  dir: Direction,
+  isOpen: (candidate: Direction) => boolean
+): Direction {
+  const reverse = getOppositeDirection(dir);
+  for (let i = 0; i < 4; i++) {
+    // PRNG_DIRECTIONS is in clockwise order: right, down, left, up
+    const candidate = PRNG_DIRECTIONS[(code + i) % 4];
+    if (candidate !== reverse && isOpen(candidate)) return candidate;
+  }
+  return dir;
 }

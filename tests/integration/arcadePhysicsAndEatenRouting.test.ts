@@ -12,8 +12,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     // Place Pac-Man at tile (10, 11)
     engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE / 2;
@@ -46,8 +46,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     // Pac-Man at tile 10 moving RIGHT towards tile 11 (at the right edge of tile 10)
     engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE - 1;
@@ -142,7 +142,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       "RIGHT",
       false
     );
-    blinky.mode = "EATEN";
+    blinky.location = "EYES";
 
     // Advance descent step by step
     for (let i = 0; i < 150; i++) {
@@ -151,7 +151,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
 
     expect(blinky.inHouse).toBe(true);
-    expect(blinky.mode).toBe("CHASE");
+    expect(blinky.location).toBe("HOUSE"); // revived: waits in the house, back on the global wave
+    expect(blinky.mode).toBe(blinky.wave);
     expect(blinky.x).toBe(14 * TILE_SIZE); // Pinky's slot, on the 13/14 seam
     expect(blinky.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2); // Row 17 centerline
   });
@@ -167,7 +168,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       "RIGHT",
       false
     );
-    inky.mode = "EATEN";
+    inky.location = "EYES";
 
     for (let i = 0; i < 200; i++) {
       if (inky.inHouse) break;
@@ -175,7 +176,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
 
     expect(inky.inHouse).toBe(true);
-    expect(inky.mode).toBe("CHASE");
+    expect(inky.location).toBe("HOUSE"); // revived: waits in the house, back on the global wave
+    expect(inky.mode).toBe(inky.wave);
     expect(inky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2); // Inky's designated slot on left
     expect(inky.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
@@ -191,7 +193,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       "LEFT",
       false
     );
-    clyde.mode = "EATEN";
+    clyde.location = "EYES";
 
     for (let i = 0; i < 200; i++) {
       if (clyde.inHouse) break;
@@ -199,7 +201,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
 
     expect(clyde.inHouse).toBe(true);
-    expect(clyde.mode).toBe("CHASE");
+    expect(clyde.location).toBe("HOUSE"); // revived: waits in the house, back on the global wave
+    expect(clyde.mode).toBe(clyde.wave);
     expect(clyde.x).toBe(15 * TILE_SIZE + TILE_SIZE / 2); // Clyde's designated slot on right
     expect(clyde.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
@@ -274,8 +277,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     // 1. INKY eaten eyes at doorstep (col 14, row 14)
     const inky = engine.ghosts.INKY;
-    inky.inHouse = false;
-    inky.mode = "EATEN";
+    inky.location = "ACTIVE";
+    inky.location = "EYES";
     inky.x = 14 * TILE_SIZE + TILE_SIZE / 2;
     inky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
     inky.enteringHousePhase = "NONE";
@@ -296,8 +299,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     // 2. CLYDE eaten eyes at doorstep (col 13, row 14)
     const clyde = engine.ghosts.CLYDE;
-    clyde.inHouse = false;
-    clyde.mode = "EATEN";
+    clyde.location = "ACTIVE";
+    clyde.location = "EYES";
     clyde.x = 13 * TILE_SIZE + TILE_SIZE / 2;
     clyde.y = 14 * TILE_SIZE + TILE_SIZE / 2;
     clyde.enteringHousePhase = "NONE";

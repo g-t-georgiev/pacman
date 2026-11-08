@@ -8,6 +8,7 @@ import type {
   ScorePopup,
   TileType,
 } from "../types";
+import type { HouseState } from "../controllers/HouseController";
 
 /**
  * The complete, serializable state of a running game: everything `GameEngine.update()` reads
@@ -42,6 +43,7 @@ export interface GameState {
   tiles: string;
   pacman: PacmanState;
   ghosts: Record<GhostType, GhostState>;
+  house: HouseState;
   fruit: FruitItem | null;
   scorePopups: ScorePopup[];
 }

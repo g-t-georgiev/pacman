@@ -3,6 +3,15 @@ import type { Pacman } from "../core/Pacman";
 import type { GhostAiController } from "./GhostAiController";
 import type { MazeData } from "../types";
 import { TILE_SIZE } from "../game/constants";
+
+/** The house door: the seam between columns 13 and 14. */
+export const HOUSE_DOOR_X = 14 * TILE_SIZE;
+/** Centerline of the house interior (row 17). */
+export const HOUSE_CENTER_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
+/** Centerline of the row just outside the door (row 14), where ghosts appear when leaving. */
+export const HOUSE_EXIT_Y = 14 * TILE_SIZE + TILE_SIZE / 2;
+/** How far waiting ghosts bob above and below the house centerline. */
+const HOUSE_BOB = TILE_SIZE / 2;
 import {
   chooseNextGhostDirection,
   getDirectionVector,
@@ -191,6 +200,56 @@ export class MovementController {
   }
 
   /**
+   * Moves a ghost that is inside the house: bobbing up and down while waiting (HOUSE), or
+   * heading out once released (LEAVING): to the center row, across to the door, then up.
+   * Outside, it always starts moving left. A reversal latched while it was inside (a mode change)
+   * stays pending, so it reverses at its next tile and heads right (Birch; Dossier "Home Sweet Home").
+   */
+  public updateHouseGhost(
+    ghost: Ghost,
+    currLevelFrame: number,
+    speedPct: number,
+    turboMultiplier: number
+  ): void {
+    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
+    ghost.speed = steps;
+
+    for (let step = 0; step < steps && ghost.inHouse; step++) {
+      if (ghost.location === "HOUSE") {
+        if (ghost.dir !== "UP" && ghost.dir !== "DOWN") ghost.dir = "UP";
+        if (ghost.y <= HOUSE_CENTER_Y - HOUSE_BOB) ghost.dir = "DOWN";
+        else if (ghost.y >= HOUSE_CENTER_Y + HOUSE_BOB) ghost.dir = "UP";
+        ghost.y += ghost.dir === "UP" ? -1 : 1;
+        continue;
+      }
+
+      // LEAVING
+      if (ghost.y !== HOUSE_CENTER_Y && ghost.x !== HOUSE_DOOR_X) {
+        ghost.dir = ghost.y < HOUSE_CENTER_Y ? "DOWN" : "UP";
+        ghost.y += Math.sign(HOUSE_CENTER_Y - ghost.y);
+      } else if (ghost.x !== HOUSE_DOOR_X) {
+        ghost.dir = ghost.x < HOUSE_DOOR_X ? "RIGHT" : "LEFT";
+        ghost.x += Math.sign(HOUSE_DOOR_X - ghost.x);
+      } else {
+        ghost.dir = "UP";
+        ghost.y--;
+        if (ghost.y <= HOUSE_EXIT_Y) this.exitHouse(ghost);
+      }
+    }
+    ghost.nextDir = ghost.dir;
+  }
+
+  private exitHouse(ghost: Ghost): void {
+    ghost.y = HOUSE_EXIT_Y;
+    ghost.location = "ACTIVE";
+    // Always leave to the left. Any latched reversal is kept and obeyed at the next tile.
+    ghost.dir = "LEFT";
+    ghost.nextDir = "LEFT";
+    ghost.lastDecisionTile = undefined;
+    ghost.lastOccupiedTile = ghost.tileCoord;
+  }
+
+  /**
    * Dedicated arcade routing for disembodied ghost eyes descending into the ghost house:
    * 1. APPROACH_SEAM: Aligns on doorstep row 14 and glides horizontally to the seam between cols 13 and 14.
    * 2. DESCENDING_DOOR: Descents vertically DOWN through the door tiles (GATE row 15) down to row 17.
@@ -215,6 +274,7 @@ export class MovementController {
       }
 
       if (ghost.enteringHousePhase === "APPROACH_SEAM") {
+        ghost.location = "ENTERING";
         // Align Y with doorstep corridor axis
         if (ghost.y < doorstepY) ghost.y += 1;
         else if (ghost.y > doorstepY) ghost.y -= 1;
@@ -274,11 +334,9 @@ export class MovementController {
   }
 
   private reviveGhostInHouse(ghost: Ghost): void {
-    ghost.inHouse = true;
-    ghost.mode = "CHASE";
-    ghost.prevMode = "CHASE";
+    ghost.location = "HOUSE";
+    ghost.frightened = false;
     ghost.enteringHousePhase = "NONE";
-    ghost.houseTimer = 60;
     ghost.dir = "UP";
     ghost.nextDir = "UP";
     ghost.flashState = false;

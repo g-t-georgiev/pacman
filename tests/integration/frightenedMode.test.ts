@@ -9,16 +9,16 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     // Set Blinky and Pinky outside pen in CHASE
-    engine.ghosts.BLINKY.inHouse = false;
-    engine.ghosts.BLINKY.mode = "CHASE";
-    engine.ghosts.PINKY.inHouse = false;
-    engine.ghosts.PINKY.mode = "CHASE";
+    engine.ghosts.BLINKY.location = "ACTIVE";
+    engine.ghosts.BLINKY.wave = "CHASE";
+    engine.ghosts.PINKY.location = "ACTIVE";
+    engine.ghosts.PINKY.wave = "CHASE";
 
     engine.triggerFrightenedMode();
 
     expect(engine.frightenedGlobalTimer).toBeGreaterThan(0);
     expect(engine.ghosts.BLINKY.mode).toBe("FRIGHTENED");
-    expect(engine.ghosts.BLINKY.prevMode).toBe("CHASE");
+    expect(engine.ghosts.BLINKY.wave).toBe("CHASE"); // the mode to return to
     expect(engine.ghosts.PINKY.mode).toBe("FRIGHTENED");
   });
 
@@ -28,8 +28,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
     blinky.dir = "LEFT";
     blinky.x = 10 * TILE_SIZE + 1; // 1 pixel from boundary of col 9
     blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
@@ -60,9 +60,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
     engine.timerController.waveIndex = 1; // CHASE wave
 
-    engine.ghosts.BLINKY.inHouse = false;
-    engine.ghosts.BLINKY.mode = "CHASE";
-    engine.ghosts.BLINKY.prevMode = "CHASE";
+    engine.ghosts.BLINKY.location = "ACTIVE";
+    engine.ghosts.BLINKY.wave = "CHASE";
 
     engine.triggerFrightenedMode();
     expect(engine.ghosts.BLINKY.mode).toBe("FRIGHTENED");
@@ -83,8 +82,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     engine.triggerFrightenedMode();
     expect(blinky.mode).toBe("FRIGHTENED");
@@ -109,8 +108,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
     // Place Blinky in horizontal corridor (row 11), moving RIGHT towards boundary
     blinky.x = 10 * TILE_SIZE + 6; // 2 px before the col 11 boundary
     blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
@@ -142,8 +141,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const inky = engine.ghosts.INKY;
-    inky.inHouse = false;
-    inky.mode = "FRIGHTENED";
+    inky.location = "ACTIVE";
+    inky.frightened = true;
     // Place Inky in lower maze (row 29)
     inky.x = 9 * TILE_SIZE + TILE_SIZE / 2;
     inky.y = 29 * TILE_SIZE + TILE_SIZE / 2;
@@ -171,8 +170,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const inky = engine.ghosts.INKY;
-    inky.inHouse = false;
-    inky.mode = "EATEN";
+    inky.location = "ACTIVE";
+    inky.location = "EYES";
     inky.x = 10 * TILE_SIZE + TILE_SIZE / 2;
     inky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
 
@@ -190,8 +189,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "EATEN";
+    blinky.location = "ACTIVE";
+    blinky.location = "EYES";
     // Position Blinky eyes approaching doorstep from the left in row 14 moving RIGHT
     blinky.x = 11 * TILE_SIZE + TILE_SIZE / 2;
     blinky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
@@ -205,8 +204,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
       if (blinky.inHouse) break;
     }
 
-    // Blinky must have entered the house and respawned into CHASE mode
+    // Blinky must have entered the house and been revived on the current wave
     expect(blinky.inHouse).toBe(true);
-    expect(blinky.mode).toBe("CHASE");
+    expect(blinky.mode).toBe(blinky.wave);
   });
 });

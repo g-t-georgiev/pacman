@@ -2,13 +2,22 @@ export type GameMode = "PACMAN" | "MS_PACMAN";
 
 export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
-export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
+/** What a ghost is doing, as shown to players and tools. Derived from GhostLocation, frightened and the wave. */
+export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN";
+/** The global scatter/chase wave (owned by TimerController). */
+export type WaveMode = "SCATTER" | "CHASE";
+/**
+ * Where a ghost is in its life cycle:
+ * HOUSE (waiting inside) -> LEAVING (moving out through the door) -> ACTIVE (in the maze)
+ * -> EYES (eaten, returning to the door) -> ENTERING (descending to its slot) -> HOUSE.
+ */
+export type GhostLocation = "HOUSE" | "LEAVING" | "ACTIVE" | "EYES" | "ENTERING";
 export type GhostsToHousePhase = "NONE" | "APPROACH_SEAM" | "DESCENDING_DOOR" | "MOVING_TO_SLOT";
 
 export interface ScatterChaseSchedule {
   /** Wave length in frames (Infinity = permanent). */
   frames: number;
-  mode: Extract<GhostBehavior, "SCATTER" | "CHASE">;
+  mode: WaveMode;
 }
 
 export interface LevelSpeedConfig {
@@ -103,19 +112,19 @@ export interface GhostState {
   anchorY?: number;
   dir: Direction;
   nextDir: Direction;
+  location: GhostLocation;
+  frightened: boolean;
+  /** This ghost's copy of the global wave, set by the engine at round start and on every switch. */
+  wave: WaveMode;
+  /** Derived from location, frightened and wave (read-only; ignored by restore). */
   mode: GhostBehavior;
-  prevMode: GhostBehavior;
+  /** Derived: location is HOUSE or LEAVING (read-only; ignored by restore). */
+  inHouse: boolean;
   speed: number;
   target: TileCoord;
-  inHouse: boolean;
-  houseTimer: number;
-  dotCounter: number;
   flashState: boolean; // white or blue when frightened ending
-  frightenedTimer: number;
   feetAnimation: number;
-  bouncedInHouse: boolean;
   clydeWanderState?: "CHASE" | "FLEE";
-  clydeSwitchTimer?: number;
   intermediateTarget?: TileCoord;
   reversalPrimed?: boolean;
   lastDecisionTile?: TileCoord;

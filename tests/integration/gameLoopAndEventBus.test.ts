@@ -51,8 +51,8 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     engine.dotsRemaining = ELROY_1_DOTS_LEFT; // 20 dots
 
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     // Simulate wave timer triggering a switch to SCATTER
     engine.timerController.update(
@@ -82,9 +82,8 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     const engine = new GameEngine("PACMAN", 5000);
     engine.playState = "PLAYING";
 
-    // Fast-forward emergence of Pinky
+    // Pinky has a dot limit of 0, so the house releases him on the first playing frame
     const pinky = engine.ghosts.PINKY;
-    pinky.houseTimer = 0;
 
     // Run 200 frames of updates
     for (let f = 0; f < 200; f++) {

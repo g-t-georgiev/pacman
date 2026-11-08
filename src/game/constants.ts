@@ -87,8 +87,8 @@ export const SPEED_PCT_PER_LEVELS_21_PLUS: LevelSpeedConfig = {
 
 /** Speed value for ghosts' eyes when eaten and return to the ghost house. */
 export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning eyes (see speedMasks.ts)
-/** Speed value for ghosts inside the ghost house. */
-export const GHOST_HOUSE_SPEED_PCT = 80;
+/** Speed inside the ghost house (bobbing and leaving). Not in the Dossier: an estimate. */
+export const GHOST_HOUSE_SPEED_PCT = 50;
 
 /**
  * Scatter / Chase timing table (durations in seconds, stored in frames).

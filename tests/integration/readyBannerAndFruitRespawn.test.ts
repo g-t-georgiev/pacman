@@ -86,11 +86,11 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     // Verify staggered actor emergence timings
     expect(engine.ghosts.BLINKY.inHouse).toBe(false); // Blinky starts outside
     expect(engine.ghosts.PINKY.inHouse).toBe(true);
-    expect(engine.ghosts.PINKY.houseTimer).toBe(60); // 1 sec delay
     expect(engine.ghosts.INKY.inHouse).toBe(true);
-    expect(engine.ghosts.INKY.houseTimer).toBe(180); // 3 sec delay
     expect(engine.ghosts.CLYDE.inHouse).toBe(true);
-    expect(engine.ghosts.CLYDE.houseTimer).toBe(300); // 5 sec delay
+    // A new level resets the house: personal dot counters from zero, no global counter
+    expect(engine.houseController.state.dotCounters).toEqual({ PINKY: 0, INKY: 0, CLYDE: 0 });
+    expect(engine.houseController.state.globalCounterActive).toBe(false);
   });
 
   it("should immediately discard active bonus fruit when Pac-Man dies and ensure it does not reappear after respawn", () => {
@@ -105,8 +105,8 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
     // Place a non-frightened ghost on Pac-Man to trigger death
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
     blinky.x = engine.pacman.x;
     blinky.y = engine.pacman.y;
 
@@ -162,8 +162,8 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     // Player loses all lives -> Game Over
     engine.lives = 1;
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
     blinky.x = engine.pacman.x;
     blinky.y = engine.pacman.y;
     engine.update();

@@ -141,7 +141,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     );
     const { col: inkyCurrCol, row: inkyCurrRow } = inky.tileCoord;
 
-    inky.mode = "CHASE";
+    inky.wave = "CHASE";
 
     const pacman = new Pacman(6 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2, "UP");
     const blinky = new Ghost(

@@ -1,13 +1,12 @@
 import type { Ghost } from "../core/Ghost";
 import type { Pacman } from "../core/Pacman";
-import type { Direction, MazeData, TileCoord } from "../types";
+import type { MazeData, TileCoord } from "../types";
 import { ELROY_1_DOTS_LEFT, TILE_SIZE } from "../game/constants";
 import {
   chooseNextGhostDirection,
   getDirectionVector,
-  getOppositeDirection,
-  isTileNoUpZone,
   isTileWalkableForGhost,
+  pickFrightenedDirection,
 } from "../game/ghostAiUtils";
 import { PRNG } from "../core/PRNG";
 
@@ -175,34 +174,14 @@ export class GhostAiController {
 
     ghost.lastDecisionTile = { col: lookaheadCol, row: lookaheadRow };
 
-    // 1. Handle Arcade-Accurate PRNG Frightened Mode
+    // 1. Frightened: a PRNG direction with a clockwise fallback, on every tile (corridors too, which
+    // advances the PRNG exactly as often as the arcade's). No-up zones are ignored.
     if (ghost.mode === "FRIGHTENED") {
-      // In the arcade, instead of generating an array of candidates and using Math.random(),
-      // a 16-bit shift register yields a direction (0=UP, 1=LEFT, 2=DOWN, 3=RIGHT).
-      // If blocked/invalid, it loops sequentially by incrementing the direction value (+1).
-      const dirOrder: Direction[] = ["UP", "LEFT", "DOWN", "RIGHT"];
-      const opposite = getOppositeDirection(ghost.dir);
-
-      // Simulate the arcade hardware PRNG index selection [0..3]
-      const prngIndex = this.prng.next();
-      let chosenDir: Direction = "NONE";
-
-      for (let i = 0; i < 4; i++) {
-        const testDir = dirOrder[(prngIndex + i) % 4];
-
-        if (testDir === opposite) continue;
-        if (testDir === "UP" && isTileNoUpZone(lookaheadCol, lookaheadRow, maze)) continue;
-
-        const v = getDirectionVector(testDir);
-        if (
-          isTileWalkableForGhost(lookaheadCol + v.dx, lookaheadRow + v.dy, ghost.toState(), maze)
-        ) {
-          chosenDir = testDir;
-          break;
-        }
-      }
-
-      ghost.nextDir = chosenDir !== "NONE" ? chosenDir : ghost.dir;
+      const state = ghost.toState();
+      ghost.nextDir = pickFrightenedDirection(this.prng.next(), ghost.dir, (candidate) => {
+        const v = getDirectionVector(candidate);
+        return isTileWalkableForGhost(lookaheadCol + v.dx, lookaheadRow + v.dy, state, maze);
+      });
       return;
     }
 
@@ -218,44 +197,5 @@ export class GhostAiController {
       lookaheadRow,
       ghost.dir
     );
-  }
-
-  /**
-   * Manages ghost house exit timers and recovery emergence.
-   */
-  public updateHouseEmergence(ghost: Ghost, doorX: number): void {
-    if (!ghost.inHouse) return;
-
-    if (ghost.houseTimer > 0) {
-      ghost.houseTimer--;
-      // Bounce up and down inside pen
-      if (ghost.y <= 16.5 * TILE_SIZE) ghost.dir = "DOWN";
-      if (ghost.y >= 17.5 * TILE_SIZE) ghost.dir = "UP";
-      const { dy } = getDirectionVector(ghost.dir);
-      ghost.y += dy * 0.25;
-      return;
-    }
-
-    // Move toward center door axis
-    if (Math.abs(ghost.x - doorX) > 0.5) {
-      ghost.x += (ghost.x < doorX ? 1 : -1) * 0.4;
-      ghost.dir = ghost.x < doorX ? "RIGHT" : "LEFT";
-      return;
-    }
-
-    // Move up through the door
-    ghost.x = doorX;
-    ghost.dir = "UP";
-    ghost.y -= 0.4;
-
-    // Fully exited through the door (row 14)
-    if (ghost.y <= 14 * TILE_SIZE + TILE_SIZE / 2) {
-      ghost.y = 14 * TILE_SIZE + TILE_SIZE / 2;
-      ghost.x = doorX;
-      ghost.inHouse = false;
-      ghost.dir = "LEFT";
-      ghost.nextDir = "LEFT";
-      ghost.lastDecisionTile = undefined;
-    }
   }
 }

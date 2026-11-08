@@ -11,13 +11,8 @@ import type {
   PlayState,
   ScorePopup,
 } from "../types";
-import {
-  getFrightenedDuration,
-  getFruitDataPerLevel,
-  getScatterChaseSchedule,
-  getSpeedConfigForLevel,
-} from "../utils";
-import { CLASSIC_FRUITS, ELROY_1_DOTS_LEFT, TILE_SIZE } from "./constants";
+import { getFrightenedDuration, getFruitDataPerLevel, getSpeedConfigForLevel } from "../utils";
+import { CLASSIC_FRUITS, TILE_SIZE } from "./constants";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
@@ -25,6 +20,7 @@ import { TimerController } from "../controllers/TimerController";
 import { AnimationController } from "../controllers/AnimationController";
 import { GhostAiController } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
+import { HouseController } from "../controllers/HouseController";
 import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
 import { getMazeData } from "./mazes";
 import type { SimEvent, SirenState } from "./simEvents";
@@ -101,6 +97,7 @@ export default class GameEngine {
   public animationController: AnimationController = new AnimationController();
   public ghostAiController: GhostAiController = new GhostAiController(false, this.prng);
   public movementController: MovementController = new MovementController();
+  public houseController: HouseController = new HouseController();
   public diagnosticController: DiagnosticController = new DiagnosticController();
 
   // Actors
@@ -318,6 +315,7 @@ export default class GameEngine {
     this.timerController.level = lvl;
     this.maze = getMazeData(this.mode, this.level);
     this.timerController.resetTimers();
+    this.houseController.onLevelStart();
     this.currLevelFrame = 0;
     this.prng.reset();
     this.dotsRemaining = 0;
@@ -404,24 +402,12 @@ export default class GameEngine {
       ),
     };
 
-    const isElroyBlinky = this.dotsRemaining <= ELROY_1_DOTS_LEFT;
-    const pacmanTilePos = {
-      col: Math.floor(this.pacman.x / TILE_SIZE),
-      row: Math.floor(this.pacman.y / TILE_SIZE),
-    };
-    this.ghosts.BLINKY.mode = isElroyBlinky ? "CHASE" : "SCATTER";
-    this.ghosts.BLINKY.prevMode = isElroyBlinky ? "CHASE" : "SCATTER";
-    this.ghosts.BLINKY.target = isElroyBlinky ? pacmanTilePos : this.maze.scatterTargets.BLINKY;
-
-    this.ghosts.PINKY.target = this.maze.scatterTargets.PINKY;
-    this.ghosts.PINKY.houseTimer = 60;
-    this.ghosts.INKY.target = this.maze.scatterTargets.INKY;
-    this.ghosts.INKY.houseTimer = 180;
-    this.ghosts.CLYDE.target = this.maze.scatterTargets.CLYDE;
-    this.ghosts.CLYDE.houseTimer = 300;
-
+    const wave = this.timerController.currentWave?.mode ?? "CHASE";
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      this.ghosts[type].speed = speedConfig.ghostNormal;
+      const g = this.ghosts[type];
+      g.wave = wave;
+      g.target = this.maze.scatterTargets[type];
+      g.speed = speedConfig.ghostNormal;
     });
   }
 
@@ -479,6 +465,7 @@ export default class GameEngine {
           }
         } else {
           this.timerController.resetTimers();
+          this.houseController.onLifeLost();
           this.currLevelFrame = 0;
           this.prng.reset();
           this.resetActorPositions();
@@ -496,44 +483,21 @@ export default class GameEngine {
     // Advance timers by one frame
     this.timerController.level = this.level;
     this.timerController.update(
-      (newMode) => {
-        // Scatter <-> Chase wave switch: prime 180° reversal upon reaching next tile center!
+      (newWave) => {
+        // Scatter <-> chase switch: every ghost follows the new wave and latches a reversal.
+        // Active ghosts reverse at their next tile center (Elroy Blinky included); ghosts in the
+        // house keep the latch and leave to the right.
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
-          if (g.mode === "EATEN" || g.mode === "FRIGHTENED" || g.inHouse) return;
-          // Cruise Elroy Blinky ignores scatter mode and remains in CHASE
-          if (
-            type === "BLINKY" &&
-            this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
-            newMode === "SCATTER"
-          ) {
-            g.mode = "CHASE";
-            g.prevMode = "CHASE";
-            return;
-          }
-          g.prevMode = g.mode;
-          g.mode = newMode;
-          g.primeReversal(); // Tile-aligned primed reversal!
+          g.wave = newWave === "SCATTER" ? "SCATTER" : "CHASE";
+          g.primeReversal();
         });
       },
       () => {
-        // Frightened mode ended: revert ghosts safely
-        const currentWave = this.timerController.currentWave;
-        const defaultMode = currentWave?.mode || "CHASE";
+        // Frightened mode ended: every ghost returns to the current wave
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
-          if (g.mode === "FRIGHTENED") {
-            let nextMode = g.prevMode && g.prevMode !== "FRIGHTENED" ? g.prevMode : defaultMode;
-            if (
-              type === "BLINKY" &&
-              this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
-              nextMode === "SCATTER"
-            ) {
-              nextMode = "CHASE";
-            }
-            g.mode = nextMode;
-            g.prevMode = g.mode;
-          }
+          g.frightened = false;
           g.flashState = false;
         });
       }
@@ -582,20 +546,18 @@ export default class GameEngine {
 
   private updateGhostsMovement(speedConfig: LevelSpeedConfig) {
     const blinky = this.ghosts.BLINKY;
-    const doorX = 13 * TILE_SIZE + TILE_SIZE / 2;
+    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
+
+    // Release ghosts from the house (dot counters, global counter, idle timer)
+    this.houseController.update(this.ghosts, this.level);
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
 
-      // Cruise Elroy Blinky immunity: Blinky must NEVER be in SCATTER when dotsRemaining <= ELROY_1_DOTS_LEFT
-      if (type === "BLINKY" && this.dotsRemaining <= ELROY_1_DOTS_LEFT && g.mode === "SCATTER") {
-        g.mode = "CHASE";
-        g.prevMode = "CHASE";
-      }
-
-      // 1. House emergence management
+      // 1. Waiting in the house, or on the way out
       if (g.inHouse) {
-        this.ghostAiController.updateHouseEmergence(g, doorX);
+        const pct = g.getSpeedPercentage(this.maze, this.dotsRemaining, speedConfig);
+        this.movementController.updateHouseGhost(g, this.currLevelFrame, pct, turboMult);
         return;
       }
 
@@ -626,7 +588,6 @@ export default class GameEngine {
       );
 
       // 4. Discrete 16-frame bitmask speed & tile-to-tile movement
-      const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
       const speedPct = g.getSpeedPercentage(this.maze, this.dotsRemaining, speedConfig);
 
       this.movementController.updateGhostMovement(
@@ -658,6 +619,7 @@ export default class GameEngine {
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
+        this.houseController.onDotEaten(this.ghosts);
         this.emit({ type: "DOT_EATEN" });
         this.checkFruitSpawn();
         this.checkLevelClear();
@@ -668,6 +630,7 @@ export default class GameEngine {
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
+        this.houseController.onDotEaten(this.ghosts);
         this.eatenGhostsInEnergizer = 0;
         this.triggerFrightenedMode();
         this.checkFruitSpawn();
@@ -682,15 +645,16 @@ export default class GameEngine {
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      if (g.inHouse) return;
+      if (g.location !== "ACTIVE") return;
 
       const ghostTile = g.tileCoord;
       const isColliding = pacTile.col === ghostTile.col && pacTile.row === ghostTile.row;
 
       if (isColliding) {
-        if (g.mode === "FRIGHTENED") {
+        if (g.frightened) {
           // Eat Ghost!
-          g.mode = "EATEN";
+          g.location = "EYES";
+          g.frightened = false;
           g.flashState = false;
           g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
           g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
@@ -717,7 +681,7 @@ export default class GameEngine {
 
           this.emitScore();
           this.emit({ type: "GHOST_EATEN", ghost: type, points });
-        } else if (g.mode === "CHASE" || g.mode === "SCATTER") {
+        } else {
           if (!this.settings.invincible && !this.pacman.invincible) {
             // Pac-Man Dies!
             this.pacman.isDying = true;
@@ -777,28 +741,16 @@ export default class GameEngine {
 
     this.timerController.triggerFrightened(duration);
 
-    const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-    const defaultMode = currentWave?.mode || "CHASE";
-
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
 
-      // Eaten ghosts (eyes returning to house) and ghosts already in the house are immune to frightened mode
-      if (g.mode === "EATEN" || g.inHouse) return;
-
-      // Frightened mode primes a 180° direction reversal upon crossing into the next tile boundary
+      // Eyes on their way home are immune. Every other ghost, inside the house too, latches a
+      // reversal and (unless this level has no frightened time) turns blue.
+      if (g.isEyes) return;
       g.primeReversal();
 
       if (duration <= 0) return;
-
-      g.prevMode =
-        g.mode !== "FRIGHTENED"
-          ? g.mode
-          : !g.prevMode || g.prevMode === "FRIGHTENED"
-            ? defaultMode
-            : g.prevMode;
-
-      g.mode = "FRIGHTENED";
+      g.frightened = true;
       g.flashState = false;
     });
   }
@@ -893,6 +845,10 @@ export default class GameEngine {
       tiles: encodeTiles(this.maze.tiles),
       pacman: this.pacman.toState(),
       ghosts,
+      house: {
+        ...this.houseController.state,
+        dotCounters: { ...this.houseController.state.dotCounters },
+      },
       fruit: this.fruit ? { ...this.fruit } : null,
       scorePopups: this.scorePopups.map((p) => ({ ...p })),
     };
@@ -926,6 +882,7 @@ export default class GameEngine {
     (Object.keys(state.ghosts) as GhostType[]).forEach((type) => {
       this.ghosts[type].restoreFromState(copyGhostState(state.ghosts[type]));
     });
+    this.houseController.state = { ...state.house, dotCounters: { ...state.house.dotCounters } };
     this.fruit = state.fruit ? { ...state.fruit } : null;
     this.scorePopups = state.scorePopups.map((p) => ({ ...p }));
   }
@@ -970,18 +927,15 @@ export default class GameEngine {
     const gSpawns = this.maze.ghostSpawns;
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      const isElroyBlinky = type === "BLINKY" && this.dotsRemaining <= ELROY_1_DOTS_LEFT;
-
       g.x = gSpawns[type].x * TILE_SIZE + TILE_SIZE / 2;
       g.y = gSpawns[type].y * TILE_SIZE + TILE_SIZE / 2;
       g.dir = gSpawns[type].initialDir;
       g.nextDir = gSpawns[type].initialDir;
-      g.inHouse = gSpawns[type].inHouse;
-      g.houseTimer = 30;
-      g.mode = isElroyBlinky ? "CHASE" : "SCATTER";
-      g.prevMode = isElroyBlinky ? "CHASE" : "SCATTER";
+      g.location = gSpawns[type].inHouse ? "HOUSE" : "ACTIVE";
+      g.frightened = false;
       g.flashState = false;
       g.reversalPrimed = false;
+      g.enteringHousePhase = "NONE";
       g.lastDecisionTile = undefined;
     });
   }

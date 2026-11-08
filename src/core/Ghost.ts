@@ -2,12 +2,14 @@ import { Actor } from "./Actor";
 import type {
   Direction,
   GhostBehavior,
+  GhostLocation,
   GhostState,
   GhostsToHousePhase,
   GhostType,
   LevelSpeedConfig,
   MazeData,
   TileCoord,
+  WaveMode,
 } from "../types";
 import {
   ELROY_1_DOTS_LEFT,
@@ -19,11 +21,16 @@ import {
 import { getSpeedConfigForLevel } from "../utils";
 
 /**
- * Ghost Actor representing an AI-driven enemy with authentic arcade states:
- * Scatter, Chase, Frightened, Eaten (Eyes returning to house), and House confinement.
+ * A ghost. Its state is split into independent parts (plan A1):
  *
- * Implements strict tile-to-tile movement, 1-tile advance intersection decision caching,
- * and primed wave reversals that execute cleanly upon reaching tile centers.
+ * - `location`: the life-cycle state machine (HOUSE -> LEAVING -> ACTIVE -> EYES -> ENTERING -> HOUSE).
+ * - `frightened`: set for every non-eyes ghost when an energizer is eaten, cleared when the
+ *   frightened timer ends or the ghost is eaten. Ghosts inside the house turn blue too.
+ * - `wave`: the global scatter/chase wave, which is also the mode to return to after frightened.
+ * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on their next tile
+ *   center; a ghost that was inside during a mode change leaves the house to the right.
+ *
+ * `mode` and `inHouse` are derived from these and are read-only.
  */
 export class Ghost extends Actor {
   public type: GhostType;
@@ -31,31 +38,26 @@ export class Ghost extends Actor {
   public anchorX: number = 0.5;
   public anchorY: number = 0.5;
 
-  public mode: GhostBehavior = "SCATTER";
-  public prevMode: GhostBehavior = "SCATTER";
+  public location: GhostLocation = "ACTIVE";
+  public frightened: boolean = false;
+  public wave: WaveMode = "SCATTER";
+
   public target: TileCoord = { col: 0, row: 0 };
   public intermediateTarget?: TileCoord;
 
-  // House state
-  public inHouse: boolean = false;
-  public houseTimer: number = 0;
-  public dotCounter: number = 0;
-  public bouncedInHouse: boolean = false;
-
   // Frightened visuals
   public flashState: boolean = false;
-  public frightenedTimer: number = 0;
   public feetAnimation: number = 0;
 
-  // Clyde personality
+  // Clyde's current targeting choice, shown by the Learn overlay
   public clydeWanderState?: "CHASE" | "FLEE" = "CHASE";
-  public clydeSwitchTimer?: number = 3.0;
 
-  // Authentic tile-to-tile advance lookahead & reversal priming
+  // Tile-to-tile lookahead and reversal latch
   public reversalPrimed: boolean = false;
   public lastDecisionTile?: TileCoord;
   public lastOccupiedTile?: TileCoord;
 
+  /** Sub-phase while the eyes enter the house (EYES at the door, then ENTERING). */
   public enteringHousePhase: GhostsToHousePhase = "NONE";
 
   constructor(
@@ -69,7 +71,7 @@ export class Ghost extends Actor {
   ) {
     super(x, y, dir, anchorX, anchorY);
     this.type = type;
-    this.inHouse = inHouse;
+    this.location = inHouse ? "HOUSE" : "ACTIVE";
     this.anchorX = anchorX;
     this.anchorY = anchorY;
     this.lastOccupiedTile = {
@@ -78,9 +80,29 @@ export class Ghost extends Actor {
     };
   }
 
-  /** Primes a 180-degree reversal to be executed upon crossing into the next tile boundary. */
+  /** What the ghost is doing, derived from location, frightened and the wave. */
+  public get mode(): GhostBehavior {
+    if (this.isEyes) return "EATEN";
+    if (this.frightened) return "FRIGHTENED";
+    return this.wave;
+  }
+
+  /** Inside the house: waiting or on the way out. */
+  public get inHouse(): boolean {
+    return this.location === "HOUSE" || this.location === "LEAVING";
+  }
+
+  /** Eaten and on the way home (or into its slot). */
+  public get isEyes(): boolean {
+    return this.location === "EYES" || this.location === "ENTERING";
+  }
+
+  /**
+   * Latches a 180-degree reversal (any scatter/chase switch, or entering frightened mode).
+   * Active ghosts obey it at their next tile center; ghosts in the house keep it and exit right.
+   */
   public primeReversal(): void {
-    if (this.mode === "EATEN" || this.inHouse) return;
+    if (this.isEyes) return;
     this.reversalPrimed = true;
   }
 
@@ -103,19 +125,16 @@ export class Ghost extends Actor {
       anchorY: this.anchorY,
       dir: this.dir,
       nextDir: this.nextDir,
+      location: this.location,
+      frightened: this.frightened,
+      wave: this.wave,
       mode: this.mode,
-      prevMode: this.prevMode,
+      inHouse: this.inHouse,
       speed: this.speed,
       target: this.target,
-      inHouse: this.inHouse,
-      houseTimer: this.houseTimer,
-      dotCounter: this.dotCounter,
       flashState: this.flashState,
-      frightenedTimer: this.frightenedTimer,
       feetAnimation: this.feetAnimation,
-      bouncedInHouse: this.bouncedInHouse,
       clydeWanderState: this.clydeWanderState,
-      clydeSwitchTimer: this.clydeSwitchTimer,
       intermediateTarget: this.intermediateTarget,
       reversalPrimed: this.reversalPrimed,
       lastDecisionTile: this.lastDecisionTile,
@@ -125,7 +144,7 @@ export class Ghost extends Actor {
   }
 
   /**
-   * Restores actor state from a snapshot.
+   * Restores actor state from a snapshot. `mode` and `inHouse` are derived and ignored.
    */
   public restoreFromState(state: GhostState): void {
     this.x = state.x;
@@ -134,19 +153,14 @@ export class Ghost extends Actor {
     this.anchorY = state.anchorY ?? 0.5;
     this.dir = state.dir;
     this.nextDir = state.nextDir;
-    this.mode = state.mode;
-    this.prevMode = state.prevMode;
+    this.location = state.location;
+    this.frightened = state.frightened;
+    this.wave = state.wave;
     this.speed = state.speed;
     this.target = state.target;
-    this.inHouse = state.inHouse;
-    this.houseTimer = state.houseTimer;
-    this.dotCounter = state.dotCounter;
     this.flashState = state.flashState;
-    this.frightenedTimer = state.frightenedTimer;
     this.feetAnimation = state.feetAnimation;
-    this.bouncedInHouse = state.bouncedInHouse;
     this.clydeWanderState = state.clydeWanderState;
-    this.clydeSwitchTimer = state.clydeSwitchTimer;
     this.intermediateTarget = state.intermediateTarget;
     this.reversalPrimed = state.reversalPrimed ?? false;
     this.lastDecisionTile = state.lastDecisionTile;
@@ -162,7 +176,7 @@ export class Ghost extends Actor {
     dotsRemaining: number,
     levelOrConfig: number | LevelSpeedConfig
   ): number {
-    if (this.mode === "EATEN") {
+    if (this.isEyes) {
       return GHOST_EATEN_SPEED_PCT;
     }
 
@@ -177,7 +191,7 @@ export class Ghost extends Actor {
     const inTunnel = maze.tunnels.some((t) => t.y === row && (col <= 5 || col >= maze.width - 6));
     if (inTunnel) return speedConfig.ghostTunnel;
 
-    if (this.mode === "FRIGHTENED") {
+    if (this.frightened) {
       return speedConfig.ghostFrightened;
     }
 

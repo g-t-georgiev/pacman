@@ -13,7 +13,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const pacman = new Pacman(14 * TILE_SIZE + 4, 20 * TILE_SIZE + 4, "UP");
     const pinky = new Ghost("PINKY", 14 * TILE_SIZE + 4, 14 * TILE_SIZE + 4, "UP", false);
     const blinky = new Ghost("BLINKY", 14 * TILE_SIZE + 4, 11 * TILE_SIZE + 4, "LEFT", false);
-    pinky.mode = "CHASE";
+    pinky.wave = "CHASE";
 
     const target = ai.calculateTarget(pinky, pacman, blinky, maze, 200);
 
@@ -27,7 +27,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const pacman = new Pacman(14 * TILE_SIZE + 4, 20 * TILE_SIZE + 4, "UP");
     const pinky = new Ghost("PINKY", 14 * TILE_SIZE + 4, 14 * TILE_SIZE + 4, "UP", false);
     const blinky = new Ghost("BLINKY", 14 * TILE_SIZE + 4, 11 * TILE_SIZE + 4, "LEFT", false);
-    pinky.mode = "CHASE";
+    pinky.wave = "CHASE";
 
     const target = ai.calculateTarget(pinky, pacman, blinky, maze, 200);
 
@@ -43,7 +43,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const pacman = new Pacman(14 * TILE_SIZE + 4, 20 * TILE_SIZE + 4, "UP");
     const blinky = new Ghost("BLINKY", 14 * TILE_SIZE + 4, 24 * TILE_SIZE + 4, "UP", false);
     const inky = new Ghost("INKY", 12 * TILE_SIZE + 4, 14 * TILE_SIZE + 4, "UP", false);
-    inky.mode = "CHASE";
+    inky.wave = "CHASE";
 
     // Normalized: Pivot = (14, 18). Target = 2*(14, 18) - (14, 24) = (14, 12)
     const normTarget = aiNorm.calculateTarget(inky, pacman, blinky, maze, 200);
@@ -61,7 +61,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const pacman = new Pacman(5 * TILE_SIZE + 4, 26 * TILE_SIZE + 4, "LEFT");
     const clyde = new Ghost("CLYDE", 7 * TILE_SIZE + 4, 26 * TILE_SIZE + 4, "LEFT", false);
     const blinky = new Ghost("BLINKY", 20 * TILE_SIZE + 4, 5 * TILE_SIZE + 4, "LEFT", false);
-    clyde.mode = "CHASE";
+    clyde.wave = "CHASE";
 
     // Distance is 2 tiles (< 8 tiles)
     const target = ai.calculateTarget(clyde, pacman, blinky, maze, 200);

@@ -33,7 +33,7 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
       "LEFT",
       false
     );
-    ghost.mode = "CHASE";
+    ghost.wave = "CHASE";
     // Target is directly above at col 12, row 5
     const target = { col: 12, row: 5 };
 
@@ -57,7 +57,7 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
       "LEFT",
       false
     );
-    ghost.mode = "CHASE";
+    ghost.wave = "CHASE";
     const target = { col: 12, row: 20 }; // Target directly above
 
     const nextDir = chooseNextGhostDirection(ghost.toState(), target, maze, 12, 26, "LEFT");
@@ -75,7 +75,7 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
       false
     );
 
-    ghost.mode = "EATEN";
+    ghost.location = "EYES";
 
     const target = { col: 12, row: 5 };
 

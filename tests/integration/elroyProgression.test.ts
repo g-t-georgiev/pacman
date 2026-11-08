@@ -7,8 +7,8 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 1);
     const blinky = engine.ghosts.BLINKY;
-    blinky.inHouse = false;
-    blinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
 
     // Standard speed: 200 dots left
     const baseSpeedPct = blinky.getSpeedPercentage(engine.maze, 200, 1);
@@ -24,17 +24,17 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
     expect(elroy2SpeedPct).toBeGreaterThan(elroy1SpeedPct);
   });
 
-  it("should make Cruise Elroy Blinky ignore scatter wave transitions and stay in CHASE", () => {
+  it("Cruise Elroy Blinky keeps chasing Pac-Man during a scatter wave", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 1);
     engine.playState = "PLAYING";
 
     const blinky = engine.ghosts.BLINKY;
     const pinky = engine.ghosts.PINKY;
-    blinky.inHouse = false;
-    pinky.inHouse = false;
-    blinky.mode = "CHASE";
-    pinky.mode = "CHASE";
+    blinky.location = "ACTIVE";
+    pinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
+    pinky.wave = "CHASE";
 
     // Set dots remaining to trigger Cruise Elroy 1
     engine.dotsRemaining = ELROY_1_DOTS_LEFT;
@@ -47,9 +47,12 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
       engine.update();
     }
 
-    // Pinky switches to SCATTER
+    // Both follow the global wave into SCATTER...
     expect(pinky.mode).toBe("SCATTER");
-    // Cruise Elroy Blinky ignores SCATTER and stays in CHASE!
-    expect(blinky.mode).toBe("CHASE");
+    expect(blinky.mode).toBe("SCATTER");
+    // ...but Elroy Blinky keeps targeting Pac-Man instead of his corner (Dossier, Blinky)
+    const pac = engine.pacman.tileCoord;
+    expect(blinky.target).toEqual({ col: pac.col, row: pac.row });
+    expect(pinky.target).toEqual(engine.maze.scatterTargets.PINKY);
   });
 });

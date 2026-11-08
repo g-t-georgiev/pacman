@@ -32,7 +32,8 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
     {
       id: "RULE_BLINKY_ELROY_SCATTER_IMMUNITY",
       name: "Blinky Cruise Elroy Scatter Immunity",
-      description: "When dots remaining <= 20, Blinky must remain in CHASE and never enter SCATTER",
+      description:
+        "When dots remaining <= 20, Blinky keeps targeting Pac-Man even during a SCATTER wave",
       enabled: true,
       passes: 0,
       failures: 0,
@@ -40,14 +41,14 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
         const blinky = engine.ghostStates.BLINKY;
         if (
           engine.dotsRemaining <= ELROY_1_DOTS_LEFT &&
-          blinky.mode !== "EATEN" &&
-          blinky.mode !== "FRIGHTENED" &&
-          !blinky.inHouse
+          blinky.location === "ACTIVE" &&
+          blinky.mode === "SCATTER"
         ) {
-          if (blinky.mode === "SCATTER") {
+          const pac = engine.pacman.tileCoord;
+          if (blinky.target.col !== pac.col || blinky.target.row !== pac.row) {
             return {
               pass: false,
-              message: `Blinky entered SCATTER mode with only ${engine.dotsRemaining} dots remaining!`,
+              message: `Elroy Blinky targets (${blinky.target.col}, ${blinky.target.row}) in SCATTER instead of Pac-Man with ${engine.dotsRemaining} dots left!`,
             };
           }
         }
