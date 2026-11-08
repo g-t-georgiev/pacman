@@ -95,9 +95,14 @@ export const ArcadeCabinet: React.FC = () => {
       }
     };
 
+    // The agent driver edits state between ticks; re-render panels that read the engine directly
+    const handleUiSync = () => setUiTick((t) => t + 1);
+
     GameEvents.on("GAME_OVER", handleGameOver);
+    GameEvents.on("UI_SYNC", handleUiSync);
     return () => {
       GameEvents.off("GAME_OVER", handleGameOver);
+      GameEvents.off("UI_SYNC", handleUiSync);
     };
   }, []);
 

@@ -75,6 +75,10 @@ export interface Placement {
 export interface Scenario {
   level?: number;
   playState?: PlayState;
+  /**
+   * Removes dots from the maze (plain dots first, in reading order, then energizers) until this
+   * many remain. They count as eaten for the fruit counter. It can only remove dots, never add.
+   */
   dotsRemaining?: number;
   waveIndex?: number;
   waveTimer?: number;
@@ -183,7 +187,7 @@ export class AgentDriver {
   public scenario(s: Scenario): AgentView {
     const e = this.engine;
     if (s.level !== undefined) e.initGame(e.mode, s.level);
-    if (s.dotsRemaining !== undefined) e.dotsRemaining = s.dotsRemaining;
+    if (s.dotsRemaining !== undefined) this.clearDotsDownTo(s.dotsRemaining);
     if (s.waveIndex !== undefined) e.timerController.waveIndex = s.waveIndex;
     if (s.waveTimer !== undefined) e.timerController.waveTimer = s.waveTimer;
     if (s.waveIndex !== undefined || s.waveTimer !== undefined) {
@@ -326,8 +330,27 @@ export class AgentDriver {
     if (!this.runner) this.recorded.push(...this.engine.drainEvents());
   }
 
+  private clearDotsDownTo(target: number): void {
+    const e = this.engine;
+    if (target > e.dotsRemaining) {
+      throw new Error(`dotsRemaining: only ${e.dotsRemaining} dots are left, cannot set ${target}`);
+    }
+    for (const kind of ["DOT", "ENERGIZER"] as const) {
+      for (const row of e.maze.tiles) {
+        for (let col = 0; col < row.length && e.dotsRemaining > target; col++) {
+          if (row[col] !== kind) continue;
+          row[col] = "EMPTY";
+          e.dotsRemaining--;
+          e.dotsEatenThisRound++;
+        }
+      }
+    }
+  }
+
+  /** Redraws the canvas and pushes the HUD values to the UI (browser). */
   private render(): void {
     this.runner?.renderer?.render(this.engine);
+    this.runner?.syncUi();
   }
 
   private result(frames: number, view: AgentView = this.view()): StepResult {

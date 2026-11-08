@@ -64,6 +64,21 @@ export class GameRunner {
     this.syncSiren();
   }
 
+  /**
+   * Pushes the current score, lives, level and play state to the UI, even when nothing changed
+   * through an event (state loaded or edited between ticks). Panels that read the engine directly
+   * re-render on `UI_SYNC`.
+   */
+  public syncUi(): void {
+    this.flush();
+    const e = this.engine;
+    GameEvents.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });
+    GameEvents.emit("LIVES_CHANGED", e.lives);
+    GameEvents.emit("LEVEL_CHANGED", e.level);
+    GameEvents.emit("PLAY_STATE_CHANGED", e.playState);
+    GameEvents.emit("UI_SYNC");
+  }
+
   private syncSiren(): void {
     const siren = this.engine.getSirenState();
     if (!this.engine.settings.soundEnabled || siren.kind === "OFF") {

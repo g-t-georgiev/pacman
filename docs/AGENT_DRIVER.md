@@ -30,7 +30,12 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `diagnostics()`          | Diagnostics rules that have failed, with messages, plus the latest log entries.  |
 
 `scenario()` with a `level` loads that level first (fresh maze, timers, house); the other fields
-are applied on top. Ghost placements default to `location: "ACTIVE"`.
+are applied on top. Ghost placements default to `location: "ACTIVE"`. `dotsRemaining` removes
+dots from the maze (plain dots first, then energizers) so the board matches the count.
+
+In the browser, every call redraws the canvas and pushes score, lives, level and play state to
+the HUD and panels, so they stay correct while the loop is paused. The Practice panel's pause
+button does not follow `pause()` yet: the two are separate pauses (see T11 in the plan).
 
 ## Example (browser console or a browser tool)
 

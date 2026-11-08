@@ -47,6 +47,14 @@ describe("AgentDriver (headless)", () => {
     expect(view.dotsRemaining).toBe(15);
   });
 
+  it("dotsRemaining removes dots from the maze so the board matches the count", () => {
+    const agent = driver();
+    agent.scenario({ dotsRemaining: 3 });
+    const left = agent.engine.maze.tiles.flat().filter((t) => t === "DOT" || t === "ENERGIZER");
+    expect(left).toEqual(["ENERGIZER", "ENERGIZER", "ENERGIZER"]);
+    expect(() => agent.scenario({ dotsRemaining: 10 })).toThrow();
+  });
+
   it("save/load rewinds exactly, and the hash proves it", () => {
     const agent = driver();
     agent.step(50);
