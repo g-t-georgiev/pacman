@@ -14,7 +14,6 @@ export class Pacman extends Actor {
   public isDying: boolean = false;
   public deathProgress: number = 0;
   public invincible: boolean = false;
-  public eatDotCooldown: number = 0;
   public eatingFreezeFrames: number = 0;
 
   constructor(x: number, y: number, dir: Direction = "LEFT") {
@@ -93,7 +92,6 @@ export class Pacman extends Actor {
       isDying: this.isDying,
       deathProgress: this.deathProgress,
       invincible: this.invincible,
-      eatDotCooldown: this.eatDotCooldown,
       eatingFreezeFrames: this.eatingFreezeFrames,
     };
   }
@@ -112,7 +110,6 @@ export class Pacman extends Actor {
     this.isDying = state.isDying;
     this.deathProgress = state.deathProgress;
     this.invincible = state.invincible;
-    this.eatDotCooldown = state.eatDotCooldown;
     this.eatingFreezeFrames = state.eatingFreezeFrames ?? 0;
   }
 
@@ -124,13 +121,9 @@ export class Pacman extends Actor {
     isFrightened: boolean,
     levelOrConfig: number | LevelSpeedConfig
   ): number {
-    const isEating = this.eatDotCooldown > 0;
     const config =
       typeof levelOrConfig === "number" ? getSpeedConfigForLevel(level) : levelOrConfig;
-    const { pacmanFrightEating, pacmanFright, pacmanEating, pacmanNormal } = config;
 
-    if (isFrightened) return isEating ? pacmanFrightEating : pacmanFright;
-
-    return isEating ? pacmanEating : pacmanNormal;
+    return isFrightened ? config.pacmanFright : config.pacmanNormal;
   }
 }

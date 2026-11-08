@@ -18,49 +18,54 @@ export default class GameRenderer {
     ctx.fillStyle = engine.maze.bgColor || "#000000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // 1. Render Intersection and No-Up Tiles
-    this.renderIntersectionTiles(engine);
+    const { showGrid, showGhostPaths, showTargetLines, learnMode, learnVisualsEnabled, crtFilter } =
+      engine.settings;
 
-    // 1. Render Maze Walls, Dots, and Gates
+    if (showGrid) {
+      // Render Intersection and No-Up Tiles
+      this.renderIntersectionTiles(engine);
+    }
+
+    // Render Maze Walls, Dots, and Gates
     this.renderMaze(engine);
 
-    // 1b. Render Tile Grid & Decision Intersections if enabled (Practice Mode)
-    if (engine.settings.showGrid) {
+    // Render Tile Grid & Decision Intersections if enabled (Practice Mode)
+    if (showGrid) {
       this.renderGrid(engine);
     }
 
-    // 2. Render Fruit / Treats
+    // Render Fruit / Treats
     this.renderFruit(engine);
 
-    // 3. Render Learn Mode Overlays (Target reticles, Inky vector, Clyde 8-tile radius)
-    if (engine.settings.learnMode || engine.settings.learnVisualsEnabled) {
+    // Render Learn Mode Overlays (Target reticles, Inky vector, Clyde 8-tile radius)
+    if (learnMode || learnVisualsEnabled) {
       this.renderLearnMode(engine);
     }
 
-    // 3b. Render Practice Ghost Paths (Multi-Step Lookahead Corridor Trajectories)
-    if (engine.settings.showGhostPaths) {
+    // Render Practice Ghost Paths (Multi-Step Lookahead Corridor Trajectories)
+    if (showGhostPaths) {
       this.renderPracticeGhostPaths(engine);
     }
 
-    // 3c. Render Practice Target Lines (Tactical Distance Meters & Proximity Radar)
-    if (engine.settings.showTargetLines) {
+    // Render Practice Target Lines (Tactical Distance Meters & Proximity Radar)
+    if (showTargetLines) {
       this.renderPracticeTargetLines(engine);
     }
 
-    // 4. Render Ghosts
+    // Render Ghosts
     this.renderGhosts(engine);
 
-    // 5. Render Pac-Man / Hero
+    // Render Pac-Man / Hero
     this.renderPlayer(engine);
 
-    // 6. Render Floating Score Popups
+    // Render Floating Score Popups
     this.renderScorePopups(engine);
 
-    // 7. Render State Messages ("READY!", "GAME OVER", "LEVEL CLEAR")
+    // Render State Messages ("READY!", "GAME OVER", "LEVEL CLEAR")
     this.renderStateBanners(engine);
 
-    // 8. Render CRT Scanlines if enabled
-    if (engine.settings.crtFilter) {
+    // Render CRT Scanlines if enabled
+    if (crtFilter) {
       this.renderCRTFilter();
     }
 
@@ -98,41 +103,17 @@ export default class GameRenderer {
           ctx.fillStyle = maze.gateColor || "#ffb8ff";
           ctx.fillRect(x, y + TILE_SIZE / 2 - 2, TILE_SIZE, 4);
         } else if (tile === "DOT") {
-          if (engine.mode === "COOKIE_MAN") {
-            // Chocolate chip dot
-            ctx.fillStyle = "#d2a679";
-            ctx.beginPath();
-            ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-            // Tiny chocolate morsel
-            ctx.fillStyle = "#5c3317";
-            ctx.fillRect(x + TILE_SIZE / 2 - 1, y + TILE_SIZE / 2 - 1, 1.5, 1.5);
-          } else {
-            // Classic arcade square/round pellet
-            ctx.fillStyle = maze.dotColor;
-            ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
-          }
+          ctx.fillStyle = maze.dotColor;
+          ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
           // Flashing energizer
           const pulse = (Math.sin(Date.now() / 120) + 1) * 0.5; // 0 to 1
           const radius = 5 + pulse * 2.5;
 
-          if (engine.mode === "COOKIE_MAN") {
-            // Giant frosted cookie
-            ctx.fillStyle = "#e0a96d";
-            ctx.beginPath();
-            ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#ff69b4";
-            ctx.beginPath();
-            ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, radius - 2, 0, Math.PI * 2);
-            ctx.fill();
-          } else {
-            ctx.fillStyle = maze.dotColor;
-            ctx.beginPath();
-            ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, radius, 0, Math.PI * 2);
-            ctx.fill();
-          }
+          ctx.fillStyle = maze.dotColor;
+          ctx.beginPath();
+          ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, radius, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     }
@@ -247,75 +228,6 @@ export default class GameRenderer {
       // Beauty mark
       ctx.fillStyle = "#222222";
       ctx.fillRect(radius * 0.1, radius * 0.3, 1.5, 1.5);
-    } else if (engine.mode === "CRAZY_OTTO") {
-      // Crazy Otto: Yellow body, cartoon legs/shoes, red antenna cap, big eyes
-      // Cartoon stick legs running
-      const legCycle = Math.sin(Date.now() / 60);
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-3, radius * 0.6);
-      ctx.lineTo(-4 + legCycle * 4, radius + 5);
-      ctx.moveTo(3, radius * 0.6);
-      ctx.lineTo(4 - legCycle * 4, radius + 5);
-      ctx.stroke();
-
-      // Red shoes
-      ctx.fillStyle = "#ff2222";
-      ctx.fillRect(-6 + legCycle * 4, radius + 4, 6, 3);
-      ctx.fillRect(2 - legCycle * 4, radius + 4, 6, 3);
-
-      // Body
-      ctx.fillStyle = "#ffea00";
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, mouth * Math.PI, (2 - mouth) * Math.PI);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-
-      // Big cartoon eyes
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(radius * 0.25, -radius * 0.4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(radius * 0.35, -radius * 0.4, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Red antenna hat on top
-      ctx.fillStyle = "#ff1111";
-      ctx.fillRect(-2, -radius - 4, 4, 5);
-      ctx.beginPath();
-      ctx.arc(0, -radius - 4, 3, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (engine.mode === "COOKIE_MAN") {
-      // Cookie Man: Gingerbread baker with frosted edge and chef hat
-      ctx.fillStyle = "#c68a4c";
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, mouth * Math.PI, (2 - mouth) * Math.PI);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-
-      // White icing border
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius - 1, mouth * Math.PI, (2 - mouth) * Math.PI);
-      ctx.stroke();
-
-      // Chocolate drop eye
-      ctx.fillStyle = "#4a2511";
-      ctx.beginPath();
-      ctx.arc(radius * 0.25, -radius * 0.4, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Tiny chef hat
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(0, -radius * 0.85, 4, 0, Math.PI * 2);
-      ctx.arc(-3, -radius * 0.7, 3, 0, Math.PI * 2);
-      ctx.arc(3, -radius * 0.7, 3, 0, Math.PI * 2);
-      ctx.fill();
     }
 
     ctx.restore();
@@ -342,14 +254,6 @@ export default class GameRenderer {
       let bodyColor = GHOST_COLORS[type].body;
       if (g.mode === "FRIGHTENED") {
         bodyColor = g.flashState ? "#ffffff" : "#2121ff";
-      }
-
-      // Crazy Otto mode: draw little walking feet
-      if (engine.mode === "CRAZY_OTTO") {
-        const step = Math.sin(Date.now() / 80) * 3;
-        ctx.fillStyle = "#ff6600";
-        ctx.fillRect(-5 + step, radius, 4, 4);
-        ctx.fillRect(2 - step, radius, 4, 4);
       }
 
       ctx.fillStyle = bodyColor;
@@ -665,6 +569,7 @@ export default class GameRenderer {
 
         // Boundary checks
         if (curCol < 0 || curCol >= maze.width || curRow < 0 || curRow >= maze.height) break;
+
         if (maze.tiles[curRow][curCol] === "WALL") break;
 
         pathPoints.push({ col: curCol, row: curRow, dir: nextDir });

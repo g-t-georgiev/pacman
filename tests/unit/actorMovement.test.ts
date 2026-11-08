@@ -38,8 +38,9 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
   });
 
   it("should NOT immediately reverse a ghost mid-tile; should prime reversal until reaching tile center", () => {
-    // Blinky positioned 2 pixels before tile boundary (10 * 16 + 14)
-    const blinky = new Ghost("BLINKY", 10 * TILE_SIZE + 14, 11 * TILE_SIZE + 8, "RIGHT", false);
+    // Blinky positioned 4 sim pixels (2 arcade pixels) before the tile boundary.
+    // Speed 80% moves exactly 1 arcade pixel (2 sim pixels) every frame.
+    const blinky = new Ghost("BLINKY", 10 * TILE_SIZE + 12, 11 * TILE_SIZE + 8, "RIGHT", false);
     blinky.lastOccupiedTile = { col: 10, row: 11 };
     const pacman = new Pacman(14 * TILE_SIZE + 8, 20 * TILE_SIZE + 8, "LEFT");
 
@@ -48,42 +49,22 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT"); // Still moving RIGHT until center!
 
-    // Step 1: Blinky moves 1 pixel (x becomes 10*16 + 15) -> still within col 10
-    movement.updateGhostMovement(
-      blinky,
-      blinky,
-      pacman,
-      0, // Frame 0 in speed mask gives 1px step
-      100,
-      1.0,
-      maze,
-      200,
-      ghostAi
-    );
-    expect(blinky.x).toBe(10 * TILE_SIZE + 15);
+    // Step 1: Blinky moves 1 arcade pixel (x becomes 10*16 + 14) -> still within col 10
+    movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, 200, ghostAi);
+    expect(blinky.x).toBe(10 * TILE_SIZE + 14);
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
-    // Step 2: Blinky moves another pixel (x reaches 11*16 + 0 = crosses boundary into col 11!)
-    movement.updateGhostMovement(
-      blinky,
-      blinky,
-      pacman,
-      1, // Frame 1 gives 1px step
-      100,
-      1.0,
-      maze,
-      200,
-      ghostAi
-    );
+    // Step 2: Blinky moves another arcade pixel (x reaches 11*16 + 0 = crosses boundary into col 11!)
+    movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, 200, ghostAi);
     expect(blinky.x).toBe(11 * TILE_SIZE);
     // Across boundary into col 11: reversal remains primed because center (11*16 + 8) is not reached yet
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
-    // Advance 8 more pixels to reach center of col 11 (11 * TILE_SIZE + 8)
-    for (let f = 2; f < 10; f++) {
-      movement.updateGhostMovement(blinky, blinky, pacman, f, 100, 1.0, maze, 200, ghostAi);
+    // Advance 8 more sim pixels (4 frames) to reach center of col 11 (11 * TILE_SIZE + 8)
+    for (let f = 2; f < 6; f++) {
+      movement.updateGhostMovement(blinky, blinky, pacman, f, 80, 1.0, maze, 200, ghostAi);
     }
     expect(blinky.x).toBe(11 * TILE_SIZE + 8);
     // At tile center, reversal executes immediately

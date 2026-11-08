@@ -233,7 +233,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           ) : (
             <span className="text-white font-bold text-xs sm:text-sm">
               {wave?.mode === "SCATTER" ? "🛡️ SCATTER MODE" : "⚔️ CHASE MODE"}{" "}
-              {wave?.duration !== Infinity
+              {wave?.duration && wave.duration !== Infinity
                 ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)`
                 : "(Permanent)"}
             </span>

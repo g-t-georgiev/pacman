@@ -1,5 +1,5 @@
 import React from "react";
-import { CLASSIC_FRUITS, COOKIE_MAN_TREATS, CRAZY_OTTO_TREATS } from "../game/constants";
+import { CLASSIC_FRUITS } from "../game/constants";
 import type { GameMode } from "../types";
 import { getFruitDataPerLevel } from "../utils";
 
@@ -26,21 +26,9 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
   onChangeMode,
   onClose,
 }) => {
-  const fruitMeta =
-    mode === "COOKIE_MAN"
-      ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
-      : mode === "CRAZY_OTTO"
-        ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
-        : getFruitDataPerLevel(CLASSIC_FRUITS, level);
+  const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, level);
 
-  const modeName =
-    mode === "PACMAN"
-      ? "Classic Pac-Man (1980)"
-      : mode === "MS_PACMAN"
-        ? "Ms. Pac-Man"
-        : mode === "CRAZY_OTTO"
-          ? "Crazy Otto (1981)"
-          : "Procedural Cookie Man";
+  const modeName = mode === "PACMAN" ? "Classic Pac-Man (1980)" : "Ms. Pac-Man";
 
   return (
     <div className="w-full max-w-[420px] bg-neutral-950/95 border-2 border-red-600/80 rounded-2xl p-6 text-white shadow-2xl backdrop-blur-md font-sans flex flex-col gap-5 select-none ring-1 ring-red-500/30">

@@ -9,10 +9,9 @@ import {
   SPEED_PCT_PER_LEVELS_2_TO_4,
   SPEED_PCT_PER_LEVELS_5_TO_20,
   SPEED_PCT_PER_LEVELS_21_PLUS,
-  SPEED_MASKS,
-  GHOST_EATEN_SPEED_PCT,
 } from "../game/constants";
 import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
+import { SIM_PX_PER_ARCADE_PX, SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 
 export function getFruitDataPerLevel(data: FruitDataType, level: number) {
   return data[Math.min(level - 1, data.length - 1)];
@@ -100,42 +99,18 @@ export function getSpeedConfigForLevel(level: number): LevelSpeedConfig {
 }
 
 /**
- * Calculates the exact integer pixel movement step for the current level frame
- * based on the authentic 16-frame cycle bitmasks.
+ * Sim pixels to move this frame, from the speed's 16-frame step masks (see `speedMasks.ts`).
+ * Callers must move one sim pixel at a time and run full per-pixel logic for each.
  *
  * @param currLevelFrame Monotonically increasing frame counter for the level.
- * @param speedPct Authentic speed percentage (e.g., 80, 75, 105, 200).
- * @param turboMultiplier Optional turbo chip speed multiplier.
- * @returns 0, 1, or 2 pixels to step this frame.
+ * @param speedPct A speed percentage that has an entry in SPEED_MASKS.
+ * @param turboMultiplier Optional turbo multiplier (to be replaced by tick-rate scaling, plan D2).
  */
 export function getPixelStepsThisFrame(
   currLevelFrame: number,
   speedPct: number,
   turboMultiplier: number = 1.0
 ): number {
-  // Determine base multiplier tier (2x steps for 200% eaten speed, 1x for everything else)
-  const baseMultiplier = speedPct >= GHOST_EATEN_SPEED_PCT ? 2 : 1;
-
-  // Cap the lookup percentage to valid 16-frame table entries (max 100%)
-  const lookupPct = speedPct > 100 ? 100 : speedPct;
-  const mask = SPEED_MASKS[lookupPct] ?? SPEED_MASKS[100];
-  const frameBit = currLevelFrame % 16;
-
-  // Extract basic binary bit step (0 or 1)
-  let step = (mask >> (15 - frameBit)) & 1;
-
-  // Cruise Elroy 2 (105% speed on level 5+) adds 1 extra pixel on frame 7 of the 16-frame cycle
-  if (speedPct === SPEED_PCT_PER_LEVELS_21_PLUS.elroy2 && frameBit === 7) {
-    step += 1;
-  }
-
-  // Apply the base speed tier scalar (forces eaten eyes to baseline 2 pixels/frame)
-  step *= baseMultiplier;
-
-  // Scale cleanly by turbo settings if active
-  if (turboMultiplier > 1.0) {
-    step = Math.round(step * turboMultiplier);
-  }
-
-  return step;
+  const steps = arcadeStepsOnFrame(SPEED_MASKS[speedPct], currLevelFrame) * SIM_PX_PER_ARCADE_PX;
+  return turboMultiplier > 1.0 ? Math.round(steps * turboMultiplier) : steps;
 }

@@ -1,6 +1,5 @@
 import type { GameMode, MazeData, TileCoord, TileType } from "../types";
 import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES } from "./constants";
-import { generateProceduralMaze } from "./proceduralMaze";
 
 /**
  * Classic Arcade Pac-Man Maze (28 cols x 36 rows):
@@ -80,52 +79,6 @@ const MS_PACMAN_MAP = [
   "#.####.## ######## ##.####.#",
   "TTTTTT.##          ##.TTTTTT",
   "######.## ######## ##.######",
-  "######.## ######## ##.######",
-  "#............##............#",
-  "#.####.#####.##.#####.####.#",
-  "#.####.#####.##.#####.####.#",
-  "#o..##.......  .......##..o#",
-  "###.##.##.########.##.##.###",
-  "###.##.##.########.##.##.###",
-  "#......##....##....##......#",
-  "#.##########.##.##########.#",
-  "#.##########.##.##########.#",
-  "#..........................#",
-  "############################",
-  // 34 - 35 (Bottom UI rows)
-  "                            ",
-  "                            ",
-];
-
-/**
- * Crazy Otto prototype map:
- * Authentic GCC prototype layout with open mid-lane corridors and emerald green / amber aesthetics!
- */
-const CRAZY_OTTO_MAP = [
-  // 0 - 2 (Top UI rows)
-  "                            ",
-  "                            ",
-  "                            ",
-  // 3 - 33 (Active maze)
-  "############################",
-  "#............##............#",
-  "#.####.#####.##.#####.####.#",
-  "#o####.#####.##.#####.####o#",
-  "#.####.#####.##.#####.####.#",
-  "#..........................#",
-  "#.####.##.########.##.####.#",
-  "#.####.##.########.##.####.#",
-  "#......##....##....##......#",
-  "######.##### ## #####.######",
-  "     #.##### ## #####.#     ",
-  "     #.##          ##.#     ",
-  "     #.## ###--### ##.#     ",
-  "######.## #HHHHHH# ##.######",
-  "TTTTTT.   #HHHHHH#   .TTTTTT",
-  "######.## #HHHHHH# ##.######",
-  "     #.## ######## ##.#     ",
-  "     #.##          ##.#     ",
-  "     #.## ######## ##.#     ",
   "######.## ######## ##.######",
   "#............##............#",
   "#.####.#####.##.#####.####.#",
@@ -246,7 +199,7 @@ function parseMapString(map: string[]): TileType[][] {
   });
 }
 
-export function getMazeData(mode: GameMode, level: number = 1, seed?: number): MazeData {
+export function getMazeData(mode: GameMode, level: number = 1): MazeData {
   const scatterTargets = DEFAULT_SCATTER_TARGETS[mode];
   switch (mode) {
     case "PACMAN": {
@@ -390,77 +343,6 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         ],
         intersections: MS_PACMAN_INTERSECTIONS,
       };
-    }
-    case "CRAZY_OTTO": {
-      return {
-        width: 28,
-        height: 36,
-        tiles: parseMapString(CRAZY_OTTO_MAP),
-        pacmanSpawn: {
-          x: 13,
-          y: 26,
-          dir: "LEFT",
-          candidates: DEFAULT_SPAWN_CANDIDATES.PACMAN,
-        },
-        ghostSpawns: {
-          BLINKY: {
-            x: 13,
-            y: 14,
-            inHouse: false,
-            initialDir: "LEFT",
-            candidates: DEFAULT_SPAWN_CANDIDATES.BLINKY,
-            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
-          },
-          PINKY: {
-            x: 13,
-            y: 17,
-            inHouse: true,
-            initialDir: "UP",
-            candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
-            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
-          },
-          INKY: {
-            x: 11,
-            y: 17,
-            inHouse: true,
-            initialDir: "UP",
-            candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
-            respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
-          },
-          CLYDE: {
-            x: 15,
-            y: 17,
-            inHouse: true,
-            initialDir: "UP",
-            candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
-            respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
-          },
-        },
-        fruitSpawn: {
-          candidates: DEFAULT_SPAWN_CANDIDATES.FRUIT,
-        },
-        scatterTargets: {
-          BLINKY: scatterTargets.BLINKY,
-          PINKY: scatterTargets.PINKY,
-          INKY: scatterTargets.INKY,
-          CLYDE: scatterTargets.CLYDE,
-        },
-        tunnels: [{ y: 17, leftExit: 0, rightExit: 27 }],
-        wallColor: "#00cc88", // Emerald proto green
-        dotColor: "#ffff00", // Bright yellow dots
-        bgColor: "#050a12",
-        gateColor: "#ff4444",
-        specialNoUpTiles: [
-          { col: 12, row: 14 },
-          { col: 15, row: 14 },
-          { col: 12, row: 26 },
-          { col: 15, row: 26 },
-        ],
-        intersections: CLASSIC_PACMAN_INTERSECTIONS,
-      };
-    }
-    case "COOKIE_MAN": {
-      return generateProceduralMaze(mode, seed);
     }
   }
 }

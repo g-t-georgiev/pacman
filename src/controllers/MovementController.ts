@@ -61,10 +61,6 @@ export class MovementController {
         break;
       }
     }
-
-    if (pacman.eatDotCooldown > 0) {
-      pacman.eatDotCooldown--;
-    }
   }
 
   /**

@@ -1,4 +1,4 @@
-export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
+export type GameMode = "PACMAN" | "MS_PACMAN";
 
 export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
@@ -12,9 +12,7 @@ export interface ScatterChaseSchedule {
 
 export interface LevelSpeedConfig {
   pacmanNormal: number;
-  pacmanEating: number;
   pacmanFright: number;
-  pacmanFrightEating: number;
   ghostNormal: number;
   ghostTunnel: number;
   ghostFrightened: number;
@@ -91,7 +89,6 @@ export interface PacmanState {
   isDying: boolean;
   deathProgress: number; // 0 to 1
   invincible: boolean;
-  eatDotCooldown: number;
   eatingFreezeFrames?: number;
 }
 

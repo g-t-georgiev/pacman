@@ -2,13 +2,7 @@ import type { Direction, GameMode } from "../types";
 import React, { useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { uiConfig } from "../config/ui.config";
-import {
-  CANVAS_HEIGHT,
-  CANVAS_WIDTH,
-  CLASSIC_FRUITS,
-  COOKIE_MAN_TREATS,
-  CRAZY_OTTO_TREATS,
-} from "../game/constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import GameRenderer from "../game/GameRenderer";
@@ -365,12 +359,7 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(true);
   };
 
-  const fruitMeta =
-    currentMode === "COOKIE_MAN"
-      ? getFruitDataPerLevel(COOKIE_MAN_TREATS, level)
-      : currentMode === "CRAZY_OTTO"
-        ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, level)
-        : getFruitDataPerLevel(CLASSIC_FRUITS, level);
+  const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, level);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">
@@ -381,13 +370,7 @@ export const ArcadeCabinet: React.FC = () => {
           <span className="font-bold tracking-wider text-white text-sm">PAC-MAN ARCADE LAB</span>
           <span className="hidden sm:inline text-neutral-400">·</span>
           <span className="hidden sm:inline text-neutral-400">
-            {currentMode === "PACMAN"
-              ? "Classic 1980"
-              : currentMode === "MS_PACMAN"
-                ? "Ms. Pac-Man"
-                : currentMode === "CRAZY_OTTO"
-                  ? "Crazy Otto 1981"
-                  : "Cookie Man"}
+            {currentMode === "PACMAN" ? "Classic 1980" : "Ms. Pac-Man"}
           </span>
         </div>
 
@@ -626,10 +609,6 @@ export const ArcadeCabinet: React.FC = () => {
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">
         <span>Pac-Man Arcade &copy; 1980 Namco / Midway</span>
-        <span className="mx-2">·</span>
-        <span>Crazy Otto prototype &copy; 1981 GCC</span>
-        <span className="mx-2">·</span>
-        <span>Procedural Cookie Man Lab</span>
       </footer>
     </div>
   );

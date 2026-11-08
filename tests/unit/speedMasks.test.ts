@@ -1,63 +1,102 @@
 import { describe, expect, it } from "vite-plus/test";
 import { getPixelStepsThisFrame } from "../../src/utils";
+import { SIM_PX_PER_ARCADE_PX, SPEED_MASKS, arcadeStepsOnFrame } from "../../src/game/speedMasks";
+import {
+  GHOST_EATEN_SPEED_PCT,
+  GHOST_HOUSE_SPEED_PCT,
+  SPEED_PCT_PER_LEVEL_1,
+  SPEED_PCT_PER_LEVELS_2_TO_4,
+  SPEED_PCT_PER_LEVELS_5_TO_20,
+  SPEED_PCT_PER_LEVELS_21_PLUS,
+} from "../../src/game/constants";
 
-describe("Layer 1 Unit Tests: 16-Frame Bitmask Speed System", () => {
-  it("should match exact authentic active bit counts across a 16-frame cycle for all speed percentages", () => {
-    // 71% -> 0x5555 has 8 bits, 71% is scaled to round(16 * 0.71) = 11 steps
-    const testCases: Array<{ pct: number; expectedStepsIn16Frames: number }> = [
-      { pct: 40, expectedStepsIn16Frames: 6 },
-      { pct: 45, expectedStepsIn16Frames: 7 },
-      { pct: 50, expectedStepsIn16Frames: 8 },
-      { pct: 55, expectedStepsIn16Frames: 9 },
-      { pct: 60, expectedStepsIn16Frames: 10 },
-      { pct: 71, expectedStepsIn16Frames: 11 },
-      { pct: 75, expectedStepsIn16Frames: 12 },
-      { pct: 80, expectedStepsIn16Frames: 13 },
-      { pct: 85, expectedStepsIn16Frames: 13 },
-      { pct: 90, expectedStepsIn16Frames: 14 },
-      { pct: 95, expectedStepsIn16Frames: 15 },
-      { pct: 100, expectedStepsIn16Frames: 16 },
+const popcount16 = (v: number) => {
+  let n = 0;
+  for (let i = 0; i < 16; i++) n += (v >> i) & 1;
+  return n;
+};
+
+const arcadePxPerCycle = (pct: number) => {
+  const mask = SPEED_MASKS[pct];
+  return popcount16(mask.step1) + popcount16(mask.step2);
+};
+
+describe("Speed masks (data validation)", () => {
+  it("every mask fits in 16 bits", () => {
+    for (const mask of Object.values(SPEED_MASKS)) {
+      expect(mask.step1 >>> 16).toBe(0);
+      expect(mask.step2 >>> 16).toBe(0);
+    }
+  });
+
+  it("every Dossier speed moves pct/5 arcade px per 16 frames (100% = 1.25 px/frame)", () => {
+    for (const key of Object.keys(SPEED_MASKS)) {
+      const pct = Number(key);
+      if (pct === GHOST_EATEN_SPEED_PCT) continue;
+      expect(arcadePxPerCycle(pct), `${pct}%`).toBe(pct / 5);
+    }
+  });
+
+  it("returning eyes move 2 arcade px every frame", () => {
+    expect(arcadePxPerCycle(GHOST_EATEN_SPEED_PCT)).toBe(32);
+  });
+
+  it("every speed used by the level tables and the ghost house has a mask", () => {
+    const tables = [
+      SPEED_PCT_PER_LEVEL_1,
+      SPEED_PCT_PER_LEVELS_2_TO_4,
+      SPEED_PCT_PER_LEVELS_5_TO_20,
+      SPEED_PCT_PER_LEVELS_21_PLUS,
     ];
-
-    testCases.forEach(({ pct, expectedStepsIn16Frames }) => {
-      let totalSteps = 0;
-      for (let frame = 0; frame < 16; frame++) {
-        totalSteps += getPixelStepsThisFrame(frame, pct, 1.0);
-      }
-      expect(totalSteps).toBe(expectedStepsIn16Frames);
-    });
-  });
-
-  it("should execute authentic Cruise Elroy 2 (105% speed) with an extra pixel on frame 7", () => {
-    let totalSteps = 0;
-    const stepsPerFrame: number[] = [];
-
-    for (let frame = 0; frame < 16; frame++) {
-      const step = getPixelStepsThisFrame(frame, 105, 1.0);
-      stepsPerFrame.push(step);
-      totalSteps += step;
+    const used = new Set<number>([GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT]);
+    for (const t of tables) {
+      for (const pct of Object.values(t) as number[]) used.add(pct);
     }
+    for (const pct of used) {
+      expect(SPEED_MASKS[pct], `${pct}%`).toBeDefined();
+    }
+  });
+});
 
-    // 16 frames: 15 frames move 1px, frame 7 moves 2px -> 17 total steps (105% of 16 ~ 16.8)
-    expect(totalSteps).toBe(17);
-    expect(stepsPerFrame[7]).toBe(2);
-    expect(stepsPerFrame[0]).toBe(1);
-    expect(stepsPerFrame[6]).toBe(1);
-    expect(stepsPerFrame[8]).toBe(1);
+describe("Speed mask stepping", () => {
+  it("reads frame 0 from the most significant bit", () => {
+    const mask = { step1: 0b1000_0000_0000_0000, step2: 0b0000_0000_0000_0001 };
+    expect(arcadeStepsOnFrame(mask, 0)).toBe(1);
+    expect(arcadeStepsOnFrame(mask, 1)).toBe(0);
+    expect(arcadeStepsOnFrame(mask, 15)).toBe(1);
+    expect(arcadeStepsOnFrame(mask, 16)).toBe(1); // cycle wraps
   });
 
-  it("should execute eaten eyes at 200% speed (2 pixels every single frame)", () => {
-    for (let frame = 0; frame < 32; frame++) {
-      const step = getPixelStepsThisFrame(frame, 200, 1.0);
-      expect(step).toBe(2);
+  it("level 1 Pac-Man (80%) moves exactly 1 arcade px every frame", () => {
+    for (let frame = 0; frame < 64; frame++) {
+      expect(getPixelStepsThisFrame(frame, 80)).toBe(SIM_PX_PER_ARCADE_PX);
     }
   });
 
-  it("should double steps when turbo multiplier is active (2.0x)", () => {
+  it("100% averages 1.25 arcade px/frame, with 2-px frames from step2", () => {
+    let total = 0;
+    let twoPxFrames = 0;
     for (let frame = 0; frame < 16; frame++) {
-      const normalStep = getPixelStepsThisFrame(frame, 100, 1.0);
-      const turboStep = getPixelStepsThisFrame(frame, 100, 2.0);
-      expect(turboStep).toBe(normalStep * 2);
+      const px = getPixelStepsThisFrame(frame, 100) / SIM_PX_PER_ARCADE_PX;
+      total += px;
+      if (px === 2) twoPxFrames++;
+    }
+    expect(total / 16).toBe(1.25);
+    expect(twoPxFrames).toBe(4);
+  });
+
+  it("Elroy 2 is faster than Elroy 1, and L1 Pac-Man is faster than L1 ghosts", () => {
+    expect(arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.elroy2)).toBeGreaterThan(
+      arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.elroy1)
+    );
+    expect(arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.pacmanNormal)).toBeGreaterThan(
+      arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.ghostNormal)
+    );
+  });
+
+  it("turbo scales the per-frame steps", () => {
+    for (let frame = 0; frame < 16; frame++) {
+      expect(getPixelStepsThisFrame(frame, 100, 2.0)).toBe(getPixelStepsThisFrame(frame, 100) * 2);
     }
   });
 });

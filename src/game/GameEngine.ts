@@ -21,13 +21,7 @@ import {
   getScatterChaseSchedule,
   getSpeedConfigForLevel,
 } from "../utils";
-import {
-  CLASSIC_FRUITS,
-  COOKIE_MAN_TREATS,
-  CRAZY_OTTO_TREATS,
-  ELROY_1_DOTS_LEFT,
-  TILE_SIZE,
-} from "./constants";
+import { CLASSIC_FRUITS, ELROY_1_DOTS_LEFT, TILE_SIZE } from "./constants";
 import GameEvents from "../core/EventBus";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
@@ -55,7 +49,7 @@ export default class GameEngine {
       CLYDE: true,
     },
     practiceMode: false,
-    showGrid: true,
+    showGrid: false,
     showGhostPaths: false,
     showTargetLines: false,
     invincible: false,
@@ -664,7 +658,6 @@ export default class GameEngine {
         this.score += 10;
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
-        this.pacman.eatDotCooldown = 2;
         this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
         soundEngine.playWaka();
         this.checkFruitSpawn();
@@ -825,12 +818,7 @@ export default class GameEngine {
   }
 
   public spawnFruit() {
-    const fruitMeta =
-      this.mode === "COOKIE_MAN"
-        ? getFruitDataPerLevel(COOKIE_MAN_TREATS, this.level)
-        : this.mode === "CRAZY_OTTO"
-          ? getFruitDataPerLevel(CRAZY_OTTO_TREATS, this.level)
-          : getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
+    const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
 
     this.fruit = {
       name: fruitMeta.name,
@@ -841,7 +829,7 @@ export default class GameEngine {
       duration: 600, // ~10 seconds at 60Hz
       color: fruitMeta.color,
       symbol: fruitMeta.symbol,
-      bouncing: this.mode === "MS_PACMAN" || this.mode === "CRAZY_OTTO",
+      bouncing: this.mode === "MS_PACMAN",
       bounceY: 0,
       bounceDir: 1,
     };
@@ -864,6 +852,7 @@ export default class GameEngine {
       const popup = this.scorePopups[i];
       popup.life--;
       popup.y -= 0.3; // float upward
+
       if (popup.life <= 0) {
         this.scorePopups.splice(i, 1);
       }
@@ -938,6 +927,7 @@ export default class GameEngine {
 
   public scrubToFrame(frameIndex: number) {
     if (frameIndex < 0 || frameIndex >= this.rewindBuffer.length) return;
+
     this.rewindIndex = frameIndex;
     const snap = this.rewindBuffer[frameIndex];
     this.restoreSnapshot(snap);

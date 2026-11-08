@@ -19,8 +19,9 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE / 2;
     engine.pacman.y = 11 * TILE_SIZE + TILE_SIZE / 2;
 
-    // Place Blinky at adjacent tile (11, 11), very close near the border (only 2px away from Pac-Man!)
-    blinky.x = 11 * TILE_SIZE + 1;
+    // Place Blinky at adjacent tile (11, 11), close to the border. One frame moves him at most
+    // 2 sim px, so he stays in col 11.
+    blinky.x = 11 * TILE_SIZE + 4;
     blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
 
     engine.update();

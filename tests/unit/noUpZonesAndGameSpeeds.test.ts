@@ -67,9 +67,10 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
   });
 
   it("scales actor movement accurately using gameSpeed in practice mode", () => {
-    const pacmanHalf = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "LEFT");
-    const pacmanFull = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "LEFT");
-    const pacmanDouble = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "LEFT");
+    // Moving RIGHT along row 26 leaves 5+ open tiles ahead
+    const pacmanHalf = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
+    const pacmanFull = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
+    const pacmanDouble = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
 
     // Run 16 frames (one full speed cycle) at different game speeds
     for (let f = 0; f < 16; f++) {
@@ -82,11 +83,11 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
     const distFull = Math.abs(pacmanFull.x - (10 * TILE_SIZE + 8));
     const distDouble = Math.abs(pacmanDouble.x - (10 * TILE_SIZE + 8));
 
-    // At 100% speed, 16 frames give 16 pixels
-    expect(distFull).toBe(16);
-    // At 0.5x speed, 16 frames give exactly 8 pixels
-    expect(distHalf).toBe(8);
-    // At 2.0x speed, 16 frames give exactly 32 pixels
-    expect(distDouble).toBe(32);
+    // At 100% speed, 16 frames give 20 arcade px = 40 sim px
+    expect(distFull).toBe(40);
+    // At 0.5x speed, exactly half
+    expect(distHalf).toBe(20);
+    // At 2.0x speed, exactly double
+    expect(distDouble).toBe(80);
   });
 });

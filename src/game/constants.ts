@@ -22,77 +22,52 @@ export const ELROY_2_DOTS_LEFT = 10;
 export const PACMAN_CORNERING_TOLERANCE = 4;
 
 /**
- * Authentic 16-frame cycle movement bitmasks from the original arcade ROM.
- * 1 means the actor advances 1 pixel on that frame; 0 means the actor pauses on that frame.
+ * Speed percentages: 100% = 75.7576 arcade px/s = 1.25 arcade px/frame at 60.606 Hz (Dossier, Table A.1).
+ * Pac-Man's slower "eating" speeds are not separate entries: they come from the 1-frame (dot) and
+ * 3-frame (energizer) stalls.
  */
-export const SPEED_MASKS: Record<number, number> = {
-  100: 0b1111_1111_1111_1111, // 16 steps (1px every frame)
-  95: 0b1111_1111_1111_1101, // 15 steps
-  90: 0b1111_0111_1111_0111, // 14 steps
-  87: 0b1111_0111_1110_1110, // 14 steps
-  85: 0b1110_1110_1111_0111, // 13 steps
-  83: 0b1110_1110_1011_1101, // 13 steps
-  80: 0b1110_1111_1110_1101, // 13 steps
-  79: 0b1110_1011_1110_1011, // 12 steps (Pac-Man eating dots L2+)
-  75: 0b1110_1110_1110_1110, // 12 steps (3 out of every 4 frames = 75%)
-  71: 0b1110_1011_1110_1010, // 11 steps (Pac-Man eating dots L1)
-  60: 0b1101_0110_1101_0110, // 10 steps (Ghost frightened L5+)
-  55: 0b1010_1101_1010_0101, // 9 steps (Ghost frightened L2-4)
-  50: 0b1010_1010_1010_1010, // 8 steps (Ghost frightened L1 / Tunnel L5+)
-  45: 0b1001_0101_1001_0100, // 7 steps (Tunnel L2-4)
-  40: 0b1001_0010_0100_1001, // 6 steps (Tunnel L1)
-};
-
 export const SPEED_PCT_PER_LEVEL_1: LevelSpeedConfig = {
-  pacmanNormal: 80, // 1.01 px
-  pacmanEating: 71, // 0.896375 px
-  pacmanFright: 90, // 1.13625 px
-  pacmanFrightEating: 83, // 1.047875 px
-  ghostNormal: 75, // 0.946875 px
-  ghostTunnel: 40, // 0.505 px
-  ghostFrightened: 50, // 0.63125 px
-  elroy1: 80, // 1.01 px
-  elroy2: 85, // 1.073125 px
+  pacmanNormal: 80, // 1 px/frame
+  pacmanFright: 90, // 1.125 px/frame
+  ghostNormal: 75, // 0.9375 px/frame
+  ghostTunnel: 40, // 0.5 px/frame
+  ghostFrightened: 50, // 0.625 px/frame
+  elroy1: 80, // 1 px/frame
+  elroy2: 85, // 1.0625 px/frame
 };
 
 export const SPEED_PCT_PER_LEVELS_2_TO_4: LevelSpeedConfig = {
-  pacmanNormal: 90, // 1.13625 px
-  pacmanEating: 79, // 0.997375 px
-  pacmanFright: 95, // 1.199375 px
-  pacmanFrightEating: 87, // 1.098375 px
-  ghostNormal: 85, // 1.073125 px
-  ghostTunnel: 45, // 0.568125 px
-  ghostFrightened: 55, // 0.694375 px
-  elroy1: 90, // 1.13625 px
-  elroy2: 95, // 1.199375 px
+  pacmanNormal: 90, // 1.125 px/frame
+  pacmanFright: 95, // 1.1875 px/frame
+  ghostNormal: 85, // 1.0625 px/frame
+  ghostTunnel: 45, // 0.5625 px/frame
+  ghostFrightened: 55, // 0.6875 px/frame
+  elroy1: 90, // 1.125 px/frame
+  elroy2: 95, // 1.1875 px/frame
 };
 
 export const SPEED_PCT_PER_LEVELS_5_TO_20: LevelSpeedConfig = {
-  pacmanNormal: 100, // 1.2625 px
-  pacmanEating: 87, // 1.098375 px
-  pacmanFright: 100, // 1.2625 px
-  pacmanFrightEating: 87, // 1.098375 px
-  ghostNormal: 95, // 1.199375 px
-  ghostTunnel: 50, // 0.63125 px
-  ghostFrightened: 60, // 0.7575 px
-  elroy1: 100, // 1.2625 px
-  elroy2: 105, // 1.325625 px
+  pacmanNormal: 100, // 1.25 px/frame
+  pacmanFright: 100, // 1.25 px/frame
+  ghostNormal: 95, // 1.1875 px/frame
+  ghostTunnel: 50, // 0.625 px/frame
+  ghostFrightened: 60, // 0.75 px/frame
+  elroy1: 100, // 1.25 px/frame
+  elroy2: 105, // 1.3125 px/frame
 };
 
 export const SPEED_PCT_PER_LEVELS_21_PLUS: LevelSpeedConfig = {
-  pacmanNormal: 90, // 1.13625 px
-  pacmanEating: 79, // 0.997375 px
-  pacmanFright: 100, // 1.2625 px
-  pacmanFrightEating: 87, // 1.098375 px
-  ghostNormal: 95, // 1.199375 px
-  ghostTunnel: 50, // 0.63125 px
-  ghostFrightened: 60, // 0.7575 px
-  elroy1: 100, // 1.2625 px
-  elroy2: 105, // 1.325625 px
+  pacmanNormal: 90, // 1.125 px/frame
+  pacmanFright: 100, // 1.25 px/frame
+  ghostNormal: 95, // 1.1875 px/frame
+  ghostTunnel: 50, // 0.625 px/frame
+  ghostFrightened: 60, // 0.75 px/frame
+  elroy1: 100, // 1.25 px/frame
+  elroy2: 105, // 1.3125 px/frame
 };
 
 /** Speed value for ghosts' eyes when eaten and return to the ghost house. */
-export const GHOST_EATEN_SPEED_PCT = 200; // 200% speed for returning eyes = 2.525 px;
+export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning eyes (see speedMasks.ts)
 /** Speed value for ghosts inside the ghost house. */
 export const GHOST_HOUSE_SPEED_PCT = 80;
 
@@ -232,26 +207,7 @@ export const CLASSIC_FRUITS: Array<{
   { name: "Key", points: 5000, symbol: "🗝️", color: "#00ddff" }, // Lvl 13+
 ] as const;
 
-export const CRAZY_OTTO_TREATS = [
-  { name: "Red Apple", points: 100, symbol: "🍎", color: "#ff3333" }, // Lvl 1
-  { name: "Banana", points: 300, symbol: "🍌", color: "#ffea00" }, // Lvl 2
-  { name: "Pretzel", points: 500, symbol: "🥨", color: "#c68a4c" }, // Lvl 3
-  { name: "Pear", points: 700, symbol: "🍐", color: "#88dd22" }, // Lvl 4
-  { name: "Pineapple", points: 1000, symbol: "🍍", color: "#ffbb11" }, // Lvl 5+
-] as const;
-
-export const COOKIE_MAN_TREATS = [
-  { name: "Glass of Milk", points: 200, symbol: "🥛", color: "#f0f4f8" }, // Lvl 1
-  { name: "Frosted Cupcake", points: 400, symbol: "🧁", color: "#ff69b4" }, // Lvl 2
-  { name: "Glazed Donut", points: 800, symbol: "🍩", color: "#e69555" }, // Lvl 3
-  { name: "Hot Cocoa", points: 1200, symbol: "☕", color: "#8b4513" }, // Lvl 4
-  { name: "Gingerbread House", points: 2500, symbol: "🏠", color: "#cd853f" }, // Lvl 5+
-] as const;
-
-export type FruitDataType =
-  | typeof CLASSIC_FRUITS
-  | typeof COOKIE_MAN_TREATS
-  | typeof CRAZY_OTTO_TREATS;
+export type FruitDataType = typeof CLASSIC_FRUITS;
 
 export const DEFAULT_SCATTER_TARGETS: Record<GameMode, Record<GhostType, TileCoord>> = {
   PACMAN: {
@@ -261,18 +217,6 @@ export const DEFAULT_SCATTER_TARGETS: Record<GameMode, Record<GhostType, TileCoo
     CLYDE: { col: 0, row: 34 },
   },
   MS_PACMAN: {
-    BLINKY: { col: 25, row: 0 },
-    PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
-  },
-  COOKIE_MAN: {
-    BLINKY: { col: 25, row: 0 },
-    PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
-  },
-  CRAZY_OTTO: {
     BLINKY: { col: 25, row: 0 },
     PINKY: { col: 2, row: 0 },
     INKY: { col: 27, row: 34 },

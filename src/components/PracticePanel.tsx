@@ -441,18 +441,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
         >
           🏠 Reset Ghosts
         </button>
-
-        {engine.mode === "COOKIE_MAN" && (
-          <button
-            onClick={() => {
-              engine.loadLevel(engine.level);
-              onUpdate();
-            }}
-            className="w-full px-2 py-1.5 mt-1 rounded bg-orange-900/60 border border-orange-700/60 hover:bg-orange-800/80 text-orange-200 font-semibold text-center"
-          >
-            🎲 Regenerate Procedural Maze
-          </button>
-        )}
       </div>
     </div>
   );

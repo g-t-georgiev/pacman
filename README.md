@@ -7,11 +7,9 @@ A faithful, modern arcade-accurate Pac-Man engine and AI intelligence lab built 
 ## 🎮 Gameplay Features
 
 - **Pixel-Accurate 28×36 Arcade Grid**: Double-bezel corridor borders, authentic tile centering, wrap-around warp tunnels, and speed-ratio regulation.
-- **4 Playable Game Editions**:
+- **2 Playable Game Editions**:
   - 🟡 **Classic Pac-Man (1980)**: The legendary arcade original with Blinky, Pinky, Inky, and Clyde.
   - 🎀 **Ms. Pac-Man (1982)**: Distinctive salmon/cyan maze, dual wrap-around tunnels (rows 10 & 20), lipstick, pink bow, Sue replacing Clyde, and bouncing fruit mechanics.
-  - 👟 **Crazy Otto (1981)**: The historical GCC prototype precursor to Ms. Pac-Man featuring animated running legs, red shoes, antenna cap, and open emerald corridors.
-  - 🍪 **Cookie Man**: Procedural symmetric solvable maze generator with chocolate chip pellets, giant frosted cookie energizers, baker chef hat, and bakery treats.
 - **⚡ Turbo Speed Chip (1.6x)**: Arcade speed mod toggle boosting player and ghost velocity for fast-paced gameplay.
 - **🧠 Interactive AI Intelligence Lab (Learn Mode)**:
   - Live ghost status badges above each ghost showing Name, Mode (`CHASE`, `SCATTER`, `FRIGHT`, `EYES`, `CHASE/FLEE`), and Target Tile Coordinates `[col, row]`.

@@ -45,26 +45,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       description:
         "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
     },
-    {
-      id: "CRAZY_OTTO",
-      title: "Crazy Otto",
-      subtitle: "1981 GCC Historical Prototype",
-      badge: "PROTOTYPE",
-      icon: "👟",
-      accent: "border-cyan-500/60 text-cyan-400",
-      description:
-        "The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.",
-    },
-    {
-      id: "COOKIE_MAN",
-      title: "Cookie Man",
-      subtitle: "Procedural Solvable Mazes",
-      badge: "INFINITE MAZES",
-      icon: "🍪",
-      accent: "border-amber-600/60 text-amber-400",
-      description:
-        "Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.",
-    },
   ];
 
   return (
