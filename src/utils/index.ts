@@ -9,27 +9,22 @@ import {
   SPEED_PCT_PER_LEVELS_2_TO_4,
   SPEED_PCT_PER_LEVELS_5_TO_20,
   SPEED_PCT_PER_LEVELS_21_PLUS,
+  SIM_FPS,
 } from "../game/constants";
 import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
-import { SIM_PX_PER_ARCADE_PX, SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
+import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 
 export function getFruitDataPerLevel(data: FruitDataType, level: number) {
   return data[Math.min(level - 1, data.length - 1)];
 }
 
 /**
- * Retrieves the frightened state duration (in seconds) for a given level.
- * Automatically handles endgame/infinite levels (Level 20+) by defaulting to 0.
+ * Frightened duration for a level, in frames. Levels past the table (19+) have none.
  *
  * @param level The current level number (1-indexed).
- * @returns The fright mode duration in seconds.
  */
 export function getFrightenedDuration(level: number): number {
-  // Guard clause for safety against invalid inputs
-  if (level < 1) return 0;
-
-  // Return the explicit configuration if it exists, otherwise default to 0 for levels 20+
-  return FRIGHTENED_DURATIONS[level] ?? 0;
+  return (FRIGHTENED_DURATIONS[level] ?? 0) * SIM_FPS;
 }
 
 /**
@@ -99,7 +94,7 @@ export function getSpeedConfigForLevel(level: number): LevelSpeedConfig {
 }
 
 /**
- * Sim pixels to move this frame, from the speed's 16-frame step masks (see `speedMasks.ts`).
+ * Pixels to move this frame, from the speed's 16-frame step masks (see `speedMasks.ts`).
  * Callers must move one sim pixel at a time and run full per-pixel logic for each.
  *
  * @param currLevelFrame Monotonically increasing frame counter for the level.
@@ -111,6 +106,6 @@ export function getPixelStepsThisFrame(
   speedPct: number,
   turboMultiplier: number = 1.0
 ): number {
-  const steps = arcadeStepsOnFrame(SPEED_MASKS[speedPct], currLevelFrame) * SIM_PX_PER_ARCADE_PX;
+  const steps = arcadeStepsOnFrame(SPEED_MASKS[speedPct], currLevelFrame);
   return turboMultiplier > 1.0 ? Math.round(steps * turboMultiplier) : steps;
 }

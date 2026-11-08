@@ -41,7 +41,7 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
 
     // Fast forward to trigger a wave switch from CHASE to SCATTER
     engine.timerController.waveIndex = 1; // CHASE wave
-    engine.timerController.waveTimer = 19.99; // Almost 20s
+    engine.timerController.waveTimer = 20 * 60 - 5; // 5 frames before the 20 s chase ends
 
     for (let f = 0; f < 10; f++) {
       engine.update();

@@ -4,6 +4,7 @@ import type { GhostType } from "@/src/types";
 import type { DiagnosticData } from "@/src/diagnostics/DiagnosticController";
 import GameEvents from "@/src/core/EventBus";
 import { useGameEvent } from "@/src/hooks/useGameEvent";
+import { SIM_FPS } from "@/src/game/constants";
 
 interface DiagnosticConsoleProps {
   engine: GameEngine;
@@ -222,7 +223,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ engine, on
               <div>
                 <span className="text-neutral-400 block">Wave / Timer:</span>
                 <span className="text-yellow-400 font-bold">
-                  {ghostStats.wave} ({ghostStats.waveTimer.toFixed(1)}s)
+                  {ghostStats.wave} ({(ghostStats.waveTimer / SIM_FPS).toFixed(1)}s)
                 </span>
               </div>
               <div>
@@ -315,7 +316,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ engine, on
                       ) : isEatenDescent ? (
                         <span className="text-cyan-300 font-bold bg-cyan-950 px-1 py-0.5 rounded text-[8.5px]">
                           {ghost.enteringHousePhase === "APPROACH_SEAM"
-                            ? "SEAM 224"
+                            ? "TO SEAM"
                             : ghost.enteringHousePhase === "DESCENDING_DOOR"
                               ? "DOOR DOWN"
                               : "TO SLOT"}

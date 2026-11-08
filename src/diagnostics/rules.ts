@@ -193,7 +193,7 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       id: "RULE_EATEN_DESCENT_SEAM_ALIGNMENT",
       name: "Eaten Eyes Door Seam Alignment",
       description:
-        "Eaten eyes descending through the door must align with the door seam between cols 13 and 14 (x = 224)",
+        "Eaten eyes descending through the door must align with the door seam between cols 13 and 14 (x = 14 tiles)",
       enabled: true,
       passes: 0,
       failures: 0,
@@ -203,10 +203,11 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
         >) {
           const g = engine.ghostStates[type];
           if (g.mode === "EATEN" && g.enteringHousePhase === "DESCENDING_DOOR") {
-            if (Math.abs(g.x - 224) > 1) {
+            const seamX = 14 * TILE_SIZE;
+            if (Math.abs(g.x - seamX) > 1) {
               return {
                 pass: false,
-                message: `${type} descending door at x=${g.x.toFixed(1)} instead of seam x=224!`,
+                message: `${type} descending door at x=${g.x.toFixed(1)} instead of seam x=${seamX}!`,
               };
             }
           }

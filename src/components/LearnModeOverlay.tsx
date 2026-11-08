@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS } from "../game/constants";
+import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS, SIM_FPS } from "../game/constants";
 import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
 import { getScatterChaseSchedule } from "../utils";
@@ -228,13 +228,13 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           <span className="text-neutral-400 text-[10px] block">GLOBAL AI WAVE CYCLE:</span>
           {isFrightened ? (
             <span className="text-blue-400 font-bold text-xs sm:text-sm animate-pulse">
-              FRIGHTENED ({engine.frightenedGlobalTimer.toFixed(1)}s left)
+              FRIGHTENED ({(engine.frightenedGlobalTimer / SIM_FPS).toFixed(1)}s left)
             </span>
           ) : (
             <span className="text-white font-bold text-xs sm:text-sm">
               {wave?.mode === "SCATTER" ? "🛡️ SCATTER MODE" : "⚔️ CHASE MODE"}{" "}
-              {wave?.duration && wave.duration !== Infinity
-                ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)`
+              {wave && wave.frames !== Infinity
+                ? `(${Math.max(0, Math.ceil((wave.frames - engine.waveTimer) / SIM_FPS))}s left)`
                 : "(Permanent)"}
             </span>
           )}

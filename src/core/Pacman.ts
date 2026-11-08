@@ -65,14 +65,14 @@ export class Pacman extends Actor {
   }
 
   /**
-   * Advances mouth chomp animation based on gameSpeed.
+   * Advances mouth chomp animation by one frame.
    */
-  public updateMouthAnimation(gameSpeed: number = 1.0): void {
+  public updateMouthAnimation(): void {
     if (this.mouthOpening) {
-      this.mouthAngle += 0.05 * gameSpeed;
+      this.mouthAngle += 0.05;
       if (this.mouthAngle >= 0.45) this.mouthOpening = false;
     } else {
-      this.mouthAngle -= 0.05 * gameSpeed;
+      this.mouthAngle -= 0.05;
       if (this.mouthAngle <= 0.05) this.mouthOpening = true;
     }
   }

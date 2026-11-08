@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
+import { TILE_SIZE } from "../../src/game/constants";
 
 describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
   it("should turn ghosts into FRIGHTENED mode with positive duration on Level 1", () => {
@@ -30,8 +31,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     blinky.inHouse = false;
     blinky.mode = "CHASE";
     blinky.dir = "LEFT";
-    blinky.x = 10 * 16 + 1; // 1 pixel from boundary of col 9
-    blinky.y = 11 * 16 + 8;
+    blinky.x = 10 * TILE_SIZE + 1; // 1 pixel from boundary of col 9
+    blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     blinky.lastOccupiedTile = { col: 10, row: 11 };
 
     engine.triggerFrightenedMode();
@@ -43,7 +44,7 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     // Reversal should be primed
     expect(blinky.reversalPrimed).toBe(true);
 
-    // Advance frames so Blinky reaches the center of col 9 (9 * 16 + 8)
+    // Advance frames so Blinky reaches the center of col 9
     for (let f = 0; f < 12; f++) {
       engine.update();
       if (!blinky.reversalPrimed) break;
@@ -67,7 +68,7 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     expect(engine.ghosts.BLINKY.mode).toBe("FRIGHTENED");
 
     // Fast-forward frightened timer to expiry
-    engine.frightenedGlobalTimer = 0.05;
+    engine.frightenedGlobalTimer = 3; // frames
     for (let f = 0; f < 10; f++) {
       engine.update();
     }
@@ -111,8 +112,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     blinky.inHouse = false;
     blinky.mode = "CHASE";
     // Place Blinky in horizontal corridor (row 11), moving RIGHT towards boundary
-    blinky.x = 10 * 16 + 14;
-    blinky.y = 11 * 16 + 8;
+    blinky.x = 10 * TILE_SIZE + 6; // 2 px before the col 11 boundary
+    blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     blinky.dir = "RIGHT";
     blinky.nextDir = "RIGHT";
     blinky.lastOccupiedTile = { col: 10, row: 11 };
@@ -123,7 +124,7 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT"); // Still RIGHT until boundary
 
-    // Advance frames until Blinky reaches the center of col 11 (11 * 16 + 8)
+    // Advance frames until Blinky reaches the center of col 11
     // Note: Frightened ghosts move at ~50% speed, so 10px takes ~20 frames
     for (let f = 0; f < 30; f++) {
       engine.update();
@@ -144,8 +145,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     inky.inHouse = false;
     inky.mode = "FRIGHTENED";
     // Place Inky in lower maze (row 29)
-    inky.x = 9 * 16 + 8;
-    inky.y = 29 * 16 + 8;
+    inky.x = 9 * TILE_SIZE + TILE_SIZE / 2;
+    inky.y = 29 * TILE_SIZE + TILE_SIZE / 2;
 
     // Simulate Pac-Man eating Inky
     engine.pacman.x = inky.x;
@@ -172,8 +173,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     const inky = engine.ghosts.INKY;
     inky.inHouse = false;
     inky.mode = "EATEN";
-    inky.x = 10 * 16 + 8;
-    inky.y = 14 * 16 + 8;
+    inky.x = 10 * TILE_SIZE + TILE_SIZE / 2;
+    inky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
 
     // Trigger another energizer while Inky is eyes returning to house
     engine.triggerFrightenedMode();
@@ -192,8 +193,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     blinky.inHouse = false;
     blinky.mode = "EATEN";
     // Position Blinky eyes approaching doorstep from the left in row 14 moving RIGHT
-    blinky.x = 11 * 16 + 8;
-    blinky.y = 14 * 16 + 8;
+    blinky.x = 11 * TILE_SIZE + TILE_SIZE / 2;
+    blinky.y = 14 * TILE_SIZE + TILE_SIZE / 2;
     blinky.dir = "RIGHT";
     blinky.nextDir = "RIGHT";
     blinky.lastOccupiedTile = { col: 11, row: 14 };

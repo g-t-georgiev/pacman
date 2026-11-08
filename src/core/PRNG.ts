@@ -1,30 +1,45 @@
+/** Seed the PRNG returns to at every level start and after every life lost (Dossier). */
+export const PRNG_SEED = 0x2a3b;
+
+/**
+ * Deterministic 16-bit LFSR used for frightened-ghost decisions.
+ *
+ * Owned by the game engine (one instance per game), never global. It advances only when a
+ * frightened ghost makes a decision, and is reset to the same seed at each level start and after
+ * each life lost, so frightened paths repeat exactly. It is not the arcade's generator (that one
+ * reads ROM bytes), only the same reset semantics.
+ */
 export class PRNG {
-  // The original Z80 register initializes with a non-zero value at boot.
-  // 0x0001 or any non-zero value works perfectly as a seed.
-  private register: number = 0x2a3b;
+  private register: number;
+
+  constructor(private readonly seed: number = PRNG_SEED) {
+    this.register = seed;
+  }
+
+  /** Returns to the seed. */
+  public reset(): void {
+    this.register = this.seed;
+  }
+
+  /** Current register value, for snapshots. */
+  public get state(): number {
+    return this.register;
+  }
+
+  public set state(value: number) {
+    this.register = value & 0xffff;
+  }
 
   /**
-   * Advances the 16-bit shift register by one step.
-   * Call this once per frame in your main game loop, AND
-   * call it whenever a ghost needs a random direction.
+   * Advances the register one step and returns a direction index 0..3
+   * (0 = UP, 1 = LEFT, 2 = DOWN, 3 = RIGHT).
    */
   public next(): number {
-    // 1. Isolate the incoming bit using the arcade's exact tap structure.
-    // The Z80 code checks specific bits (taps at bit 11, 13, 14, 15) to calculate the feedback.
-    // A standard maximum-length 16-bit LFSR tap sequence (bits 16, 14, 13, 11) achieves the same behavior.
+    // Maximum-length 16-bit LFSR (taps 16, 14, 13, 11).
     const bit =
       ((this.register >> 0) ^ (this.register >> 2) ^ (this.register >> 3) ^ (this.register >> 5)) &
       1;
-
-    // 2. Shift the register left by 1 and push the feedback bit into the lowest position
     this.register = ((this.register >> 1) | (bit << 15)) & 0xffff;
-
-    // 3. The arcade isolates the lowest 2 bits to yield a direction value between 0 and 3
-    // 00 = UP, 01 = LEFT, 10 = DOWN, 11 = RIGHT
     return this.register & 0x03;
   }
 }
-
-const GlobalPRNG = new PRNG();
-
-export default GlobalPRNG;

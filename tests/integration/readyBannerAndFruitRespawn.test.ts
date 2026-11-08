@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import GameEvents from "../../src/core/EventBus";
 import GameEngine from "../../src/game/GameEngine";
 import { uiConfig } from "../../src/config/ui.config";
 
@@ -46,23 +45,20 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
   it("should emit LEVEL_CHANGED whenever loadLevel is called and track current level", () => {
     const engine = new GameEngine("PACMAN", 0);
-    let capturedLevel = 0;
-    const listener = (e: CustomEvent<number>) => {
-      capturedLevel = e.detail;
-    };
-    GameEvents.on("LEVEL_CHANGED", listener);
+    const lastLevelEvent = () =>
+      engine
+        .drainEvents()
+        .filter((e) => e.type === "LEVEL_CHANGED")
+        .map((e) => e.level)
+        .pop();
 
-    try {
-      engine.loadLevel(5);
-      expect(engine.level).toBe(5);
-      expect(capturedLevel).toBe(5);
+    engine.loadLevel(5);
+    expect(engine.level).toBe(5);
+    expect(lastLevelEvent()).toBe(5);
 
-      engine.loadLevel(8);
-      expect(engine.level).toBe(8);
-      expect(capturedLevel).toBe(8);
-    } finally {
-      GameEvents.off("LEVEL_CHANGED", listener);
-    }
+    engine.loadLevel(8);
+    expect(engine.level).toBe(8);
+    expect(lastLevelEvent()).toBe(8);
   });
 
   it("should properly restart at the current level with READY text, delay, and 3 lives upon restartLevel", () => {
@@ -76,32 +72,25 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     engine.dotsRemaining = 100;
 
     // Call restartLevel for level 5
-    let levelEventFired = false;
-    const listener = (e: CustomEvent<number>) => {
-      if (e.detail === 5) levelEventFired = true;
-    };
-    GameEvents.on("LEVEL_CHANGED", listener);
+    engine.drainEvents();
+    engine.restartLevel(5);
 
-    try {
-      engine.restartLevel(5);
+    expect(engine.level).toBe(5);
+    expect(engine.lives).toBe(3);
+    expect(engine.playState).toBe("READY");
+    expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames);
+    expect(engine.drainEvents().some((e) => e.type === "LEVEL_CHANGED" && e.level === 5)).toBe(
+      true
+    );
 
-      expect(engine.level).toBe(5);
-      expect(engine.lives).toBe(3);
-      expect(engine.playState).toBe("READY");
-      expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames);
-      expect(levelEventFired).toBe(true);
-
-      // Verify staggered actor emergence timings
-      expect(engine.ghosts.BLINKY.inHouse).toBe(false); // Blinky starts outside
-      expect(engine.ghosts.PINKY.inHouse).toBe(true);
-      expect(engine.ghosts.PINKY.houseTimer).toBe(60); // 1 sec delay
-      expect(engine.ghosts.INKY.inHouse).toBe(true);
-      expect(engine.ghosts.INKY.houseTimer).toBe(180); // 3 sec delay
-      expect(engine.ghosts.CLYDE.inHouse).toBe(true);
-      expect(engine.ghosts.CLYDE.houseTimer).toBe(300); // 5 sec delay
-    } finally {
-      GameEvents.off("LEVEL_CHANGED", listener);
-    }
+    // Verify staggered actor emergence timings
+    expect(engine.ghosts.BLINKY.inHouse).toBe(false); // Blinky starts outside
+    expect(engine.ghosts.PINKY.inHouse).toBe(true);
+    expect(engine.ghosts.PINKY.houseTimer).toBe(60); // 1 sec delay
+    expect(engine.ghosts.INKY.inHouse).toBe(true);
+    expect(engine.ghosts.INKY.houseTimer).toBe(180); // 3 sec delay
+    expect(engine.ghosts.CLYDE.inHouse).toBe(true);
+    expect(engine.ghosts.CLYDE.houseTimer).toBe(300); // 5 sec delay
   });
 
   it("should immediately discard active bonus fruit when Pac-Man dies and ensure it does not reappear after respawn", () => {

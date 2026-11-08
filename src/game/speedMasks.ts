@@ -1,4 +1,4 @@
-import { GHOST_EATEN_SPEED_PCT, TILE_SIZE } from "./constants";
+import { GHOST_EATEN_SPEED_PCT } from "./constants";
 
 /**
  * Movement step masks for one 16-frame cycle.
@@ -13,9 +13,6 @@ export interface SpeedMask {
   step1: number;
   step2: number;
 }
-
-/** Sim pixels per arcade pixel. 2 while the sim still runs on 16-px tiles; 1 once it moves to 8-px. */
-export const SIM_PX_PER_ARCADE_PX = TILE_SIZE / 8;
 
 /**
  * Hand-authored speed masks, keyed by speed percentage.

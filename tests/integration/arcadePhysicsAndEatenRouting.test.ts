@@ -19,8 +19,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE / 2;
     engine.pacman.y = 11 * TILE_SIZE + TILE_SIZE / 2;
 
-    // Place Blinky at adjacent tile (11, 11), close to the border. One frame moves him at most
-    // 2 sim px, so he stays in col 11.
+    // Place Blinky at adjacent tile (11, 11). One frame moves him at most 2 px, so he stays in col 11.
     blinky.x = 11 * TILE_SIZE + 4;
     blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
 
@@ -50,13 +49,13 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     blinky.inHouse = false;
     blinky.mode = "CHASE";
 
-    // Pac-Man at tile 10 moving RIGHT towards tile 11 (at right edge of tile 10: 10 * 16 + 15)
-    engine.pacman.x = 10 * TILE_SIZE + 15;
+    // Pac-Man at tile 10 moving RIGHT towards tile 11 (at the right edge of tile 10)
+    engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE - 1;
     engine.pacman.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     engine.pacman.dir = "RIGHT";
     engine.pacman.nextDir = "RIGHT";
 
-    // Blinky at tile 11 moving LEFT towards tile 10 (at left edge of tile 11: 11 * 16 + 0)
+    // Blinky at tile 11 moving LEFT towards tile 10 (at the left edge of tile 11)
     blinky.x = 11 * TILE_SIZE;
     blinky.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     blinky.dir = "LEFT";
@@ -83,8 +82,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     // Set dot at (10, 11)
     engine.maze.tiles[11][10] = "DOT";
-    engine.pacman.x = 10 * TILE_SIZE + 8;
-    engine.pacman.y = 11 * TILE_SIZE + 8;
+    engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE / 2;
+    engine.pacman.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     engine.pacman.dir = "LEFT";
 
     // Run collision check by updating
@@ -107,8 +106,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     // Set energizer at (10, 11)
     engine.maze.tiles[11][10] = "ENERGIZER";
-    engine.pacman.x = 10 * TILE_SIZE + 8;
-    engine.pacman.y = 11 * TILE_SIZE + 8;
+    engine.pacman.x = 10 * TILE_SIZE + TILE_SIZE / 2;
+    engine.pacman.y = 11 * TILE_SIZE + TILE_SIZE / 2;
     engine.pacman.dir = "LEFT";
 
     // Run collision check
@@ -132,11 +131,17 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     expect(engine.pacman.eatingFreezeFrames).toBe(0);
   });
 
-  it("should guide eaten Blinky eyes through the door seam (x=224) into Pinky's slot (224, 280) and revive", () => {
+  it("should guide eaten Blinky eyes through the door seam into Pinky's slot and revive", () => {
     const movement = new MovementController();
 
     // Blinky reaches doorstep at (13, 14) as EATEN eyes
-    const blinky = new Ghost("BLINKY", 13 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "RIGHT", false);
+    const blinky = new Ghost(
+      "BLINKY",
+      13 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT",
+      false
+    );
     blinky.mode = "EATEN";
 
     // Advance descent step by step
@@ -147,15 +152,21 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     expect(blinky.inHouse).toBe(true);
     expect(blinky.mode).toBe("CHASE");
-    expect(blinky.x).toBe(224); // Pinky's slot
-    expect(blinky.y).toBe(280); // Row 17 centerline
+    expect(blinky.x).toBe(14 * TILE_SIZE); // Pinky's slot, on the 13/14 seam
+    expect(blinky.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2); // Row 17 centerline
   });
 
-  it("should guide eaten Inky eyes through the door seam and horizontally to Inky's left slot (184, 280)", () => {
+  it("should guide eaten Inky eyes through the door seam and horizontally to Inky's left slot", () => {
     const movement = new MovementController();
 
     // Inky reaches doorstep at (13, 14) as EATEN eyes
-    const inky = new Ghost("INKY", 13 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "RIGHT", false);
+    const inky = new Ghost(
+      "INKY",
+      13 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT",
+      false
+    );
     inky.mode = "EATEN";
 
     for (let i = 0; i < 200; i++) {
@@ -165,15 +176,21 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     expect(inky.inHouse).toBe(true);
     expect(inky.mode).toBe("CHASE");
-    expect(inky.x).toBe(184); // Inky's designated slot on left
-    expect(inky.y).toBe(280);
+    expect(inky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2); // Inky's designated slot on left
+    expect(inky.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
 
-  it("should guide eaten Clyde eyes through the door seam and horizontally to Clyde's right slot (248, 280)", () => {
+  it("should guide eaten Clyde eyes through the door seam and horizontally to Clyde's right slot", () => {
     const movement = new MovementController();
 
     // Clyde reaches doorstep at (14, 14) as EATEN eyes
-    const clyde = new Ghost("CLYDE", 14 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "LEFT", false);
+    const clyde = new Ghost(
+      "CLYDE",
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT",
+      false
+    );
     clyde.mode = "EATEN";
 
     for (let i = 0; i < 200; i++) {
@@ -183,8 +200,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     expect(clyde.inHouse).toBe(true);
     expect(clyde.mode).toBe("CHASE");
-    expect(clyde.x).toBe(248); // Clyde's designated slot on right
-    expect(clyde.y).toBe(280);
+    expect(clyde.x).toBe(15 * TILE_SIZE + TILE_SIZE / 2); // Clyde's designated slot on right
+    expect(clyde.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
 
   it("should define dual-candidate starting coordinates for all actors and bonus fruit in maze data", () => {
@@ -305,6 +322,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
     expect(finishedDescent).toBe(true);
     expect(inky.inHouse).toBe(true);
-    expect(inky.x).toBe(184); // Left slot inside house
+    expect(inky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2); // Left slot inside house
   });
 });

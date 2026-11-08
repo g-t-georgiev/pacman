@@ -1,5 +1,3 @@
-import type GameRenderer from "./GameRenderer";
-import soundEngine from "../audio/SoundEngine";
 import type {
   Direction,
   FruitItem,
@@ -12,8 +10,6 @@ import type {
   PacmanState,
   PlayState,
   ScorePopup,
-  SnapshotState,
-  TileType,
 } from "../types";
 import {
   getFrightenedDuration,
@@ -22,18 +18,34 @@ import {
   getSpeedConfigForLevel,
 } from "../utils";
 import { CLASSIC_FRUITS, ELROY_1_DOTS_LEFT, TILE_SIZE } from "./constants";
-import GameEvents from "../core/EventBus";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
-import { GameLoopController } from "../controllers/GameLoopController";
+import { PRNG } from "../core/PRNG";
 import { TimerController } from "../controllers/TimerController";
 import { AnimationController } from "../controllers/AnimationController";
 import { GhostAiController } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
 import { getMazeData } from "./mazes";
+import type { SimEvent, SirenState } from "./simEvents";
+import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
 import { uiConfig } from "../config/ui.config";
 
+/** Copies a ghost state, including its nested tile objects. */
+function copyGhostState(g: GhostState): GhostState {
+  return {
+    ...g,
+    target: { ...g.target },
+    intermediateTarget: g.intermediateTarget && { ...g.intermediateTarget },
+    lastDecisionTile: g.lastDecisionTile && { ...g.lastDecisionTile },
+    lastOccupiedTile: g.lastOccupiedTile && { ...g.lastOccupiedTile },
+  };
+}
+
+/**
+ * The simulation. It only updates state and queues SimEvents; it never plays audio, touches the
+ * UI event bus or reads the clock. GameRunner is the shell that drives it in real time.
+ */
 export default class GameEngine {
   public mode: GameMode = "PACMAN";
   public playState: PlayState = "MENU";
@@ -75,13 +87,19 @@ export default class GameEngine {
   public scorePopups: ScorePopup[] = [];
   public eatenGhostsInEnergizer: number = 0;
 
-  /** Level frame counter for 16-frame bitmask speed tables */
+  /** Frames since the level (or the current life) started. Indexes the 16-frame speed masks. */
   public currLevelFrame: number = 0;
+
+  /** Events queued during this tick, for the shell to dispatch (see GameRunner). */
+  private outbox: SimEvent[] = [];
+
+  /** The sim's only source of randomness. Reset at every level start and after every life lost. */
+  public prng: PRNG = new PRNG();
 
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
   public animationController: AnimationController = new AnimationController();
-  public ghostAiController: GhostAiController = new GhostAiController(false);
+  public ghostAiController: GhostAiController = new GhostAiController(false, this.prng);
   public movementController: MovementController = new MovementController();
   public diagnosticController: DiagnosticController = new DiagnosticController();
 
@@ -155,43 +173,46 @@ export default class GameEngine {
   }
 
   // Rewind ring buffer (up to 900 frames ~ 15 seconds)
-  private rewindBuffer: SnapshotState[] = [];
+  private rewindBuffer: GameState[] = [];
   private readonly maxRewindFrames: number = 900;
   public rewindIndex: number = -1; // when scrubbing (-1 means live play)
-
-  // Game loop & Render linkage
-  public gameLoopController!: GameLoopController;
-  public renderer: GameRenderer | null = null;
-  public onPreUpdate?: () => void;
 
   constructor(mode: GameMode = "PACMAN", highScoresRecord: number = 0) {
     this.mode = mode;
     this.highScore = highScoresRecord;
-
-    this.gameLoopController = new GameLoopController(
-      (currLevelFrame) => {
-        this.currLevelFrame = currLevelFrame;
-        if (this.onPreUpdate) this.onPreUpdate();
-        this.update();
-      },
-      () => {
-        if (this.renderer) {
-          this.renderer.render(this);
-        }
-      }
-    );
-
     this.initGame(mode, 1);
   }
 
-  public start(): void {
-    this.gameLoopController.start();
-    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+  /** Returns and clears the events queued since the last call. */
+  public drainEvents(): SimEvent[] {
+    const events = this.outbox;
+    this.outbox = [];
+    return events;
   }
 
-  public stop(): void {
-    this.gameLoopController.stop();
-    soundEngine.stopSiren();
+  private emit(event: SimEvent): void {
+    this.outbox.push(event);
+  }
+
+  private emitScore(): void {
+    this.emit({ type: "SCORE_CHANGED", score: this.score, highScore: this.highScore });
+  }
+
+  private setPlayState(playState: PlayState): void {
+    this.playState = playState;
+    this.emit({ type: "PLAY_STATE_CHANGED", playState });
+  }
+
+  /** The background siren for the current state (the shell plays it). */
+  public getSirenState(): SirenState {
+    if (this.playState !== "PLAYING") return { kind: "OFF" };
+    const ghosts = Object.values(this.ghosts);
+    if (ghosts.some((g) => g.mode === "EATEN")) return { kind: "EYES" };
+    if (ghosts.some((g) => g.mode === "FRIGHTENED")) return { kind: "FRIGHTENED" };
+    return {
+      kind: "NORMAL",
+      dotsRatio: this.totalDots > 0 ? this.dotsRemaining / this.totalDots : 1,
+    };
   }
 
   public buildGhostDiagnosticsData(type: GhostType) {
@@ -246,7 +267,6 @@ export default class GameEngine {
   }
 
   public initGame(mode: GameMode, level: number = 1) {
-    soundEngine.stopSiren();
     this.mode = mode;
     this.level = level;
     this.score = 0;
@@ -262,17 +282,15 @@ export default class GameEngine {
     this.rewindIndex = -1;
 
     this.loadLevel(this.level);
-    this.playState = "READY";
     this.readyTimer = uiConfig.timings.readyBannerFrames;
 
-    GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
-    GameEvents.emit("LIVES_CHANGED", this.lives);
-    GameEvents.emit("LEVEL_CHANGED", this.level);
-    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+    this.emitScore();
+    this.emit({ type: "LIVES_CHANGED", lives: this.lives });
+    this.emit({ type: "LEVEL_CHANGED", level: this.level });
+    this.setPlayState("READY");
   }
 
   public restartLevel(level?: number) {
-    soundEngine.stopSiren();
     if (level !== undefined) {
       this.level = level;
     }
@@ -288,21 +306,20 @@ export default class GameEngine {
     this.rewindIndex = -1;
 
     this.loadLevel(this.level);
-    this.playState = "READY";
     this.readyTimer = uiConfig.timings.readyBannerFrames;
 
-    GameEvents.emit("LIVES_CHANGED", this.lives);
-    GameEvents.emit("LEVEL_CHANGED", this.level);
-    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+    this.emit({ type: "LIVES_CHANGED", lives: this.lives });
+    this.emit({ type: "LEVEL_CHANGED", level: this.level });
+    this.setPlayState("READY");
   }
 
   public loadLevel(lvl: number) {
-    soundEngine.stopSiren();
     this.level = lvl;
     this.timerController.level = lvl;
     this.maze = getMazeData(this.mode, this.level);
     this.timerController.resetTimers();
-    this.gameLoopController.resetLevelFrame();
+    this.currLevelFrame = 0;
+    this.prng.reset();
     this.dotsRemaining = 0;
     this.dotsEatenThisRound = 0;
     this.fruit = null;
@@ -319,7 +336,7 @@ export default class GameEngine {
     this.totalDots = this.dotsRemaining;
 
     this.resetActorPositions();
-    GameEvents.emit("LEVEL_CHANGED", this.level);
+    this.emit({ type: "LEVEL_CHANGED", level: this.level });
   }
 
   public resetActorPositions() {
@@ -414,18 +431,18 @@ export default class GameEngine {
     }
   }
 
+  /** Advances the simulation by exactly one frame. */
   public update() {
+    this.currLevelFrame++;
+
     if (this.playState === "PAUSED" || this.rewindIndex !== -1) {
-      soundEngine.stopSiren();
       return;
     }
 
     if (this.playState === "READY") {
-      soundEngine.stopSiren();
       this.readyTimer--;
       if (this.readyTimer <= 0) {
-        this.playState = "PLAYING";
-        GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+        this.setPlayState("PLAYING");
       }
       return;
     }
@@ -434,9 +451,8 @@ export default class GameEngine {
       this.levelClearTimer--;
       if (this.levelClearTimer <= 0) {
         this.loadLevel(this.level + 1);
-        this.playState = "READY";
+        this.setPlayState("READY");
         this.readyTimer = uiConfig.timings.readyBannerFrames;
-        GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
       }
       return;
     }
@@ -445,7 +461,7 @@ export default class GameEngine {
       this.pacman.deathProgress += 0.015;
       if (this.pacman.deathProgress >= 1) {
         this.lives--;
-        GameEvents.emit("LIVES_CHANGED", this.lives);
+        this.emit({ type: "LIVES_CHANGED", lives: this.lives });
 
         // Discard bonus fruit immediately upon losing a life.
         if (this.fruit) {
@@ -454,22 +470,20 @@ export default class GameEngine {
         }
 
         if (this.lives <= 0) {
-          this.playState = "GAME_OVER";
-          soundEngine.stopSiren();
-          GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
-          GameEvents.emit("GAME_OVER", this.score);
+          this.setPlayState("GAME_OVER");
+          this.emit({ type: "GAME_OVER", score: this.score });
 
           if (this.score > this.highScore) {
             this.highScore = this.score;
-            GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+            this.emitScore();
           }
         } else {
           this.timerController.resetTimers();
-          this.gameLoopController.resetLevelFrame();
+          this.currLevelFrame = 0;
+          this.prng.reset();
           this.resetActorPositions();
-          this.playState = "READY";
+          this.setPlayState("READY");
           this.readyTimer = uiConfig.timings.readyBannerFrames;
-          GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
         }
       }
       return;
@@ -479,10 +493,9 @@ export default class GameEngine {
       return;
     }
 
-    // Advance Timers via TimerController (scaled by gameSpeed)
+    // Advance timers by one frame
     this.timerController.level = this.level;
     this.timerController.update(
-      this.settings.gameSpeed,
       (newMode) => {
         // Scatter <-> Chase wave switch: prime 180° reversal upon reaching next tile center!
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
@@ -533,12 +546,11 @@ export default class GameEngine {
     this.updateGhostsMovement(speedConfig);
 
     // Update Visual Animations via AnimationController
-    this.animationController.updatePacmanAnimation(this.pacman, this.settings.gameSpeed);
+    this.animationController.updatePacmanAnimation(this.pacman);
     this.animationController.updateGhostVisuals(
       this.ghosts,
       this.level,
-      this.frightenedGlobalTimer,
-      this.settings.gameSpeed
+      this.frightenedGlobalTimer
     );
 
     // Check Collisions
@@ -550,19 +562,8 @@ export default class GameEngine {
     // Update Score Popups
     this.updateScorePopups();
 
-    // Manage Background Siren
-    this.updateAudioSiren();
-
-    // Evaluate in-game diagnostic invariants
-    this.diagnosticController.evaluateRules(this, this.currLevelFrame);
-
     // Record snapshot for Rewind Buffer
     this.recordSnapshot();
-
-    // Emit live diagnostics event for decoupled subscribers
-    if (this.currLevelFrame % 4 === 0) {
-      GameEvents.emit("DIAGNOSTICS_TICK", this.getActorsDiagnostics());
-    }
   }
 
   private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
@@ -575,7 +576,6 @@ export default class GameEngine {
       this.currLevelFrame,
       speedPct,
       turboMult,
-      this.settings.gameSpeed,
       this.maze
     );
   }
@@ -595,7 +595,7 @@ export default class GameEngine {
 
       // 1. House emergence management
       if (g.inHouse) {
-        this.ghostAiController.updateHouseEmergence(g, doorX, this.settings.gameSpeed);
+        this.ghostAiController.updateHouseEmergence(g, doorX);
         return;
       }
 
@@ -636,7 +636,6 @@ export default class GameEngine {
         this.currLevelFrame,
         speedPct,
         turboMult,
-        this.settings.gameSpeed,
         this.maze,
         this.dotsRemaining,
         this.ghostAiController
@@ -659,10 +658,10 @@ export default class GameEngine {
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
-        soundEngine.playWaka();
+        this.emit({ type: "DOT_EATEN" });
         this.checkFruitSpawn();
         this.checkLevelClear();
-        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+        this.emitScore();
       } else if (tile === "ENERGIZER") {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.score += 50;
@@ -670,12 +669,11 @@ export default class GameEngine {
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
         this.eatenGhostsInEnergizer = 0;
-        soundEngine.playWaka();
         this.triggerFrightenedMode();
         this.checkFruitSpawn();
         this.checkLevelClear();
-        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
-        GameEvents.emit("ENERGIZER_EATEN", { level: this.level });
+        this.emitScore();
+        this.emit({ type: "ENERGIZER_EATEN", level: this.level });
       }
     }
 
@@ -707,11 +705,9 @@ export default class GameEngine {
           const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
           this.score += points;
 
-          soundEngine.playEatGhost();
-
           // Add Score Popup
           this.scorePopups.push({
-            id: `ghost_${Date.now()}_${type}`,
+            id: `ghost_${this.currLevelFrame}_${type}`,
             text: `${points}`,
             x: g.x,
             y: g.y,
@@ -719,14 +715,14 @@ export default class GameEngine {
             color: "#00ffff",
           });
 
-          GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
-          GameEvents.emit("GHOST_EATEN", { type, points });
+          this.emitScore();
+          this.emit({ type: "GHOST_EATEN", ghost: type, points });
         } else if (g.mode === "CHASE" || g.mode === "SCATTER") {
           if (!this.settings.invincible && !this.pacman.invincible) {
             // Pac-Man Dies!
             this.pacman.isDying = true;
             this.pacman.deathProgress = 0;
-            this.playState = "DYING";
+            this.setPlayState("DYING");
 
             // Discard bonus fruit immediately upon losing a life.
             if (this.fruit) {
@@ -734,9 +730,7 @@ export default class GameEngine {
               this.fruit = null;
             }
 
-            soundEngine.playDeath().catch(() => {
-              /* GG */
-            });
+            this.emit({ type: "PACMAN_DIED" });
           }
         }
       }
@@ -753,13 +747,12 @@ export default class GameEngine {
       if (isFruitTile) {
         this.score += this.fruit.points;
         this.fruit.active = false;
-        soundEngine.playEatFruit();
 
         const fruitX = fruitCol * TILE_SIZE + halfTile;
         const fruitY = fruitRow * TILE_SIZE + halfTile;
 
         this.scorePopups.push({
-          id: `fruit_${Date.now()}`,
+          id: `fruit_${this.currLevelFrame}`,
           text: `${this.fruit.points}`,
           x: fruitX,
           y: fruitY,
@@ -767,15 +760,15 @@ export default class GameEngine {
           color: "#ffcc00",
         });
 
-        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
-        GameEvents.emit("FRUIT_EATEN", this.fruit.points);
+        this.emitScore();
+        this.emit({ type: "FRUIT_EATEN", points: this.fruit.points });
       }
     }
 
     // High Score tracking
     if (this.score > this.highScore) {
       this.highScore = this.score;
-      GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+      this.emitScore();
     }
   }
 
@@ -839,7 +832,7 @@ export default class GameEngine {
     if (this.fruit && this.fruit.active) {
       this.fruit.duration--;
       if (this.fruit.bouncing) {
-        this.fruit.bounceY = Math.sin(Date.now() / 150) * 4;
+        this.fruit.bounceY = Math.sin(this.fruit.duration / 9) * 2;
       }
       if (this.fruit.duration <= 0) {
         this.fruit.active = false;
@@ -851,7 +844,7 @@ export default class GameEngine {
     for (let i = this.scorePopups.length - 1; i >= 0; i--) {
       const popup = this.scorePopups[i];
       popup.life--;
-      popup.y -= 0.3; // float upward
+      popup.y -= 0.15; // float upward
 
       if (popup.life <= 0) {
         this.scorePopups.splice(i, 1);
@@ -861,61 +854,84 @@ export default class GameEngine {
 
   private checkLevelClear() {
     if (this.dotsRemaining <= 0) {
-      this.playState = "LEVEL_CLEAR";
       this.levelClearTimer = 120; // 2 seconds flash
-      soundEngine.stopSiren();
-      GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
-      GameEvents.emit("LEVEL_CLEARED", this.level);
-    }
-  }
-
-  private updateAudioSiren() {
-    if (!this.settings.soundEnabled || this.playState !== "PLAYING") {
-      soundEngine.stopSiren();
-      return;
-    }
-
-    const anyFrightened = Object.values(this.ghostStates).some((g) => g.mode === "FRIGHTENED");
-    const anyEaten = Object.values(this.ghostStates).some((g) => g.mode === "EATEN");
-
-    if (anyEaten) {
-      soundEngine.updateSiren("EYES");
-    } else if (anyFrightened) {
-      soundEngine.updateSiren("FRIGHTENED");
-    } else {
-      const dotsRatio = this.totalDots > 0 ? this.dotsRemaining / this.totalDots : 1;
-      soundEngine.updateSiren("NORMAL", dotsRatio);
+      this.setPlayState("LEVEL_CLEAR");
+      this.emit({ type: "LEVEL_CLEARED", level: this.level });
     }
   }
 
   // --- Rewind Buffer & Practice Sandbox ---
 
-  private recordSnapshot() {
-    // Deep clone tiles array state to preserve dot consumption history
-    const clonedTiles: TileType[][] = this.maze.tiles.map((row) => [...row]);
-    const clonedGhosts = JSON.parse(JSON.stringify(this.ghostStates)) as Record<
-      GhostType,
-      GhostState
-    >;
-    const clonedPacman: PacmanState = { ...this.pacmanState };
+  /** Captures the complete sim state (see GameState). Every object in it is a fresh copy. */
+  public getState(): GameState {
+    const ghosts = {} as Record<GhostType, GhostState>;
+    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
+      ghosts[type] = copyGhostState(this.ghosts[type].toState());
+    });
 
-    const snapshot: SnapshotState = {
-      pacman: clonedPacman,
-      ghosts: clonedGhosts,
-      score: this.score,
+    return {
+      version: 1,
+      mode: this.mode,
+      playState: this.playState,
       level: this.level,
+      score: this.score,
+      highScore: this.highScore,
       lives: this.lives,
       dotsRemaining: this.dotsRemaining,
-      fruit: this.fruit ? { ...this.fruit } : null,
+      totalDots: this.totalDots,
+      dotsEatenThisRound: this.dotsEatenThisRound,
       eatenGhostsInEnergizer: this.eatenGhostsInEnergizer,
-      globalWaveIndex: this.waveIndex,
-      globalWaveTimer: this.waveTimer,
-      frightenedGlobalTimer: this.frightenedGlobalTimer,
-      playState: this.playState,
-      tiles: clonedTiles,
+      currLevelFrame: this.currLevelFrame,
+      timers: {
+        waveIndex: this.timerController.waveIndex,
+        waveTimer: this.timerController.waveTimer,
+        frightened: this.timerController.frightenedGlobalTimer,
+        ready: this.timerController.readyTimer,
+        levelClear: this.timerController.levelClearTimer,
+      },
+      prng: this.prng.state,
+      tiles: encodeTiles(this.maze.tiles),
+      pacman: this.pacman.toState(),
+      ghosts,
+      fruit: this.fruit ? { ...this.fruit } : null,
+      scorePopups: this.scorePopups.map((p) => ({ ...p })),
     };
+  }
 
-    this.rewindBuffer.push(snapshot);
+  /** Restores a state captured by getState(). The state object is not kept or mutated. */
+  public setState(state: GameState): void {
+    if (state.mode !== this.mode || state.level !== this.level) {
+      this.maze = getMazeData(state.mode, state.level);
+    }
+    this.mode = state.mode;
+    this.playState = state.playState;
+    this.level = state.level;
+    this.timerController.level = state.level;
+    this.score = state.score;
+    this.highScore = state.highScore;
+    this.lives = state.lives;
+    this.dotsRemaining = state.dotsRemaining;
+    this.totalDots = state.totalDots;
+    this.dotsEatenThisRound = state.dotsEatenThisRound;
+    this.eatenGhostsInEnergizer = state.eatenGhostsInEnergizer;
+    this.currLevelFrame = state.currLevelFrame;
+    this.timerController.waveIndex = state.timers.waveIndex;
+    this.timerController.waveTimer = state.timers.waveTimer;
+    this.timerController.frightenedGlobalTimer = state.timers.frightened;
+    this.timerController.readyTimer = state.timers.ready;
+    this.timerController.levelClearTimer = state.timers.levelClear;
+    this.prng.state = state.prng;
+    decodeTilesInto(state.tiles, this.maze.tiles);
+    this.pacman.restoreFromState({ ...state.pacman });
+    (Object.keys(state.ghosts) as GhostType[]).forEach((type) => {
+      this.ghosts[type].restoreFromState(copyGhostState(state.ghosts[type]));
+    });
+    this.fruit = state.fruit ? { ...state.fruit } : null;
+    this.scorePopups = state.scorePopups.map((p) => ({ ...p }));
+  }
+
+  private recordSnapshot() {
+    this.rewindBuffer.push(this.getState());
     if (this.rewindBuffer.length > this.maxRewindFrames) {
       this.rewindBuffer.shift();
     }
@@ -929,8 +945,10 @@ export default class GameEngine {
     if (frameIndex < 0 || frameIndex >= this.rewindBuffer.length) return;
 
     this.rewindIndex = frameIndex;
-    const snap = this.rewindBuffer[frameIndex];
-    this.restoreSnapshot(snap);
+    // Scrubbing back never lowers a high score the player already reached.
+    const highScore = this.highScore;
+    this.setState(this.rewindBuffer[frameIndex]);
+    this.highScore = Math.max(highScore, this.highScore);
   }
 
   public rewindSeconds(seconds: number) {
@@ -944,23 +962,8 @@ export default class GameEngine {
       // Truncate buffer to current frame and resume live play
       this.rewindBuffer = this.rewindBuffer.slice(0, this.rewindIndex + 1);
       this.rewindIndex = -1;
-      this.playState = "PLAYING";
+      this.setPlayState("PLAYING");
     }
-  }
-
-  public restoreSnapshot(snap: SnapshotState) {
-    this.pacmanState = { ...snap.pacman };
-    this.ghostStates = JSON.parse(JSON.stringify(snap.ghosts)) as Record<GhostType, GhostState>;
-    this.score = snap.score;
-    this.level = snap.level;
-    this.lives = snap.lives;
-    this.dotsRemaining = snap.dotsRemaining;
-    this.fruit = snap.fruit ? { ...snap.fruit } : null;
-    this.eatenGhostsInEnergizer = snap.eatenGhostsInEnergizer;
-    this.waveIndex = snap.globalWaveIndex;
-    this.waveTimer = snap.globalWaveTimer;
-    this.frightenedGlobalTimer = snap.frightenedGlobalTimer;
-    this.maze.tiles = snap.tiles.map((row) => [...row]);
   }
 
   public resetGhostsToHouse() {

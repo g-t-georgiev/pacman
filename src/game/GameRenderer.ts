@@ -1,7 +1,16 @@
 import type { Direction, GhostType } from "../types";
 import type GameEngine from "./GameEngine";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, GHOST_COLORS, TILE_SIZE } from "./constants";
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  GHOST_COLORS,
+  RENDER_SCALE,
+  RENDER_TILE_SIZE as TILE_SIZE,
+} from "./constants";
 import { chooseNextGhostDirection, getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
+
+/** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
+const px = (simPx: number) => simPx * RENDER_SCALE;
 
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -143,7 +152,7 @@ export default class GameRenderer {
     if (!p) return;
 
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(px(p.x), px(p.y));
 
     // Death animation
     if (p.isDying) {
@@ -239,7 +248,7 @@ export default class GameRenderer {
     (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       const g = engine.ghostStates[type];
       ctx.save();
-      ctx.translate(g.x, g.y);
+      ctx.translate(px(g.x), px(g.y));
 
       const radius = TILE_SIZE / 2;
 
@@ -324,7 +333,7 @@ export default class GameRenderer {
     if (!f || !f.active) return;
 
     const x = f.col * TILE_SIZE + TILE_SIZE / 2;
-    const y = f.row * TILE_SIZE + TILE_SIZE / 2 + (f.bounceY || 0);
+    const y = f.row * TILE_SIZE + TILE_SIZE / 2 + px(f.bounceY || 0);
 
     ctx.save();
     ctx.font = "16px monospace";
@@ -361,7 +370,7 @@ export default class GameRenderer {
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(g.x, g.y);
+        ctx.moveTo(px(g.x), px(g.y));
         ctx.lineTo(targetX, targetY);
         ctx.stroke();
         ctx.setLineDash([]);
@@ -406,7 +415,7 @@ export default class GameRenderer {
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 4]);
         ctx.beginPath();
-        ctx.moveTo(blinky.x, blinky.y);
+        ctx.moveTo(px(blinky.x), px(blinky.y));
         ctx.lineTo(pivotX, pivotY);
         ctx.lineTo(targetX, targetY);
         ctx.stroke();
@@ -425,7 +434,7 @@ export default class GameRenderer {
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 5]);
         ctx.beginPath();
-        ctx.arc(g.x, g.y, 8 * TILE_SIZE, 0, Math.PI * 2);
+        ctx.arc(px(g.x), px(g.y), 8 * TILE_SIZE, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -462,13 +471,13 @@ export default class GameRenderer {
         const badgeH = 13;
 
         // Position badge above ghost dome, flip below skirt if too close to top of canvas
-        let badgeY = g.y - 18;
+        let badgeY = px(g.y) - 18;
         if (badgeY < 6) {
-          badgeY = g.y + 12;
+          badgeY = px(g.y) + 12;
         }
 
         // Clamp horizontally so badge never clips outside canvas edges
-        const badgeX = Math.max(4, Math.min(CANVAS_WIDTH - badgeW - 4, g.x - badgeW / 2));
+        const badgeX = Math.max(4, Math.min(CANVAS_WIDTH - badgeW - 4, px(g.x) - badgeW / 2));
 
         // Dark rounded pill background with ghost color border
         ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
@@ -551,8 +560,8 @@ export default class GameRenderer {
       if (g.inHouse) return;
 
       const ghostColor = GHOST_COLORS[type].body;
-      const startCol = Math.floor(g.x / TILE_SIZE);
-      const startRow = Math.floor(g.y / TILE_SIZE);
+      const startCol = Math.floor(px(g.x) / TILE_SIZE);
+      const startRow = Math.floor(px(g.y) / TILE_SIZE);
 
       // Simulate forward corridor trajectory for next 7 steps
       const pathPoints: Array<{ col: number; row: number; dir: Direction }> = [];
@@ -586,7 +595,7 @@ export default class GameRenderer {
       ctx.globalAlpha = 0.85;
 
       ctx.beginPath();
-      ctx.moveTo(g.x, g.y);
+      ctx.moveTo(px(g.x), px(g.y));
       for (const pt of pathPoints) {
         ctx.lineTo(pt.col * TILE_SIZE + TILE_SIZE / 2, pt.row * TILE_SIZE + TILE_SIZE / 2);
       }
@@ -639,10 +648,12 @@ export default class GameRenderer {
       const targetY = g.target.row * TILE_SIZE + TILE_SIZE / 2;
 
       // Distance to target in tiles
-      const targetDistTiles = (Math.hypot(g.x - targetX, g.y - targetY) / TILE_SIZE).toFixed(1);
+      const targetDistTiles = (
+        Math.hypot(px(g.x) - targetX, px(g.y) - targetY) / TILE_SIZE
+      ).toFixed(1);
 
       // Distance to Pac-Man in tiles
-      const pacDistTiles = Math.hypot(g.x - pacman.x, g.y - pacman.y) / TILE_SIZE;
+      const pacDistTiles = Math.hypot(px(g.x) - px(pacman.x), px(g.y) - px(pacman.y)) / TILE_SIZE;
       const isDangerous = pacDistTiles <= 5.0 && g.mode !== "FRIGHTENED" && g.mode !== "EATEN";
 
       ctx.save();
@@ -652,14 +663,14 @@ export default class GameRenderer {
       ctx.lineWidth = isDangerous ? 2 : 1.2;
       ctx.setLineDash(isDangerous ? [6, 2] : [4, 4]);
       ctx.beginPath();
-      ctx.moveTo(g.x, g.y);
+      ctx.moveTo(px(g.x), px(g.y));
       ctx.lineTo(targetX, targetY);
       ctx.stroke();
       ctx.setLineDash([]);
 
       // Floating tactical badge at midpoint
-      const midX = (g.x + targetX) / 2;
-      const midY = (g.y + targetY) / 2;
+      const midX = (px(g.x) + targetX) / 2;
+      const midY = (px(g.y) + targetY) / 2;
 
       const label = `${GHOST_COLORS[type].name.toUpperCase()}: ${targetDistTiles}t`;
       ctx.font = "bold 9px monospace";
@@ -695,8 +706,8 @@ export default class GameRenderer {
         const alertLabel = `⚠️ ${pacDistTiles.toFixed(1)}t PROXIMITY`;
         ctx.font = "bold 9px monospace";
         const alertWidth = ctx.measureText(alertLabel).width;
-        const abx = g.x - alertWidth / 2 - 3;
-        const aby = g.y - 20;
+        const abx = px(g.x) - alertWidth / 2 - 3;
+        const aby = px(g.y) - 20;
         const abw = alertWidth + 6;
         const abh = 13;
 
@@ -711,7 +722,7 @@ export default class GameRenderer {
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(alertLabel, g.x, aby + abh / 2);
+        ctx.fillText(alertLabel, px(g.x), aby + abh / 2);
       }
 
       ctx.restore();
@@ -727,7 +738,7 @@ export default class GameRenderer {
 
     engine.scorePopups.forEach((popup) => {
       ctx.fillStyle = popup.color;
-      ctx.fillText(popup.text, popup.x, popup.y);
+      ctx.fillText(popup.text, px(popup.x), px(popup.y));
     });
 
     ctx.restore();

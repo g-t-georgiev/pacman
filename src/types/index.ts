@@ -6,7 +6,8 @@ export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_H
 export type GhostsToHousePhase = "NONE" | "APPROACH_SEAM" | "DESCENDING_DOOR" | "MOVING_TO_SLOT";
 
 export interface ScatterChaseSchedule {
-  duration: number;
+  /** Wave length in frames (Infinity = permanent). */
+  frames: number;
   mode: Extract<GhostBehavior, "SCATTER" | "CHASE">;
 }
 
@@ -186,19 +187,3 @@ export type PlayState =
   | "DYING"
   | "LEVEL_CLEAR"
   | "GAME_OVER";
-
-export interface SnapshotState {
-  pacman: PacmanState;
-  ghosts: Record<GhostType, GhostState>;
-  score: number;
-  level: number;
-  lives: number;
-  dotsRemaining: number;
-  fruit: FruitItem | null;
-  eatenGhostsInEnergizer: number;
-  globalWaveIndex: number;
-  globalWaveTimer: number;
-  frightenedGlobalTimer: number;
-  playState: PlayState;
-  tiles: TileType[][]; // snapshot of eaten dots
-}

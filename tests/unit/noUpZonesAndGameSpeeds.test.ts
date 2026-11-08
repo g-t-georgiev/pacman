@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { TILE_SIZE } from "../../src/game/constants";
 import { getMazeData } from "../../src/game/mazes";
 import { MovementController } from "../../src/controllers/MovementController";
+import { GameLoopController } from "../../src/controllers/GameLoopController";
 import { chooseNextGhostDirection, isTileNoUpZone } from "../../src/game/ghostAiUtils";
 import { Ghost } from "../../src/core/Ghost";
 import { Pacman } from "../../src/core/Pacman";
@@ -25,7 +26,13 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
   });
 
   it("forbids ghosts from turning UP at No-Up zones in CHASE mode even when target is directly above", () => {
-    const ghost = new Ghost("BLINKY", 12 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "LEFT", false);
+    const ghost = new Ghost(
+      "BLINKY",
+      12 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT",
+      false
+    );
     ghost.mode = "CHASE";
     // Target is directly above at col 12, row 5
     const target = { col: 12, row: 5 };
@@ -43,7 +50,13 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
     expect(maze.tiles[26][12]).toBe("DOT");
     expect(maze.tiles[26][15]).toBe("DOT");
 
-    const ghost = new Ghost("PINKY", 12 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "LEFT", false);
+    const ghost = new Ghost(
+      "PINKY",
+      12 * TILE_SIZE + TILE_SIZE / 2,
+      26 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT",
+      false
+    );
     ghost.mode = "CHASE";
     const target = { col: 12, row: 20 }; // Target directly above
 
@@ -54,7 +67,13 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
   });
 
   it("allows EATEN ghosts (eyes) to travel UP through No-Up zones toward house", () => {
-    const ghost = new Ghost("BLINKY", 12 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "LEFT", false);
+    const ghost = new Ghost(
+      "BLINKY",
+      12 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT",
+      false
+    );
 
     ghost.mode = "EATEN";
 
@@ -66,28 +85,32 @@ describe("Authentic Special No-Up Intersection Tiles and Practice GameSpeed", ()
     expect(nextDir).toBe("UP");
   });
 
-  it("scales actor movement accurately using gameSpeed in practice mode", () => {
-    // Moving RIGHT along row 26 leaves 5+ open tiles ahead
-    const pacmanHalf = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
-    const pacmanFull = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
-    const pacmanDouble = new Pacman(10 * TILE_SIZE + 8, 26 * TILE_SIZE + 8, "RIGHT");
+  it("game speed changes how many ticks run per real second, not what a tick does", () => {
+    const run = (gameSpeed: number) => {
+      let ticks = 0;
+      const loop = new GameLoopController(
+        () => ticks++,
+        () => {},
+        () => gameSpeed
+      );
+      // One real second, fed in 60 display frames
+      for (let i = 0; i < 60; i++) loop.advance(1000 / 60);
+      return ticks;
+    };
 
-    // Run 16 frames (one full speed cycle) at different game speeds
-    for (let f = 0; f < 16; f++) {
-      movement.updatePacmanMovement(pacmanHalf, f, 100, 1.0, 0.5, maze);
-      movement.updatePacmanMovement(pacmanFull, f, 100, 1.0, 1.0, maze);
-      movement.updatePacmanMovement(pacmanDouble, f, 100, 1.0, 2.0, maze);
-    }
+    expect(run(1.0)).toBe(60);
+    expect(run(0.5)).toBe(30);
+    expect(run(2.0)).toBe(120);
+  });
 
-    const distHalf = Math.abs(pacmanHalf.x - (10 * TILE_SIZE + 8));
-    const distFull = Math.abs(pacmanFull.x - (10 * TILE_SIZE + 8));
-    const distDouble = Math.abs(pacmanDouble.x - (10 * TILE_SIZE + 8));
-
-    // At 100% speed, 16 frames give 20 arcade px = 40 sim px
-    expect(distFull).toBe(40);
-    // At 0.5x speed, exactly half
-    expect(distHalf).toBe(20);
-    // At 2.0x speed, exactly double
-    expect(distDouble).toBe(80);
+  it("moves Pac-Man the same distance per tick at any game speed", () => {
+    const pacman = new Pacman(
+      10 * TILE_SIZE + TILE_SIZE / 2,
+      26 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT"
+    );
+    // 16 ticks at 100% = 20 px
+    for (let f = 0; f < 16; f++) movement.updatePacmanMovement(pacman, f, 100, 1.0, maze);
+    expect(pacman.x - (10 * TILE_SIZE + TILE_SIZE / 2)).toBe(20);
   });
 });

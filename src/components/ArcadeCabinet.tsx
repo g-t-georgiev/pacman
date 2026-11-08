@@ -5,6 +5,7 @@ import { uiConfig } from "../config/ui.config";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
+import { GameRunner } from "../game/GameRunner";
 import GameRenderer from "../game/GameRenderer";
 import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
@@ -106,6 +107,7 @@ export const ArcadeCabinet: React.FC = () => {
 
     const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
+    const runner = new GameRunner(engine);
     setLearnVisualsActive(engine.settings.learnVisualsEnabled ?? true);
 
     // Detect mobile touch capability to show D-pad automatically
@@ -126,12 +128,12 @@ export const ArcadeCabinet: React.FC = () => {
         ctx.scale(dpr, dpr);
         const renderer = new GameRenderer(ctx);
         rendererRef.current = renderer;
-        engine.renderer = renderer;
+        runner.renderer = renderer;
       }
     }
 
     // Connect gamepad polling to engine's pre-update tick
-    engine.onPreUpdate = () => {
+    runner.onPreUpdate = () => {
       pollGamepads(engine);
     };
 
@@ -139,10 +141,10 @@ export const ArcadeCabinet: React.FC = () => {
     void soundEngine.playIntro();
 
     // Start deterministic game loop via GameLoopController
-    engine.start();
+    runner.start();
 
     return () => {
-      engine.stop();
+      runner.stop();
       soundEngine.stopSiren();
       if (gameOverTimerRef.current !== null) {
         window.clearTimeout(gameOverTimerRef.current);

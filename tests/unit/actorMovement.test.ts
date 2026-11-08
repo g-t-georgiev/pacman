@@ -23,7 +23,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(pacman.dir).toBe("LEFT");
   });
 
-  it("should honor Pac-Man cornering pre-turn when within 4 pixels of tile center", () => {
+  it("should honor Pac-Man cornering pre-turn when within 2 pixels of tile center", () => {
     // Tile center for col 9 is 9*8 + 4 = 76. Pac-Man at x=74 is within 2px of center.
     const pacman = new Pacman(9 * TILE_SIZE + 2, 20 * TILE_SIZE + 4, "RIGHT");
 
@@ -38,35 +38,45 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
   });
 
   it("should NOT immediately reverse a ghost mid-tile; should prime reversal until reaching tile center", () => {
-    // Blinky positioned 4 sim pixels (2 arcade pixels) before the tile boundary.
-    // Speed 80% moves exactly 1 arcade pixel (2 sim pixels) every frame.
-    const blinky = new Ghost("BLINKY", 10 * TILE_SIZE + 12, 11 * TILE_SIZE + 8, "RIGHT", false);
+    // Blinky positioned 2 pixels before the tile boundary.
+    // Speed 80% moves exactly 1 pixel every frame.
+    const blinky = new Ghost(
+      "BLINKY",
+      10 * TILE_SIZE + 6,
+      11 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT",
+      false
+    );
     blinky.lastOccupiedTile = { col: 10, row: 11 };
-    const pacman = new Pacman(14 * TILE_SIZE + 8, 20 * TILE_SIZE + 8, "LEFT");
+    const pacman = new Pacman(
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      20 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT"
+    );
 
     // Wave switch primes reversal
     blinky.primeReversal();
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT"); // Still moving RIGHT until center!
 
-    // Step 1: Blinky moves 1 arcade pixel (x becomes 10*16 + 14) -> still within col 10
+    // Step 1: Blinky moves 1 pixel -> still within col 10
     movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, 200, ghostAi);
-    expect(blinky.x).toBe(10 * TILE_SIZE + 14);
+    expect(blinky.x).toBe(10 * TILE_SIZE + 7);
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
-    // Step 2: Blinky moves another arcade pixel (x reaches 11*16 + 0 = crosses boundary into col 11!)
+    // Step 2: Blinky moves another pixel and crosses the boundary into col 11
     movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, 200, ghostAi);
     expect(blinky.x).toBe(11 * TILE_SIZE);
-    // Across boundary into col 11: reversal remains primed because center (11*16 + 8) is not reached yet
+    // Across boundary into col 11: reversal remains primed because the center is not reached yet
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
-    // Advance 8 more sim pixels (4 frames) to reach center of col 11 (11 * TILE_SIZE + 8)
+    // Advance 4 more pixels (4 frames) to reach the center of col 11
     for (let f = 2; f < 6; f++) {
       movement.updateGhostMovement(blinky, blinky, pacman, f, 80, 1.0, maze, 200, ghostAi);
     }
-    expect(blinky.x).toBe(11 * TILE_SIZE + 8);
+    expect(blinky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2);
     // At tile center, reversal executes immediately
     expect(blinky.reversalPrimed).toBe(false);
     expect(blinky.dir).toBe("LEFT");
@@ -74,10 +84,20 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
 
   it("should evaluate straight corridor lookahead without querying AI target", () => {
     // Blinky at col 2, row 11 moving RIGHT towards col 3 (which continues straight to col 4)
-    const blinky = new Ghost("BLINKY", 2 * TILE_SIZE + 8, 11 * TILE_SIZE + 8, "RIGHT", false);
+    const blinky = new Ghost(
+      "BLINKY",
+      2 * TILE_SIZE + TILE_SIZE / 2,
+      11 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT",
+      false
+    );
     const { col: blinkyCurrCol, row: blinkyCurrRow } = blinky.tileCoord;
 
-    const pacman = new Pacman(20 * TILE_SIZE + 8, 20 * TILE_SIZE + 8, "LEFT");
+    const pacman = new Pacman(
+      20 * TILE_SIZE + TILE_SIZE / 2,
+      20 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT"
+    );
 
     ghostAi.evaluateTileEntryLookahead(
       blinky,
@@ -95,10 +115,20 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
 
   it("should detect corner tile lookahead and assign the single valid turn exit without querying target", () => {
     // Blinky at col 1, row 5 moving UP towards corner at col 1, row 4 (wall above, only exit is RIGHT)
-    const blinky = new Ghost("BLINKY", 1 * TILE_SIZE + 8, 5 * TILE_SIZE + 8, "UP", false);
+    const blinky = new Ghost(
+      "BLINKY",
+      1 * TILE_SIZE + TILE_SIZE / 2,
+      5 * TILE_SIZE + TILE_SIZE / 2,
+      "UP",
+      false
+    );
     const { col: blinkyCurrCol, row: blinkyCurrRow } = blinky.tileCoord;
 
-    const pacman = new Pacman(20 * TILE_SIZE + 8, 20 * TILE_SIZE + 8, "LEFT");
+    const pacman = new Pacman(
+      20 * TILE_SIZE + TILE_SIZE / 2,
+      20 * TILE_SIZE + TILE_SIZE / 2,
+      "LEFT"
+    );
 
     ghostAi.evaluateTileEntryLookahead(
       blinky,
@@ -116,13 +146,25 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
 
   it("should detect intersection tile lookahead and query target in Chase mode", () => {
     // Inky at col 5, row 8 moving RIGHT towards intersection at col 6, row 8
-    const inky = new Ghost("INKY", 5 * TILE_SIZE + 8, 8 * TILE_SIZE + 8, "RIGHT", false);
+    const inky = new Ghost(
+      "INKY",
+      5 * TILE_SIZE + TILE_SIZE / 2,
+      8 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT",
+      false
+    );
     const { col: inkyCurrCol, row: inkyCurrRow } = inky.tileCoord;
 
     inky.mode = "CHASE";
 
-    const pacman = new Pacman(6 * TILE_SIZE + 8, 4 * TILE_SIZE + 8, "UP");
-    const blinky = new Ghost("BLINKY", 6 * TILE_SIZE + 8, 14 * TILE_SIZE + 8, "UP", false);
+    const pacman = new Pacman(6 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2, "UP");
+    const blinky = new Ghost(
+      "BLINKY",
+      6 * TILE_SIZE + TILE_SIZE / 2,
+      14 * TILE_SIZE + TILE_SIZE / 2,
+      "UP",
+      false
+    );
 
     ghostAi.evaluateTileEntryLookahead(inky, pacman, blinky, maze, 200, inkyCurrCol, inkyCurrRow);
 

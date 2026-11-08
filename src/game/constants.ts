@@ -7,19 +7,30 @@ import type {
   TileCoord,
 } from "../types";
 
-export const TILE_SIZE = 16;
+/** Simulation ticks per second. Every timer in the sim counts these frames. */
+export const SIM_FPS = 60;
+
+/**
+ * Tile size in sim pixels. The sim runs in the arcade's own coordinates: 8-px tiles, integer
+ * pixel positions, so every pixel figure in the Dossier applies directly.
+ */
+export const TILE_SIZE = 8;
+/** The renderer draws every sim pixel as RENDER_SCALE x RENDER_SCALE canvas pixels. */
+export const RENDER_SCALE = 2;
+/** Tile size on the canvas. Only the renderer and UI use this. */
+export const RENDER_TILE_SIZE = TILE_SIZE * RENDER_SCALE;
 export const MAZE_COLS = 28;
 export const MAZE_ROWS = 36;
-export const CANVAS_WIDTH = MAZE_COLS * TILE_SIZE; // 448px
-export const CANVAS_HEIGHT = MAZE_ROWS * TILE_SIZE; // 576px
+export const CANVAS_WIDTH = MAZE_COLS * RENDER_TILE_SIZE; // 448px
+export const CANVAS_HEIGHT = MAZE_ROWS * RENDER_TILE_SIZE; // 576px
 
 /** Remaining number of dots pacman has to eat for Blinky's "Elroy 1" mode to activate. */
 export const ELROY_1_DOTS_LEFT = 20;
 /** Remaining number of dots pacman has to eat for Blinky's "Elroy 2" mode to activate. */
 export const ELROY_2_DOTS_LEFT = 10;
 
-/** Default cornering tolerance in pixels for Pac-Man to initiate pre-turns */
-export const PACMAN_CORNERING_TOLERANCE = 4;
+/** Default cornering tolerance in arcade pixels for Pac-Man to initiate pre-turns (replaced in F4) */
+export const PACMAN_CORNERING_TOLERANCE = 2;
 
 /**
  * Speed percentages: 100% = 75.7576 arcade px/s = 1.25 arcade px/frame at 60.606 Hz (Dossier, Table A.1).
@@ -72,7 +83,7 @@ export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning 
 export const GHOST_HOUSE_SPEED_PCT = 80;
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Level 1:
  *
@@ -82,18 +93,18 @@ export const GHOST_HOUSE_SPEED_PCT = 80;
  * - SCATTER: 5s, CHASE: permanent
  */
 export const SCATTER_CHASE_LEVEL_1: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Levels 2 - 4:
  *
@@ -103,18 +114,18 @@ export const SCATTER_CHASE_LEVEL_1: readonly ScatterChaseSchedule[] = [
  * - SCATTER: 1/60s, CHASE: permanent
  */
 export const SCATTER_CHASE_LEVELS_2_TO_4: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 1033 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 1033 * SIM_FPS },
+  { mode: "SCATTER", frames: 1 },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Levels 5+:
  *
@@ -126,16 +137,17 @@ export const SCATTER_CHASE_LEVELS_2_TO_4: readonly ScatterChaseSchedule[] = [
  * *Note: In level 5 and beyond every 3rd scatter drops down to 1 frame here due to an integer underflow in the ROM*
  */
 export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: 1037 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 1 },
+  { mode: "CHASE", frames: 1037 * SIM_FPS },
+  { mode: "SCATTER", frames: 1 },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
+/** Frightened duration per level, in seconds (Dossier, Table A.1). Use getFrightenedDuration() for frames. */
 export const FRIGHTENED_DURATIONS: Record<number, number> = {
   1: 6,
   2: 5,
@@ -184,7 +196,8 @@ export const FRIGHTENED_FLASH_COUNTS: Record<number, number> = {
  * Duration of each color phase (white or blue) during ghosts' warning flashes
  * (14 frames at 60 FPS = ~0.2333s) during last momemnts of frightened state.
  */
-export const FRIGHTENED_FLASH_TOGGLE_DURATION = 14 / 60;
+/** Frames per white/blue half-cycle of the frightened warning flash. */
+export const FRIGHTENED_FLASH_TOGGLE_FRAMES = 14;
 
 export const CLASSIC_FRUITS: Array<{
   name: string;

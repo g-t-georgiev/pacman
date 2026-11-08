@@ -26,7 +26,6 @@ export class MovementController {
     currLevelFrame: number,
     speedPct: number,
     turboMultiplier: number,
-    gameSpeed: number,
     maze: MazeData
   ): void {
     if (pacman.isDying) return;
@@ -36,11 +35,7 @@ export class MovementController {
       return;
     }
 
-    // Calculate discrete pixel steps for this frame via 16-frame bitmask, scaled by gameSpeed
-    const baseSteps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
-    pacman.stepAccumulator = (pacman.stepAccumulator || 0) + baseSteps * gameSpeed;
-    const steps = Math.floor(pacman.stepAccumulator);
-    pacman.stepAccumulator -= steps;
+    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
     pacman.speed = steps;
 
     if (steps <= 0) return;
@@ -73,27 +68,10 @@ export class MovementController {
     currLevelFrame: number,
     speedPct: number,
     turboMultiplier: number,
-    arg7: MazeData | number,
-    arg8: number | MazeData,
-    arg9: GhostAiController | number,
-    arg10?: GhostAiController
+    maze: MazeData,
+    dotsRemaining: number,
+    ghostAiController: GhostAiController
   ): void {
-    let gameSpeed = 1.0;
-    let maze: MazeData;
-    let dotsRemaining: number;
-    let ghostAiController: GhostAiController;
-
-    if (typeof arg7 === "number") {
-      gameSpeed = arg7;
-      maze = arg8 as MazeData;
-      dotsRemaining = arg9 as number;
-      ghostAiController = arg10 as GhostAiController;
-    } else {
-      maze = arg7;
-      dotsRemaining = arg8 as number;
-      ghostAiController = arg9 as GhostAiController;
-    }
-
     if (ghost.inHouse || ghost.dir === "NONE") return;
 
     // Eaten house descent logic
@@ -108,10 +86,7 @@ export class MovementController {
         ghost.enteringHousePhase = "APPROACH_SEAM";
       }
 
-      const baseSteps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
-      ghost.stepAccumulator = (ghost.stepAccumulator || 0) + baseSteps * gameSpeed;
-      const steps = Math.floor(ghost.stepAccumulator);
-      ghost.stepAccumulator -= steps;
+      const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
       ghost.speed = steps;
 
       if (steps > 0) {
@@ -133,10 +108,7 @@ export class MovementController {
       );
     }
 
-    const baseSteps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
-    ghost.stepAccumulator = (ghost.stepAccumulator || 0) + baseSteps * gameSpeed;
-    const steps = Math.floor(ghost.stepAccumulator);
-    ghost.stepAccumulator -= steps;
+    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
     ghost.speed = steps;
 
     if (steps <= 0) return;
@@ -230,21 +202,21 @@ export class MovementController {
 
   /**
    * Dedicated arcade routing for disembodied ghost eyes descending into the ghost house:
-   * 1. APPROACH_SEAM: Aligns on doorstep row 14 and glides horizontally to the middle seam (x = 224).
+   * 1. APPROACH_SEAM: Aligns on doorstep row 14 and glides horizontally to the seam between cols 13 and 14.
    * 2. DESCENDING_DOOR: Descents vertically DOWN through the door tiles (GATE row 15) down to row 17.
    * 3. MOVING_TO_SLOT: Navigates horizontally to the ghost's designated spawn slot inside the house.
-   *    (Blinky routes to Pinky's slot at x = 224; Inky to x = 184; Clyde to x = 248).
+   *    (Blinky routes to Pinky's slot on the seam; Inky to col 11's center; Clyde to col 15's center).
    */
   public handleEatenDescent(ghost: Ghost, steps: number): boolean {
-    const seamX = 224; // Boundary seam between columns 13 and 14 (13.5 * TILE_SIZE = 216 + 8 = 224)
-    const doorstepY = 14 * TILE_SIZE + TILE_SIZE / 2; // 232: centerline of doorstep row 14
-    const houseLevelY = 17 * TILE_SIZE + TILE_SIZE / 2; // 280: centerline of house row 17
+    const seamX = 14 * TILE_SIZE; // Seam between columns 13 and 14
+    const doorstepY = 14 * TILE_SIZE + TILE_SIZE / 2; // Centerline of doorstep row 14
+    const houseLevelY = 17 * TILE_SIZE + TILE_SIZE / 2; // Centerline of house row 17
 
-    let slotX = 224; // Pinky & Blinky respawn slot: centered at 13.5 (x = 224)
+    let slotX = seamX; // Pinky & Blinky respawn slot
     if (ghost.type === "INKY") {
-      slotX = 184; // Left slot (col 11.5: 11 * 16 + 8 = 184)
+      slotX = 11 * TILE_SIZE + TILE_SIZE / 2; // Left slot
     } else if (ghost.type === "CLYDE") {
-      slotX = 248; // Right slot (col 15.5: 15 * 16 + 8 = 248)
+      slotX = 15 * TILE_SIZE + TILE_SIZE / 2; // Right slot
     }
 
     for (let step = 0; step < steps; step++) {

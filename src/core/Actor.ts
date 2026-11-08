@@ -12,7 +12,6 @@ export class Actor {
   public dir: Direction = "NONE";
   public nextDir: Direction = "NONE";
   public speed: number = 0;
-  public stepAccumulator: number = 0;
 
   /**
    * Spatial anchor point inside the actor's footprint [0, 1].
@@ -70,7 +69,7 @@ export class Actor {
   /**
    * Checks whether the actor's anchor point is aligned with the center of its current tile.
    */
-  public isAtTileCenter(tolerance: number = 1.0): boolean {
+  public isAtTileCenter(tolerance: number = 0.5): boolean {
     const { col, row } = this.tileCoord;
     const center = Actor.getTileCenter(col, row);
     return Math.abs(this.x - center.x) <= tolerance && Math.abs(this.y - center.y) <= tolerance;
@@ -100,9 +99,9 @@ export class Actor {
     if (!inTunnel) return;
 
     if (this.x < -half) {
-      this.x = maze.width * TILE_SIZE + half - 2;
+      this.x = maze.width * TILE_SIZE + half - 1;
     } else if (this.x > maze.width * TILE_SIZE + half) {
-      this.x = -half + 2;
+      this.x = -half + 1;
     }
   }
 

@@ -9,7 +9,7 @@ import {
   isTileNoUpZone,
   isTileWalkableForGhost,
 } from "../game/ghostAiUtils";
-import GlobalPRNG from "../core/PRNG";
+import { PRNG } from "../core/PRNG";
 
 /**
  * Controller encapsulating all Ghost AI personality routines, Cruise Elroy states,
@@ -17,9 +17,12 @@ import GlobalPRNG from "../core/PRNG";
  */
 export class GhostAiController {
   public emulateRomQuirks: boolean = false;
+  /** The sim's PRNG, shared with (and reset by) the engine. Advanced only by frightened decisions. */
+  public prng: PRNG;
 
-  constructor(emulateRomQuirks: boolean = false) {
+  constructor(emulateRomQuirks: boolean = false, prng: PRNG = new PRNG()) {
     this.emulateRomQuirks = emulateRomQuirks;
+    this.prng = prng;
   }
 
   /**
@@ -181,7 +184,7 @@ export class GhostAiController {
       const opposite = getOppositeDirection(ghost.dir);
 
       // Simulate the arcade hardware PRNG index selection [0..3]
-      let prngIndex: number = GlobalPRNG.next();
+      const prngIndex = this.prng.next();
       let chosenDir: Direction = "NONE";
 
       for (let i = 0; i < 4; i++) {
@@ -220,22 +223,22 @@ export class GhostAiController {
   /**
    * Manages ghost house exit timers and recovery emergence.
    */
-  public updateHouseEmergence(ghost: Ghost, doorX: number, gameSpeed: number): void {
+  public updateHouseEmergence(ghost: Ghost, doorX: number): void {
     if (!ghost.inHouse) return;
 
     if (ghost.houseTimer > 0) {
-      ghost.houseTimer -= gameSpeed;
+      ghost.houseTimer--;
       // Bounce up and down inside pen
       if (ghost.y <= 16.5 * TILE_SIZE) ghost.dir = "DOWN";
       if (ghost.y >= 17.5 * TILE_SIZE) ghost.dir = "UP";
       const { dy } = getDirectionVector(ghost.dir);
-      ghost.y += dy * 0.5 * gameSpeed;
+      ghost.y += dy * 0.25;
       return;
     }
 
     // Move toward center door axis
-    if (Math.abs(ghost.x - doorX) > 1) {
-      ghost.x += (ghost.x < doorX ? 1 : -1) * 0.8 * gameSpeed;
+    if (Math.abs(ghost.x - doorX) > 0.5) {
+      ghost.x += (ghost.x < doorX ? 1 : -1) * 0.4;
       ghost.dir = ghost.x < doorX ? "RIGHT" : "LEFT";
       return;
     }
@@ -243,7 +246,7 @@ export class GhostAiController {
     // Move up through the door
     ghost.x = doorX;
     ghost.dir = "UP";
-    ghost.y -= 0.8 * gameSpeed;
+    ghost.y -= 0.4;
 
     // Fully exited through the door (row 14)
     if (ghost.y <= 14 * TILE_SIZE + TILE_SIZE / 2) {

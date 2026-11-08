@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { getPixelStepsThisFrame } from "../../src/utils";
-import { SIM_PX_PER_ARCADE_PX, SPEED_MASKS, arcadeStepsOnFrame } from "../../src/game/speedMasks";
+import { SPEED_MASKS, arcadeStepsOnFrame } from "../../src/game/speedMasks";
 import {
   GHOST_EATEN_SPEED_PCT,
   GHOST_HOUSE_SPEED_PCT,
@@ -69,7 +69,7 @@ describe("Speed mask stepping", () => {
 
   it("level 1 Pac-Man (80%) moves exactly 1 arcade px every frame", () => {
     for (let frame = 0; frame < 64; frame++) {
-      expect(getPixelStepsThisFrame(frame, 80)).toBe(SIM_PX_PER_ARCADE_PX);
+      expect(getPixelStepsThisFrame(frame, 80)).toBe(1);
     }
   });
 
@@ -77,7 +77,7 @@ describe("Speed mask stepping", () => {
     let total = 0;
     let twoPxFrames = 0;
     for (let frame = 0; frame < 16; frame++) {
-      const px = getPixelStepsThisFrame(frame, 100) / SIM_PX_PER_ARCADE_PX;
+      const px = getPixelStepsThisFrame(frame, 100);
       total += px;
       if (px === 2) twoPxFrames++;
     }

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import GameEvents from "../../src/core/EventBus";
 import GameEngine from "../../src/game/GameEngine";
 import { TILE_SIZE } from "../../src/game/constants";
 
@@ -14,10 +13,14 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
     engine.score = 500;
     engine.playState = "PLAYING";
 
-    GameEvents.on("GAME_OVER", (e: CustomEvent<number>) => {
-      gameOverFired = true;
-      finalScoreReported = e.detail;
-    });
+    const collectEvents = () => {
+      for (const e of engine.drainEvents()) {
+        if (e.type === "GAME_OVER") {
+          gameOverFired = true;
+          finalScoreReported = e.score;
+        }
+      }
+    };
 
     const blinky = engine.ghosts.BLINKY;
     blinky.inHouse = false;
@@ -35,6 +38,7 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
     // Run frames until death animation finishes (0.015 per frame ~ 67 frames)
     for (let f = 0; f < 80; f++) {
       engine.update();
+      collectEvents();
     }
 
     expect(engine.lives).toBe(0);

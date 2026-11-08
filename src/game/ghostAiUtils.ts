@@ -132,10 +132,11 @@ export function chooseNextGhostDirection(
     return candidates[0];
   }
 
-  // Frightened ghost uses pseudo-random selection among valid candidates
+  // Frightened decisions use the sim PRNG in GhostAiController.evaluateTileEntryLookahead. This
+  // helper must stay deterministic (it also drives path previews), so a frightened ghost here
+  // takes the first valid candidate.
   if (ghost.mode === "FRIGHTENED") {
-    const randIdx = Math.floor(Math.random() * candidates.length);
-    return candidates[randIdx];
+    return candidates[0];
   }
 
   // Standard target-distance decision among candidates (tie-breaker order: UP > LEFT > DOWN > RIGHT)

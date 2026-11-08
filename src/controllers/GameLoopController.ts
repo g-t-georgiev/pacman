@@ -1,39 +1,31 @@
-import GlobalPRNG from "../core/PRNG";
-
 /**
  * Fixed-timestep Game Loop Controller.
- * Ensures consistent 60 FPS deterministic physics independent of display refresh rate,
- * and maintains the monotonically increasing currLevelFrame counter required by 16-frame speed bitmasks.
+ *
+ * The simulation always advances in whole 60 Hz ticks. Practice slow-motion and fast-forward
+ * change how many ticks run per real second (the time scale), never what a tick does, so the sim
+ * behaves identically at any speed.
  */
 export class GameLoopController {
   public static readonly LOGIC_FPS = 60;
   public static readonly LOGIC_STEP = 1000 / GameLoopController.LOGIC_FPS; // ~16.666ms
+  /** Longest real-time gap accepted per animation frame (avoids a burst after the tab was hidden). */
+  public static readonly MAX_FRAME_MS = 100;
 
-  public currLevelFrame: number = 0;
   private accumulator: number = 0;
   private lastTime: number = 0;
   private isRunning: boolean = false;
   private animationFrameId: number | null = null;
 
-  private onTick: (currLevelFrame: number) => void;
+  private onTick: () => void;
   private onRender: () => void;
+  private getTimeScale: () => number;
 
-  constructor(onTick: typeof this.onTick, onRender: typeof this.onRender) {
+  constructor(onTick: () => void, onRender: () => void, getTimeScale: () => number = () => 1) {
     this.onTick = onTick;
     this.onRender = onRender;
+    this.getTimeScale = getTimeScale;
   }
 
-  /**
-   * Resets the level frame counter back to 0 (upon level start or death reset).
-   */
-  public resetLevelFrame(): void {
-    this.currLevelFrame = 0;
-    this.accumulator = 0;
-  }
-
-  /**
-   * Starts the fixed-step game loop.
-   */
   public start(): void {
     if (this.isRunning) return;
     this.isRunning = true;
@@ -41,9 +33,6 @@ export class GameLoopController {
     this.loop(this.lastTime);
   }
 
-  /**
-   * Stops the game loop.
-   */
   public stop(): void {
     this.isRunning = false;
     if (this.animationFrameId !== null) {
@@ -55,33 +44,41 @@ export class GameLoopController {
   }
 
   /**
-   * Performs a single manual step (useful for testing or frame-by-frame practice stepping).
+   * Performs a single manual step (frame-by-frame practice stepping and tests).
    */
   public stepOnce(): void {
-    this.currLevelFrame++;
-    this.onTick(this.currLevelFrame);
+    this.tick();
     this.onRender();
+  }
+
+  /**
+   * Feeds real elapsed time into the loop and runs every whole tick it covers.
+   *
+   * @returns The number of ticks that ran.
+   */
+  public advance(deltaMs: number): number {
+    const clamped = Math.min(deltaMs, GameLoopController.MAX_FRAME_MS);
+    this.accumulator += clamped * this.getTimeScale();
+
+    let ticks = 0;
+    // The epsilon absorbs float error, so 60 frames of 1000/60 ms always make exactly 60 ticks.
+    while (this.accumulator >= GameLoopController.LOGIC_STEP - 1e-9) {
+      this.accumulator -= GameLoopController.LOGIC_STEP;
+      this.tick();
+      ticks++;
+    }
+    return ticks;
+  }
+
+  private tick(): void {
+    this.onTick();
   }
 
   private loop = (currentTime: number): void => {
     if (!this.isRunning) return;
 
-    let deltaTime = currentTime - this.lastTime;
+    this.advance(currentTime - this.lastTime);
     this.lastTime = currentTime;
-
-    // Prevent spiral of death when window is unfocused (cap at 100ms)
-    if (deltaTime > 100) {
-      deltaTime = 100;
-    }
-
-    this.accumulator += deltaTime;
-
-    while (this.accumulator >= GameLoopController.LOGIC_STEP) {
-      this.currLevelFrame++;
-      GlobalPRNG.next();
-      this.onTick(this.currLevelFrame);
-      this.accumulator -= GameLoopController.LOGIC_STEP;
-    }
 
     this.onRender();
     if (typeof requestAnimationFrame !== "undefined") {

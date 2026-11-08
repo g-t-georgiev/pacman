@@ -1,27 +1,28 @@
 import { describe, it, expect } from "vite-plus/test";
 import GameEvents from "../../src/core/EventBus";
 import GameEngine from "../../src/game/GameEngine";
+import { GameRunner } from "../../src/game/GameRunner";
 import { ELROY_1_DOTS_LEFT, TILE_SIZE } from "../../src/game/constants";
 import type { DiagnosticData } from "../../src/diagnostics/DiagnosticController";
 
 describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
-  it("engine.start() and engine.stop() control GameLoopController correctly", () => {
+  it("GameRunner drives the engine: pre-update hook, one frame per tick, start and stop", () => {
     const engine = new GameEngine("PACMAN", 5000);
-    expect(engine.gameLoopController).toBeDefined();
+    const runner = new GameRunner(engine);
 
     let preUpdateCalled = false;
-    engine.onPreUpdate = () => {
+    runner.onPreUpdate = () => {
       preUpdateCalled = true;
     };
 
     // Single step
-    engine.gameLoopController.stepOnce();
+    runner.loop.stepOnce();
     expect(preUpdateCalled).toBe(true);
     expect(engine.currLevelFrame).toBe(1);
 
     // Start & Stop
-    engine.start();
-    engine.stop();
+    runner.start();
+    runner.stop();
   });
 
   it("EventBus emits SCORE_CHANGED, LIVES_CHANGED and DIAGNOSTICS_TICK", () => {
@@ -33,9 +34,10 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
       diagReceived = e.detail;
     });
 
-    // Run 4 frames to trigger DIAGNOSTICS_TICK
+    // Run 4 frames to trigger DIAGNOSTICS_TICK (the runner owns diagnostics, not the sim)
+    const runner = new GameRunner(engine);
     for (let i = 0; i < 4; i++) {
-      engine.update();
+      runner.tick();
     }
 
     expect(diagReceived).toBeDefined();
@@ -54,7 +56,6 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
 
     // Simulate wave timer triggering a switch to SCATTER
     engine.timerController.update(
-      1.0,
       (newMode) => {
         // Trigger mode switch callback like in GameEngine
         expect(newMode).toBe("SCATTER");

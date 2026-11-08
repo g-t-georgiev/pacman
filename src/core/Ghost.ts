@@ -87,8 +87,8 @@ export class Ghost extends Actor {
   /**
    * Advances wavy scallop bottom skirt animation.
    */
-  public updateFeetAnimation(gameSpeed: number = 1.0): void {
-    this.feetAnimation = (this.feetAnimation + 0.15 * gameSpeed) % 1;
+  public updateFeetAnimation(): void {
+    this.feetAnimation = (this.feetAnimation + 0.15) % 1;
   }
 
   /**

@@ -1,50 +1,57 @@
 import { describe, expect, it } from "vite-plus/test";
 import { TimerController } from "../../src/controllers/TimerController";
+import type { GhostBehavior } from "../../src/types";
+import { getFrightenedDuration } from "../../src/utils";
 
-describe("Layer 1 Unit Tests: TimerController & Scatter/Chase Schedule", () => {
-  it("should initialize at wave 0 and advance through the level 1 scatter/chase schedule", () => {
+describe("TimerController & Scatter/Chase Schedule (integer frames)", () => {
+  it("switches from the first scatter to chase after exactly 420 frames (7 s) on level 1", () => {
     const timer = new TimerController(1);
     expect(timer.waveIndex).toBe(0);
     expect(timer.currentWave?.mode).toBe("SCATTER");
-    expect(timer.currentWave?.duration).toBe(7);
+    expect(timer.currentWave?.frames).toBe(420);
 
-    // Advance 7 seconds (7 * 60 = 420 frames at 60 FPS)
-    let triggeredMode = "";
-    for (let f = 0; f < 420; f++) {
-      timer.update(1.0, (newMode) => {
-        triggeredMode = newMode;
-      });
-    }
+    let triggeredMode: GhostBehavior | "" = "";
+    const onWaveChange = (newMode: GhostBehavior) => {
+      triggeredMode = newMode;
+    };
 
-    // Should transition to Wave 1: CHASE (20s)
+    for (let f = 0; f < 419; f++) timer.update(onWaveChange);
+    expect(timer.waveIndex).toBe(0);
+
+    timer.update(onWaveChange);
     expect(timer.waveIndex).toBe(1);
     expect(timer.currentWave?.mode).toBe("CHASE");
     expect(triggeredMode).toBe("CHASE");
   });
 
-  it("should pause scatter/chase wave timer while frightened mode is active", () => {
+  it("pauses the wave timer while frightened mode is active", () => {
     const timer = new TimerController(1);
-    timer.waveTimer = 3.5;
-    timer.triggerFrightened(6); // 6 seconds frightened mode
+    timer.waveTimer = 210;
+    timer.triggerFrightened(getFrightenedDuration(1));
 
     expect(timer.isFrightened).toBe(true);
+    expect(timer.frightenedGlobalTimer).toBe(360); // 6 s on level 1
 
-    // Advance 60 frames (1 second)
-    for (let f = 0; f < 60; f++) {
-      timer.update(1.0);
-    }
+    for (let f = 0; f < 60; f++) timer.update();
 
-    // Frightened timer decreased by 1 second (from 6 to 5)
-    expect(timer.frightenedGlobalTimer).toBeCloseTo(5.0, 1);
-    // Wave timer was PAUSED and stayed exactly 3.5!
-    expect(timer.waveTimer).toBe(3.5);
+    expect(timer.frightenedGlobalTimer).toBe(300);
+    expect(timer.waveTimer).toBe(210);
   });
 
-  it("should reset wave timer and wave index back to beginning on life loss or level clear", () => {
+  it("calls onFrightenedEnd exactly once, on the frame the timer reaches zero", () => {
+    const timer = new TimerController(1);
+    timer.triggerFrightened(3);
+    let ended = 0;
+    for (let f = 0; f < 10; f++) timer.update(undefined, () => ended++);
+    expect(ended).toBe(1);
+    expect(timer.frightenedGlobalTimer).toBe(0);
+  });
+
+  it("resets wave timer and wave index on life loss or level clear", () => {
     const timer = new TimerController(1);
     timer.waveIndex = 4;
-    timer.waveTimer = 12;
-    timer.frightenedGlobalTimer = 3;
+    timer.waveTimer = 720;
+    timer.frightenedGlobalTimer = 180;
 
     timer.resetTimers();
 
