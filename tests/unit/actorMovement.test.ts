@@ -23,20 +23,6 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(pacman.dir).toBe("LEFT");
   });
 
-  it("should honor Pac-Man cornering pre-turn when within 2 pixels of tile center", () => {
-    // Tile center for col 9 is 9*8 + 4 = 76. Pac-Man at x=74 is within 2px of center.
-    const pacman = new Pacman(9 * TILE_SIZE + 2, 20 * TILE_SIZE + 4, "RIGHT");
-
-    pacman.setRequestedDirection("UP");
-    const turned = pacman.tryTurn(maze);
-
-    // If UP is walkable from tile 9, 20, cornering tolerance allows turn and axis-snaps x
-    if (turned) {
-      expect(pacman.dir).toBe("UP");
-      expect(pacman.x).toBe(9 * TILE_SIZE + 4); // Snapped to center
-    }
-  });
-
   it("should NOT immediately reverse a ghost mid-tile; should prime reversal until reaching tile center", () => {
     // Blinky positioned 2 pixels before the tile boundary.
     // Speed 80% moves exactly 1 pixel every frame.

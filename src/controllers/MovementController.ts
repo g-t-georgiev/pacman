@@ -40,21 +40,11 @@ export class MovementController {
 
     if (steps <= 0) return;
 
-    // Try buffered next direction turn (with cornering tolerance)
-    pacman.tryTurn(maze);
-
-    // Execute integer pixel steps
+    // One pixel at a time: a buffered turn is checked before every pixel, so the earliest
+    // pre-turn pixel is never skipped on a 2-pixel frame.
     for (let step = 0; step < steps; step++) {
-      if (pacman.canMoveInDirection(pacman.dir, maze)) {
-        const { dx, dy } = getDirectionVector(pacman.dir);
-        pacman.x += dx;
-        pacman.y += dy;
-        pacman.handleTunnelWrap(maze);
-      } else {
-        // Wall hit: snap onto center of tile axis
-        pacman.snapToAxis(pacman.dir);
-        break;
-      }
+      pacman.tryTurn(maze);
+      if (!pacman.stepOnePixel(maze)) break;
     }
   }
 

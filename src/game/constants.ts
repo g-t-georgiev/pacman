@@ -29,8 +29,16 @@ export const ELROY_1_DOTS_LEFT = 20;
 /** Remaining number of dots pacman has to eat for Blinky's "Elroy 2" mode to activate. */
 export const ELROY_2_DOTS_LEFT = 10;
 
-/** Default cornering tolerance in arcade pixels for Pac-Man to initiate pre-turns (replaced in F4) */
-export const PACMAN_CORNERING_TOLERANCE = 2;
+/**
+ * Pac-Man's turn window around a turn's center pixel (Dossier, "Cornering"). Pac-Man may start a
+ * turn while he is within CORNER_WINDOW_LOW pixels on the low-coordinate side of the center
+ * (left / above) or CORNER_WINDOW_HIGH pixels on the high side (right / below). So entering from
+ * the left or top gives 3 pre-turn and 4 post-turn pixels, and from the right or bottom 4 and 3.
+ * The window is 8 pixels wide, so every position belongs to exactly one turn.
+ */
+export const CORNER_WINDOW_LOW = 3;
+/** Follows from the 8-px window: TILE_SIZE - 1 - CORNER_WINDOW_LOW. */
+export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
 
 /**
  * Speed percentages: 100% = 75.7576 arcade px/s = 1.25 arcade px/frame at 60.606 Hz (Dossier, Table A.1).

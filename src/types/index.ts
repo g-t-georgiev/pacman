@@ -91,6 +91,8 @@ export interface PacmanState {
   deathProgress: number; // 0 to 1
   invincible: boolean;
   eatingFreezeFrames?: number;
+  /** Perpendicular coordinate Pac-Man is easing onto during a pre/post-turn, or null. */
+  cornerTarget?: number | null;
 }
 
 export interface GhostState {
