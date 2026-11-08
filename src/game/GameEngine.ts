@@ -11,7 +11,12 @@ import type {
   PlayState,
   ScorePopup,
 } from "../types";
-import { getFrightenedDuration, getFruitDataPerLevel, getSpeedConfigForLevel } from "../utils";
+import {
+  getElroyStage,
+  getFrightenedDuration,
+  getFruitDataPerLevel,
+  getSpeedConfigForLevel,
+} from "../utils";
 import { CLASSIC_FRUITS, TILE_SIZE } from "./constants";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
@@ -550,13 +555,18 @@ export default class GameEngine {
 
     // Release ghosts from the house (dot counters, global counter, idle timer)
     this.houseController.update(this.ghosts, this.level);
+    blinky.elroyStage = getElroyStage(
+      this.level,
+      this.dotsRemaining,
+      this.houseController.state.elroySuspended
+    );
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
 
       // 1. Waiting in the house, or on the way out
       if (g.inHouse) {
-        const pct = g.getSpeedPercentage(this.maze, this.dotsRemaining, speedConfig);
+        const pct = g.getSpeedPercentage(this.maze, speedConfig);
         this.movementController.updateHouseGhost(g, this.currLevelFrame, pct, turboMult);
         return;
       }
@@ -579,16 +589,10 @@ export default class GameEngine {
 
       // 3. Update Target Tile with configurable 1980 ROM quirks flag
       this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
-      g.target = this.ghostAiController.calculateTarget(
-        g,
-        this.pacman,
-        blinky,
-        this.maze,
-        this.dotsRemaining
-      );
+      g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
 
       // 4. Discrete 16-frame bitmask speed & tile-to-tile movement
-      const speedPct = g.getSpeedPercentage(this.maze, this.dotsRemaining, speedConfig);
+      const speedPct = g.getSpeedPercentage(this.maze, speedConfig);
 
       this.movementController.updateGhostMovement(
         g,
@@ -598,7 +602,6 @@ export default class GameEngine {
         speedPct,
         turboMult,
         this.maze,
-        this.dotsRemaining,
         this.ghostAiController
       );
     });
@@ -662,8 +665,7 @@ export default class GameEngine {
             g,
             this.pacman,
             this.ghosts.BLINKY,
-            this.maze,
-            this.dotsRemaining
+            this.maze
           );
           this.eatenGhostsInEnergizer++;
           const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));

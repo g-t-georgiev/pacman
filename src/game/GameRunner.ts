@@ -15,6 +15,12 @@ export class GameRunner {
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
+  /** Receives every batch of sim events after it is dispatched (used by the agent driver). */
+  public onEvents?: (events: SimEvent[]) => void;
+  /** Whether the real-time loop is running (false while an agent drives frames by hand). */
+  public get running(): boolean {
+    return this.loop.isRunning;
+  }
 
   constructor(public readonly engine: GameEngine) {
     this.loop = new GameLoopController(
@@ -52,7 +58,9 @@ export class GameRunner {
 
   /** Dispatches queued sim events and syncs the siren. Also call after engine calls made between ticks. */
   public flush(): void {
-    for (const event of this.engine.drainEvents()) dispatchSimEvent(event);
+    const events = this.engine.drainEvents();
+    for (const event of events) dispatchSimEvent(event);
+    if (events.length > 0) this.onEvents?.(events);
     this.syncSiren();
   }
 

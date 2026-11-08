@@ -68,7 +68,6 @@ export class MovementController {
     speedPct: number,
     turboMultiplier: number,
     maze: MazeData,
-    dotsRemaining: number,
     ghostAiController: GhostAiController
   ): void {
     if (ghost.inHouse || ghost.dir === "NONE") return;
@@ -101,7 +100,6 @@ export class MovementController {
         pacman,
         blinky,
         maze,
-        dotsRemaining,
         ghost.tileCoord.col,
         ghost.tileCoord.row
       );
@@ -153,7 +151,6 @@ export class MovementController {
             pacman,
             blinky,
             maze,
-            dotsRemaining,
             ghostCurrCol,
             ghostCurrRow
           );
@@ -191,7 +188,6 @@ export class MovementController {
           pacman,
           blinky,
           maze,
-          dotsRemaining,
           ghostCurrCol,
           ghostCurrRow
         );

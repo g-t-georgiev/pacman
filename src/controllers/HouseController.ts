@@ -29,6 +29,8 @@ export interface HouseState {
   globalCounterActive: boolean;
   globalCounter: number;
   idleFrames: number;
+  /** After a life is lost, Cruise Elroy is suspended until Clyde starts leaving (Dossier, Blinky). */
+  elroySuspended: boolean;
 }
 
 /**
@@ -54,6 +56,7 @@ export class HouseController {
       globalCounterActive: false,
       globalCounter: 0,
       idleFrames: 0,
+      elroySuspended: false,
     };
   }
 
@@ -67,6 +70,7 @@ export class HouseController {
     this.state.globalCounterActive = true;
     this.state.globalCounter = 0;
     this.state.idleFrames = 0;
+    this.state.elroySuspended = true;
   }
 
   /** Pac-Man ate a dot or an energizer. */
@@ -120,5 +124,6 @@ export class HouseController {
 
   private release(ghost: Ghost): void {
     ghost.location = "LEAVING";
+    if (ghost.type === "CLYDE") this.state.elroySuspended = false;
   }
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vite-plus/test";
 import GameEvents from "../../src/core/EventBus";
 import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
-import { ELROY_1_DOTS_LEFT, TILE_SIZE } from "../../src/game/constants";
+import { TILE_SIZE } from "../../src/game/constants";
 import type { DiagnosticData } from "../../src/diagnostics/DiagnosticController";
 
 describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
@@ -48,7 +48,7 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
   it("Blinky adheres to Cruise Elroy Scatter Immunity when dotsRemaining <= 20", () => {
     const engine = new GameEngine("PACMAN", 5000);
     engine.playState = "PLAYING";
-    engine.dotsRemaining = ELROY_1_DOTS_LEFT; // 20 dots
+    engine.dotsRemaining = 20; // level 1 Elroy 1 threshold
 
     const blinky = engine.ghosts.BLINKY;
     blinky.location = "ACTIVE";

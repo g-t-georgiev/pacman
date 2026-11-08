@@ -13,7 +13,11 @@ export class GameLoopController {
 
   private accumulator: number = 0;
   private lastTime: number = 0;
-  private isRunning: boolean = false;
+  private running: boolean = false;
+
+  public get isRunning(): boolean {
+    return this.running;
+  }
   private animationFrameId: number | null = null;
 
   private onTick: () => void;
@@ -27,14 +31,14 @@ export class GameLoopController {
   }
 
   public start(): void {
-    if (this.isRunning) return;
-    this.isRunning = true;
+    if (this.running) return;
+    this.running = true;
     this.lastTime = performance.now();
     this.loop(this.lastTime);
   }
 
   public stop(): void {
-    this.isRunning = false;
+    this.running = false;
     if (this.animationFrameId !== null) {
       if (typeof cancelAnimationFrame !== "undefined") {
         cancelAnimationFrame(this.animationFrameId);
@@ -75,7 +79,7 @@ export class GameLoopController {
   }
 
   private loop = (currentTime: number): void => {
-    if (!this.isRunning) return;
+    if (!this.running) return;
 
     this.advance(currentTime - this.lastTime);
     this.lastTime = currentTime;

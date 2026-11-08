@@ -1,7 +1,7 @@
 import type { Ghost } from "../core/Ghost";
 import type { Pacman } from "../core/Pacman";
 import type { MazeData, TileCoord } from "../types";
-import { ELROY_1_DOTS_LEFT, TILE_SIZE } from "../game/constants";
+import { TILE_SIZE } from "../game/constants";
 import {
   chooseNextGhostDirection,
   getDirectionVector,
@@ -27,13 +27,7 @@ export class GhostAiController {
   /**
    * Calculates the authentic target tile for a ghost, with optional 1980 ROM quirk emulation.
    */
-  public calculateTarget(
-    ghost: Ghost,
-    pacman: Pacman,
-    blinky: Ghost,
-    maze: MazeData,
-    dotsRemaining: number
-  ): TileCoord {
+  public calculateTarget(ghost: Ghost, pacman: Pacman, blinky: Ghost, maze: MazeData): TileCoord {
     const pacCol = Math.floor(pacman.x / TILE_SIZE);
     const pacRow = Math.floor(pacman.y / TILE_SIZE);
     const ghostCol = Math.floor(ghost.x / TILE_SIZE);
@@ -51,11 +45,8 @@ export class GhostAiController {
 
     // 2. SCATTER Mode: Home corner (unless Blinky is in Cruise Elroy)
     if (ghost.mode === "SCATTER") {
-      if (ghost.type === "BLINKY" && dotsRemaining <= ELROY_1_DOTS_LEFT) {
-        // Cruise Elroy Blinky ignores scatter mode and remains in pursuit!
-      } else {
-        return maze.scatterTargets[ghost.type];
-      }
+      // Cruise Elroy Blinky keeps targeting Pac-Man during scatter (he still reverses)
+      if (ghost.elroyStage === 0) return maze.scatterTargets[ghost.type];
     }
 
     // 3. FRIGHTENED Mode: Pseudo-random wander target
@@ -163,7 +154,6 @@ export class GhostAiController {
     pacman: Pacman,
     blinky: Ghost,
     maze: MazeData,
-    dotsRemaining: number,
     evalCol: number, // The tile the ghost is currently on (already centered)
     evalRow: number // The tile the ghost is currently on (already centered)
   ): void {
@@ -187,7 +177,7 @@ export class GhostAiController {
 
     // 2. Unified Target Evaluation Loop (Chase / Scatter / Eaten)
     // The arcade uses this exact block for corridors, corners, and intersections alike.
-    ghost.target = this.calculateTarget(ghost, pacman, blinky, maze, dotsRemaining);
+    ghost.target = this.calculateTarget(ghost, pacman, blinky, maze);
 
     ghost.nextDir = chooseNextGhostDirection(
       ghost.toState(),

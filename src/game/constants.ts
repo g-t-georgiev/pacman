@@ -24,10 +24,20 @@ export const MAZE_ROWS = 36;
 export const CANVAS_WIDTH = MAZE_COLS * RENDER_TILE_SIZE; // 448px
 export const CANVAS_HEIGHT = MAZE_ROWS * RENDER_TILE_SIZE; // 576px
 
-/** Remaining number of dots pacman has to eat for Blinky's "Elroy 1" mode to activate. */
-export const ELROY_1_DOTS_LEFT = 20;
-/** Remaining number of dots pacman has to eat for Blinky's "Elroy 2" mode to activate. */
-export const ELROY_2_DOTS_LEFT = 10;
+/**
+ * Dots remaining at which Blinky becomes Elroy 1, from a level on (Dossier, Table A.1).
+ * Elroy 2 starts at half that count. Use getElroyDotThresholds() / getElroyStage().
+ */
+export const ELROY_1_DOTS_BY_LEVEL: ReadonlyArray<{ fromLevel: number; dots: number }> = [
+  { fromLevel: 1, dots: 20 },
+  { fromLevel: 2, dots: 30 },
+  { fromLevel: 3, dots: 40 },
+  { fromLevel: 6, dots: 50 },
+  { fromLevel: 9, dots: 60 },
+  { fromLevel: 12, dots: 80 },
+  { fromLevel: 15, dots: 100 },
+  { fromLevel: 19, dots: 120 },
+];
 
 /**
  * Pac-Man's turn window around a turn's center pixel (Dossier, "Cornering"). Pac-Man may start a

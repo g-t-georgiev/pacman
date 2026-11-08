@@ -288,8 +288,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       inky,
       engine.pacman,
       engine.ghosts.BLINKY,
-      engine.maze,
-      engine.dotsRemaining
+      engine.maze
     );
     expect(inky.target).toEqual({ col: 11, row: 17 });
 
@@ -309,8 +308,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       clyde,
       engine.pacman,
       engine.ghosts.BLINKY,
-      engine.maze,
-      engine.dotsRemaining
+      engine.maze
     );
     expect(clyde.target).toEqual({ col: 15, row: 17 });
 

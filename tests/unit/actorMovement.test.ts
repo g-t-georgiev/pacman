@@ -46,13 +46,13 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(blinky.dir).toBe("RIGHT"); // Still moving RIGHT until center!
 
     // Step 1: Blinky moves 1 pixel -> still within col 10
-    movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, 200, ghostAi);
+    movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, ghostAi);
     expect(blinky.x).toBe(10 * TILE_SIZE + 7);
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
     // Step 2: Blinky moves another pixel and crosses the boundary into col 11
-    movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, 200, ghostAi);
+    movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, ghostAi);
     expect(blinky.x).toBe(11 * TILE_SIZE);
     // Across boundary into col 11: reversal remains primed because the center is not reached yet
     expect(blinky.reversalPrimed).toBe(true);
@@ -60,7 +60,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
 
     // Advance 4 more pixels (4 frames) to reach the center of col 11
     for (let f = 2; f < 6; f++) {
-      movement.updateGhostMovement(blinky, blinky, pacman, f, 80, 1.0, maze, 200, ghostAi);
+      movement.updateGhostMovement(blinky, blinky, pacman, f, 80, 1.0, maze, ghostAi);
     }
     expect(blinky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2);
     // At tile center, reversal executes immediately
@@ -85,15 +85,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       "LEFT"
     );
 
-    ghostAi.evaluateTileEntryLookahead(
-      blinky,
-      pacman,
-      blinky,
-      maze,
-      200,
-      blinkyCurrCol,
-      blinkyCurrRow
-    );
+    ghostAi.evaluateTileEntryLookahead(blinky, pacman, blinky, maze, blinkyCurrCol, blinkyCurrRow);
 
     // Straight path continuation sets nextDir without changing target
     expect(blinky.nextDir).toBe("RIGHT");
@@ -116,15 +108,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       "LEFT"
     );
 
-    ghostAi.evaluateTileEntryLookahead(
-      blinky,
-      pacman,
-      blinky,
-      maze,
-      200,
-      blinkyCurrCol,
-      blinkyCurrRow
-    );
+    ghostAi.evaluateTileEntryLookahead(blinky, pacman, blinky, maze, blinkyCurrCol, blinkyCurrRow);
 
     // Corner at (1, 4): path above is blocked, only valid exit is RIGHT
     expect(blinky.nextDir).toBe("RIGHT");
@@ -152,7 +136,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       false
     );
 
-    ghostAi.evaluateTileEntryLookahead(inky, pacman, blinky, maze, 200, inkyCurrCol, inkyCurrRow);
+    ghostAi.evaluateTileEntryLookahead(inky, pacman, blinky, maze, inkyCurrCol, inkyCurrRow);
 
     // Next tile (6, 8) is an authentic intersection: pokes AI and records decision tile
     expect(inky.lastDecisionTile).toEqual({ col: 6, row: 8 });

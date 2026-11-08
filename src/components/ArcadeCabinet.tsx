@@ -6,6 +6,7 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import { GameRunner } from "../game/GameRunner";
+import { AgentDriver } from "../agent/AgentDriver";
 import GameRenderer from "../game/GameRenderer";
 import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
@@ -143,8 +144,12 @@ export const ArcadeCabinet: React.FC = () => {
     // Start deterministic game loop via GameLoopController
     runner.start();
 
+    // Dev builds: expose the agent driver for automated play-testing from the console or tools
+    if (import.meta.env.DEV) window.pacmanAgent = new AgentDriver(engine, runner);
+
     return () => {
       runner.stop();
+      if (import.meta.env.DEV) delete window.pacmanAgent;
       soundEngine.stopSiren();
       if (gameOverTimerRef.current !== null) {
         window.clearTimeout(gameOverTimerRef.current);

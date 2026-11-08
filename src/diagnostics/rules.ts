@@ -1,5 +1,5 @@
 import type GameEngine from "../game/GameEngine";
-import { ELROY_1_DOTS_LEFT, TILE_SIZE } from "../game/constants";
+import { TILE_SIZE } from "../game/constants";
 
 export interface DiagnosticRule {
   id: string;
@@ -32,18 +32,13 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
     {
       id: "RULE_BLINKY_ELROY_SCATTER_IMMUNITY",
       name: "Blinky Cruise Elroy Scatter Immunity",
-      description:
-        "When dots remaining <= 20, Blinky keeps targeting Pac-Man even during a SCATTER wave",
+      description: "Cruise Elroy Blinky keeps targeting Pac-Man even during a SCATTER wave",
       enabled: true,
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
         const blinky = engine.ghostStates.BLINKY;
-        if (
-          engine.dotsRemaining <= ELROY_1_DOTS_LEFT &&
-          blinky.location === "ACTIVE" &&
-          blinky.mode === "SCATTER"
-        ) {
+        if (blinky.elroyStage > 0 && blinky.location === "ACTIVE" && blinky.mode === "SCATTER") {
           const pac = engine.pacman.tileCoord;
           if (blinky.target.col !== pac.col || blinky.target.row !== pac.row) {
             return {

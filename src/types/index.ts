@@ -6,6 +6,8 @@ export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN";
 /** The global scatter/chase wave (owned by TimerController). */
 export type WaveMode = "SCATTER" | "CHASE";
+/** Blinky's Cruise Elroy stage: 0 normal, 1 and 2 faster (and chasing during scatter). */
+export type ElroyStage = 0 | 1 | 2;
 /**
  * Where a ghost is in its life cycle:
  * HOUSE (waiting inside) -> LEAVING (moving out through the door) -> ACTIVE (in the maze)
@@ -116,6 +118,8 @@ export interface GhostState {
   frightened: boolean;
   /** This ghost's copy of the global wave, set by the engine at round start and on every switch. */
   wave: WaveMode;
+  /** Cruise Elroy stage (Blinky only; always 0 for the others). Set by the engine every frame. */
+  elroyStage: ElroyStage;
   /** Derived from location, frightened and wave (read-only; ignored by restore). */
   mode: GhostBehavior;
   /** Derived: location is HOUSE or LEAVING (read-only; ignored by restore). */

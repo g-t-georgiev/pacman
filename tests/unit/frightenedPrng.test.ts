@@ -101,7 +101,7 @@ describe("Frightened direction choice", () => {
     ghost.frightened = true;
     const pacman = new Pacman(1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
 
-    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 200, 13, 14);
+    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 13, 14);
     expect(ghost.nextDir).toBe("UP");
   });
 
@@ -114,7 +114,7 @@ describe("Frightened direction choice", () => {
     ghost.frightened = true;
     const pacman = new Pacman(1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
 
-    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 200, 2, 8);
+    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 2, 8);
     expect(prng.state).toBe(1);
     expect(ghost.nextDir).toBe("RIGHT"); // the only way on
   });

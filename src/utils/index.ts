@@ -10,9 +10,33 @@ import {
   SPEED_PCT_PER_LEVELS_5_TO_20,
   SPEED_PCT_PER_LEVELS_21_PLUS,
   SIM_FPS,
+  ELROY_1_DOTS_BY_LEVEL,
 } from "../game/constants";
-import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
+import type { ElroyStage, LevelSpeedConfig, ScatterChaseSchedule } from "../types";
 import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
+
+/** Dots remaining at which Blinky becomes Elroy 1 and Elroy 2 on a level (Dossier, Table A.1). */
+export function getElroyDotThresholds(level: number): { elroy1: number; elroy2: number } {
+  let elroy1 = ELROY_1_DOTS_BY_LEVEL[0].dots;
+  for (const row of ELROY_1_DOTS_BY_LEVEL) if (level >= row.fromLevel) elroy1 = row.dots;
+  return { elroy1, elroy2: elroy1 / 2 };
+}
+
+/**
+ * Blinky's Cruise Elroy stage. After a life is lost, Elroy is suspended (stage 0) until Clyde
+ * starts leaving the house (Dossier, Blinky).
+ */
+export function getElroyStage(
+  level: number,
+  dotsRemaining: number,
+  suspended: boolean
+): ElroyStage {
+  if (suspended) return 0;
+  const { elroy1, elroy2 } = getElroyDotThresholds(level);
+  if (dotsRemaining <= elroy2) return 2;
+  if (dotsRemaining <= elroy1) return 1;
+  return 0;
+}
 
 export function getFruitDataPerLevel(data: FruitDataType, level: number) {
   return data[Math.min(level - 1, data.length - 1)];

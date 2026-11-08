@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS, SIM_FPS } from "../game/constants";
+import { GHOST_COLORS, SIM_FPS } from "../game/constants";
 import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
-import { getScatterChaseSchedule } from "../utils";
+import { getElroyDotThresholds, getScatterChaseSchedule } from "../utils";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -60,9 +60,9 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
 
   const wave = getScatterChaseSchedule(engine.level)[engine.waveIndex];
   const isFrightened = engine.frightenedGlobalTimer > 0;
-  const dotsRemaining = engine.dotsRemaining;
-  const isElroy1 = dotsRemaining <= ELROY_1_DOTS_LEFT && dotsRemaining > ELROY_2_DOTS_LEFT;
-  const isElroy2 = dotsRemaining <= ELROY_2_DOTS_LEFT;
+  const elroyDots = getElroyDotThresholds(engine.level);
+  const isElroy1 = engine.ghosts.BLINKY.elroyStage === 1;
+  const isElroy2 = engine.ghosts.BLINKY.elroyStage === 2;
 
   const handleToggleMasterVisuals = () => {
     const nextVal = !visualsEnabled;
@@ -271,7 +271,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
             Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le;{" "}
-            {ELROY_1_DOTS_LEFT} (Cruise Elroy) and ignores scatter!
+            {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
           </p>
           <div className="text-[10px] text-red-300">
             Target: ({engine.ghostStates.BLINKY.target.col}, {engine.ghostStates.BLINKY.target.row})

@@ -10,14 +10,9 @@ import type {
   MazeData,
   TileCoord,
   WaveMode,
+  ElroyStage,
 } from "../types";
-import {
-  ELROY_1_DOTS_LEFT,
-  ELROY_2_DOTS_LEFT,
-  GHOST_EATEN_SPEED_PCT,
-  GHOST_HOUSE_SPEED_PCT,
-  TILE_SIZE,
-} from "../game/constants";
+import { GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT, TILE_SIZE } from "../game/constants";
 import { getSpeedConfigForLevel } from "../utils";
 
 /**
@@ -41,6 +36,8 @@ export class Ghost extends Actor {
   public location: GhostLocation = "ACTIVE";
   public frightened: boolean = false;
   public wave: WaveMode = "SCATTER";
+  /** Cruise Elroy stage (Blinky only), set by the engine every frame. */
+  public elroyStage: ElroyStage = 0;
 
   public target: TileCoord = { col: 0, row: 0 };
   public intermediateTarget?: TileCoord;
@@ -128,6 +125,7 @@ export class Ghost extends Actor {
       location: this.location,
       frightened: this.frightened,
       wave: this.wave,
+      elroyStage: this.elroyStage,
       mode: this.mode,
       inHouse: this.inHouse,
       speed: this.speed,
@@ -156,6 +154,7 @@ export class Ghost extends Actor {
     this.location = state.location;
     this.frightened = state.frightened;
     this.wave = state.wave;
+    this.elroyStage = state.elroyStage;
     this.speed = state.speed;
     this.target = state.target;
     this.flashState = state.flashState;
@@ -171,11 +170,7 @@ export class Ghost extends Actor {
   /**
    * Calculates current speed of ghost based on location, state, level speed config and "Cruise Elroy".
    */
-  getSpeedPercentage(
-    maze: MazeData,
-    dotsRemaining: number,
-    levelOrConfig: number | LevelSpeedConfig
-  ): number {
+  getSpeedPercentage(maze: MazeData, levelOrConfig: number | LevelSpeedConfig): number {
     if (this.isEyes) {
       return GHOST_EATEN_SPEED_PCT;
     }
@@ -195,15 +190,9 @@ export class Ghost extends Actor {
       return speedConfig.ghostFrightened;
     }
 
-    // Cruise Elroy for Blinky
-    if (this.type === "BLINKY") {
-      if (dotsRemaining <= ELROY_2_DOTS_LEFT) {
-        return speedConfig.elroy2;
-      }
-      if (dotsRemaining <= ELROY_1_DOTS_LEFT) {
-        return speedConfig.elroy1;
-      }
-    }
+    // Cruise Elroy (Blinky only)
+    if (this.elroyStage === 2) return speedConfig.elroy2;
+    if (this.elroyStage === 1) return speedConfig.elroy1;
 
     return speedConfig.ghostNormal;
   }

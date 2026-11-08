@@ -15,7 +15,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const blinky = new Ghost("BLINKY", 14 * TILE_SIZE + 4, 11 * TILE_SIZE + 4, "LEFT", false);
     pinky.wave = "CHASE";
 
-    const target = ai.calculateTarget(pinky, pacman, blinky, maze, 200);
+    const target = ai.calculateTarget(pinky, pacman, blinky, maze);
 
     // Facing UP: col 14, row 16 (exactly 4 tiles UP, 0 tiles LEFT)
     expect(target.col).toBe(14);
@@ -29,7 +29,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     const blinky = new Ghost("BLINKY", 14 * TILE_SIZE + 4, 11 * TILE_SIZE + 4, "LEFT", false);
     pinky.wave = "CHASE";
 
-    const target = ai.calculateTarget(pinky, pacman, blinky, maze, 200);
+    const target = ai.calculateTarget(pinky, pacman, blinky, maze);
 
     // Facing UP with 1980 ROM quirk: col 14 - 4 = 10, row 20 - 4 = 16
     expect(target.col).toBe(10);
@@ -46,12 +46,12 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     inky.wave = "CHASE";
 
     // Normalized: Pivot = (14, 18). Target = 2*(14, 18) - (14, 24) = (14, 12)
-    const normTarget = aiNorm.calculateTarget(inky, pacman, blinky, maze, 200);
+    const normTarget = aiNorm.calculateTarget(inky, pacman, blinky, maze);
     expect(normTarget.col).toBe(14);
     expect(normTarget.row).toBe(12);
 
     // Quirk: Pivot = (12, 18). Target = 2*(12, 18) - (14, 24) = (10, 12)
-    const quirkTarget = aiQuirk.calculateTarget(inky, pacman, blinky, maze, 200);
+    const quirkTarget = aiQuirk.calculateTarget(inky, pacman, blinky, maze);
     expect(quirkTarget.col).toBe(10);
     expect(quirkTarget.row).toBe(12);
   });
@@ -64,7 +64,7 @@ describe("Layer 1 Unit Tests: Ghost Targeting & 1980 Z80 ROM Quirks", () => {
     clyde.wave = "CHASE";
 
     // Distance is 2 tiles (< 8 tiles)
-    const target = ai.calculateTarget(clyde, pacman, blinky, maze, 200);
+    const target = ai.calculateTarget(clyde, pacman, blinky, maze);
 
     // Should retreat to Clyde's scatter target (bottom-left corner)
     expect(target).toEqual(maze.scatterTargets.CLYDE);
