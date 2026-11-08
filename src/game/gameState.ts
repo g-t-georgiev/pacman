@@ -4,10 +4,10 @@ import type {
   GhostState,
   GhostType,
   PacmanState,
-  PlayState,
   ScorePopup,
   TileType,
 } from "../types";
+import type { SequenceState } from "./RoundSequencer";
 import type { HouseState } from "../controllers/HouseController";
 
 /**
@@ -19,9 +19,12 @@ import type { HouseState } from "../controllers/HouseController";
  * Only the tiles that change (dots and energizers) are, as one character per tile.
  */
 export interface GameState {
-  version: 1;
+  version: 2;
   mode: GameMode;
-  playState: PlayState;
+  /** Round phase and its countdown (READY, PLAYING, eat pause, death and level-clear steps). */
+  sequence: SequenceState;
+  /** User pause, separate from the round phase. */
+  paused: boolean;
   level: number;
   score: number;
   highScore: number;
@@ -35,10 +38,12 @@ export interface GameState {
     waveIndex: number;
     waveTimer: number;
     frightened: number;
-    ready: number;
-    levelClear: number;
   };
+  /** Frightened-ghost PRNG index. */
   prng: number;
+  /** General sim random stream (fruit timer). */
+  simRandom: number;
+  extraLifeAwarded: boolean;
   /** Row-major maze tiles, one character per tile (see TILE_CODES). */
   tiles: string;
   pacman: PacmanState;

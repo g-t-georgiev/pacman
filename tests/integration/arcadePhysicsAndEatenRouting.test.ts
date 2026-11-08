@@ -35,8 +35,8 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
 
     engine.update();
 
-    // Now occupying same integer tile: Pac-Man dies!
-    expect(engine.pacman.isDying).toBe(true);
+    // Now occupying same integer tile: Pac-Man dies (the freeze before the animation)
+    expect(engine.phase).toBe("DEATH_FREEZE");
     expect(engine.playState).toBe("DYING");
   });
 

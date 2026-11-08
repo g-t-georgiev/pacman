@@ -17,10 +17,25 @@ import {
   getFruitDataPerLevel,
   getSpeedConfigForLevel,
 } from "../utils";
-import { CLASSIC_FRUITS, TILE_SIZE } from "./constants";
+import {
+  CLASSIC_FRUITS,
+  EXTRA_LIFE_SCORE,
+  FRUIT_EXTRA_FRAMES,
+  FRUIT_MIN_FRAMES,
+  TILE_SIZE,
+} from "./constants";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
+import { SimRandom } from "../core/SimRandom";
+import {
+  MAZE_FLASH_TOGGLE_FRAMES,
+  PHASE_PLAY_STATE,
+  PLAY_STATE_ENTRY_PHASE,
+  READY_FRAMES_GAME_START,
+  type RoundPhase,
+  RoundSequencer,
+} from "./RoundSequencer";
 import { TimerController } from "../controllers/TimerController";
 import { AnimationController } from "../controllers/AnimationController";
 import { GhostAiController } from "../controllers/GhostAiController";
@@ -30,7 +45,6 @@ import { DiagnosticController, type DiagnosticData } from "../diagnostics/Diagno
 import { getMazeData } from "./mazes";
 import type { SimEvent, SirenState } from "./simEvents";
 import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
-import { uiConfig } from "../config/ui.config";
 
 /** Copies a ghost state, including its nested tile objects. */
 function copyGhostState(g: GhostState): GhostState {
@@ -49,7 +63,36 @@ function copyGhostState(g: GhostState): GhostState {
  */
 export default class GameEngine {
   public mode: GameMode = "PACMAN";
-  public playState: PlayState = "MENU";
+
+  /** The timed round phases (READY, PLAYING, the eat pause, the death and level-clear steps). */
+  public sequencer: RoundSequencer = new RoundSequencer();
+  /** User pause (Practice panel, P key). Orthogonal to the round phase. */
+  public paused: boolean = false;
+
+  public get phase(): RoundPhase {
+    return this.sequencer.phase;
+  }
+
+  /** The coarse state the UI shows, derived from the round phase and the pause flag. */
+  public get playState(): PlayState {
+    return this.paused ? "PAUSED" : PHASE_PLAY_STATE[this.sequencer.phase];
+  }
+
+  /**
+   * Setting a coarse state from outside (UI, tests, the agent driver): "PAUSED" pauses, anything
+   * else unpauses and, if the coarse state differs, starts that state's first phase.
+   */
+  public set playState(playState: PlayState) {
+    if (playState === "PAUSED") {
+      this.paused = true;
+      return;
+    }
+    this.paused = false;
+    if (PHASE_PLAY_STATE[this.sequencer.phase] !== playState) {
+      this.sequencer.enter(PLAY_STATE_ENTRY_PHASE[playState]);
+    }
+  }
+
   public settings: GameSettings = {
     turbo: false,
     turboSpeedMultiplier: 1.6,
@@ -83,6 +126,8 @@ export default class GameEngine {
   public dotsRemaining: number = 0;
   public totalDots: number = 0;
   public dotsEatenThisRound: number = 0;
+  /** The one bonus life of a game has been given. */
+  public extraLifeAwarded: boolean = false;
 
   public fruit: FruitItem | null = null;
   public scorePopups: ScorePopup[] = [];
@@ -96,6 +141,8 @@ export default class GameEngine {
 
   /** The sim's only source of randomness. Reset at every level start and after every life lost. */
   public prng: PRNG = new PRNG();
+  /** Randomness that isn't the ghosts' (fruit timer). Reset only when a game starts. */
+  public simRandom: SimRandom = new SimRandom();
 
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
@@ -158,20 +205,27 @@ export default class GameEngine {
     this.timerController.frightenedGlobalTimer = v;
   }
 
-  public get readyTimer(): number {
-    return this.timerController.readyTimer;
+  /** Frames left in the current round phase (READY countdown, eat pause, ...). */
+  public get phaseFramesLeft(): number {
+    return this.sequencer.state.framesLeft;
   }
 
-  public set readyTimer(v: number) {
-    this.timerController.readyTimer = v;
+  /** Ghosts vanish once the death animation starts and while the maze flashes. */
+  public get ghostsVisible(): boolean {
+    const phase = this.sequencer.phase;
+    return phase !== "DEATH_ANIM" && phase !== "DEATH_WAIT" && phase !== "MAZE_FLASH";
   }
 
-  public get levelClearTimer(): number {
-    return this.timerController.levelClearTimer;
+  /** Pac-Man is hidden while a ghost's score is shown, and after the death animation. */
+  public get pacmanVisible(): boolean {
+    const phase = this.sequencer.phase;
+    return phase !== "GHOST_EATEN_PAUSE" && phase !== "DEATH_WAIT";
   }
 
-  public set levelClearTimer(v: number) {
-    this.timerController.levelClearTimer = v;
+  /** While the maze flashes after a level clear: whether the walls are white this frame. */
+  public get isMazeFlashWhite(): boolean {
+    const { phase, framesLeft } = this.sequencer.state;
+    return phase === "MAZE_FLASH" && Math.floor(framesLeft / MAZE_FLASH_TOGGLE_FRAMES) % 2 === 1;
   }
 
   // Rewind ring buffer (up to 900 frames ~ 15 seconds)
@@ -200,9 +254,26 @@ export default class GameEngine {
     this.emit({ type: "SCORE_CHANGED", score: this.score, highScore: this.highScore });
   }
 
-  private setPlayState(playState: PlayState): void {
-    this.playState = playState;
-    this.emit({ type: "PLAY_STATE_CHANGED", playState });
+  /** Starts a round phase, telling the UI when the coarse play state changes. */
+  private enterPhase(phase: RoundPhase, frames?: number): void {
+    const before = this.playState;
+    this.sequencer.enter(phase, frames);
+    if (this.playState !== before) {
+      this.emit({ type: "PLAY_STATE_CHANGED", playState: this.playState });
+    }
+  }
+
+  /** Adds points, awards the one bonus life, and tracks the high score. */
+  private addScore(points: number): void {
+    this.score += points;
+    if (!this.extraLifeAwarded && this.score >= EXTRA_LIFE_SCORE) {
+      this.extraLifeAwarded = true;
+      this.lives++;
+      this.emit({ type: "LIVES_CHANGED", lives: this.lives });
+      this.emit({ type: "EXTRA_LIFE", lives: this.lives });
+    }
+    if (this.score > this.highScore) this.highScore = this.score;
+    this.emitScore();
   }
 
   /** The background siren for the current state (the shell plays it). */
@@ -282,14 +353,16 @@ export default class GameEngine {
     this.scorePopups = [];
     this.rewindBuffer = [];
     this.rewindIndex = -1;
+    this.extraLifeAwarded = false;
+    this.paused = false;
+    this.simRandom.reset();
 
     this.loadLevel(this.level);
-    this.readyTimer = uiConfig.timings.readyBannerFrames;
 
     this.emitScore();
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
-    this.setPlayState("READY");
+    this.enterPhase("READY", READY_FRAMES_GAME_START);
   }
 
   public restartLevel(level?: number) {
@@ -306,13 +379,14 @@ export default class GameEngine {
     this.scorePopups = [];
     this.rewindBuffer = [];
     this.rewindIndex = -1;
+    this.paused = false;
+    this.simRandom.reset();
 
     this.loadLevel(this.level);
-    this.readyTimer = uiConfig.timings.readyBannerFrames;
 
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
-    this.setPlayState("READY");
+    this.enterPhase("READY", READY_FRAMES_GAME_START);
   }
 
   public loadLevel(lvl: number) {
@@ -426,65 +500,81 @@ export default class GameEngine {
   public update() {
     this.currLevelFrame++;
 
-    if (this.playState === "PAUSED" || this.rewindIndex !== -1) {
+    if (this.paused || this.rewindIndex !== -1) {
       return;
     }
 
-    if (this.playState === "READY") {
-      this.readyTimer--;
-      if (this.readyTimer <= 0) {
-        this.setPlayState("PLAYING");
+    if (this.sequencer.phase === "PLAYING") {
+      this.updatePlaying();
+      return;
+    }
+
+    // Every other phase is a countdown. While a ghost's score is shown, eyes that were already
+    // heading home keep moving; everything else (timers included) is frozen.
+    if (this.sequencer.phase === "GHOST_EATEN_PAUSE") {
+      const shown = this.sequencer.state.eatenGhost;
+      const speedConfig = getSpeedConfigForLevel(this.level);
+      for (const g of Object.values(this.ghosts)) {
+        if (g.isEyes && g.type !== shown) this.updateActiveGhost(g, speedConfig);
       }
-      return;
     }
 
-    if (this.playState === "LEVEL_CLEAR") {
-      this.levelClearTimer--;
-      if (this.levelClearTimer <= 0) {
+    const ended = this.sequencer.tick();
+    if (this.sequencer.phase === "DEATH_ANIM") {
+      this.pacman.deathProgress = this.sequencer.progress;
+    }
+    if (ended) this.onPhaseEnd(ended);
+  }
+
+  /** What happens when a timed phase runs out. */
+  private onPhaseEnd(phase: RoundPhase): void {
+    switch (phase) {
+      case "READY":
+      case "GHOST_EATEN_PAUSE":
+        this.enterPhase("PLAYING");
+        break;
+      case "DEATH_FREEZE":
+        this.pacman.isDying = true;
+        this.pacman.deathProgress = 0;
+        this.enterPhase("DEATH_ANIM");
+        this.emit({ type: "PACMAN_DIED" });
+        break;
+      case "DEATH_ANIM":
+        this.enterPhase("DEATH_WAIT");
+        break;
+      case "DEATH_WAIT":
+        this.loseLife();
+        break;
+      case "LEVEL_CLEAR_FREEZE":
+        this.enterPhase("MAZE_FLASH");
+        break;
+      case "MAZE_FLASH":
         this.loadLevel(this.level + 1);
-        this.setPlayState("READY");
-        this.readyTimer = uiConfig.timings.readyBannerFrames;
-      }
+        this.enterPhase("READY");
+        break;
+    }
+  }
+
+  private loseLife(): void {
+    this.lives--;
+    this.emit({ type: "LIVES_CHANGED", lives: this.lives });
+
+    if (this.lives <= 0) {
+      this.enterPhase("GAME_OVER");
+      this.emit({ type: "GAME_OVER", score: this.score });
       return;
     }
 
-    if (this.playState === "DYING") {
-      this.pacman.deathProgress += 0.015;
-      if (this.pacman.deathProgress >= 1) {
-        this.lives--;
-        this.emit({ type: "LIVES_CHANGED", lives: this.lives });
+    this.timerController.resetTimers();
+    this.houseController.onLifeLost();
+    this.currLevelFrame = 0;
+    this.prng.reset();
+    this.resetActorPositions();
+    this.enterPhase("READY");
+  }
 
-        // Discard bonus fruit immediately upon losing a life.
-        if (this.fruit) {
-          this.fruit.active = false;
-          this.fruit = null;
-        }
-
-        if (this.lives <= 0) {
-          this.setPlayState("GAME_OVER");
-          this.emit({ type: "GAME_OVER", score: this.score });
-
-          if (this.score > this.highScore) {
-            this.highScore = this.score;
-            this.emitScore();
-          }
-        } else {
-          this.timerController.resetTimers();
-          this.houseController.onLifeLost();
-          this.currLevelFrame = 0;
-          this.prng.reset();
-          this.resetActorPositions();
-          this.setPlayState("READY");
-          this.readyTimer = uiConfig.timings.readyBannerFrames;
-        }
-      }
-      return;
-    }
-
-    if (this.playState !== "PLAYING") {
-      return;
-    }
-
+  /** One frame of normal play. */
+  private updatePlaying(): void {
     // Advance timers by one frame
     this.timerController.level = this.level;
     this.timerController.update(
@@ -561,50 +651,54 @@ export default class GameEngine {
       this.houseController.state.elroySuspended
     );
 
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      const g = this.ghosts[type];
-
-      // 1. Waiting in the house, or on the way out
+    for (const g of Object.values(this.ghosts)) {
+      // Waiting in the house, or on the way out
       if (g.inHouse) {
         const pct = g.getSpeedPercentage(this.maze, speedConfig);
         this.movementController.updateHouseGhost(g, this.currLevelFrame, pct, turboMult);
-        return;
+      } else {
+        this.updateActiveGhost(g, speedConfig);
       }
+    }
+  }
 
-      // 2. Clyde's Proximity Targeting Update (Arcade-Accurate 8-Tile Circle Rule)
-      // Clyde does not use custom sub-state clocks or Math.random inside this tick loop.
-      if (type === "CLYDE") {
-        const pacTile = this.pacman.tileCoord;
-        const clydeTile = g.tileCoord;
+  /** Targeting and movement for a ghost outside the house (eyes included). */
+  private updateActiveGhost(g: Ghost, speedConfig: LevelSpeedConfig): void {
+    const blinky = this.ghosts.BLINKY;
+    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
 
-        // Calculate true Euclidean squared tile distance
-        const dx = clydeTile.col - pacTile.col;
-        const dy = clydeTile.row - pacTile.row;
-        const distanceSquared = dx * dx + dy * dy;
+    // Clyde's Proximity Targeting Update (Arcade-Accurate 8-Tile Circle Rule)
+    if (g.type === "CLYDE") {
+      const pacTile = this.pacman.tileCoord;
+      const clydeTile = g.tileCoord;
 
-        // If closer than 8 tiles (64 squared), Clyde panics and flees to his home corner.
-        // Otherwise, he targets Pac-Man directly using normal Chase target parameters.
-        g.clydeWanderState = distanceSquared < 64 ? "FLEE" : "CHASE";
-      }
+      // Calculate true Euclidean squared tile distance
+      const dx = clydeTile.col - pacTile.col;
+      const dy = clydeTile.row - pacTile.row;
+      const distanceSquared = dx * dx + dy * dy;
 
-      // 3. Update Target Tile with configurable 1980 ROM quirks flag
-      this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
-      g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
+      // If closer than 8 tiles (64 squared), Clyde panics and flees to his home corner.
+      // Otherwise, he targets Pac-Man directly using normal Chase target parameters.
+      g.clydeWanderState = distanceSquared < 64 ? "FLEE" : "CHASE";
+    }
 
-      // 4. Discrete 16-frame bitmask speed & tile-to-tile movement
-      const speedPct = g.getSpeedPercentage(this.maze, speedConfig);
+    // Target tile (with the optional 1980 ROM quirks)
+    this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
+    g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
 
-      this.movementController.updateGhostMovement(
-        g,
-        blinky,
-        this.pacman,
-        this.currLevelFrame,
-        speedPct,
-        turboMult,
-        this.maze,
-        this.ghostAiController
-      );
-    });
+    // Discrete 16-frame bitmask speed & tile-to-tile movement
+    const speedPct = g.getSpeedPercentage(this.maze, speedConfig);
+
+    this.movementController.updateGhostMovement(
+      g,
+      blinky,
+      this.pacman,
+      this.currLevelFrame,
+      speedPct,
+      turboMult,
+      this.maze,
+      this.ghostAiController
+    );
   }
 
   private checkCollisions() {
@@ -618,7 +712,7 @@ export default class GameEngine {
 
       if (tile === "DOT") {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
-        this.score += 10;
+        this.addScore(10);
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
@@ -626,10 +720,9 @@ export default class GameEngine {
         this.emit({ type: "DOT_EATEN" });
         this.checkFruitSpawn();
         this.checkLevelClear();
-        this.emitScore();
       } else if (tile === "ENERGIZER") {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
-        this.score += 50;
+        this.addScore(50);
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
@@ -638,69 +731,50 @@ export default class GameEngine {
         this.triggerFrightenedMode();
         this.checkFruitSpawn();
         this.checkLevelClear();
-        this.emitScore();
         this.emit({ type: "ENERGIZER_EATEN", level: this.level });
       }
     }
 
-    // 2. Check Ghost Collision (Strict Single-Point Anchor Integer Tile Occupancy)
+    // 2. Ghost collisions (same tile). A cleared level ends the frame first. Only one ghost is
+    // eaten per frame: the pause starts, and a second ghost on the tile is caught after it.
     const pacTile = this.pacman.tileCoord;
 
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      const g = this.ghosts[type];
-      if (g.location !== "ACTIVE") return;
+    for (const g of Object.values(this.ghosts)) {
+      if (this.sequencer.phase !== "PLAYING") break;
+      if (g.location !== "ACTIVE") continue;
 
       const ghostTile = g.tileCoord;
-      const isColliding = pacTile.col === ghostTile.col && pacTile.row === ghostTile.row;
+      if (pacTile.col !== ghostTile.col || pacTile.row !== ghostTile.row) continue;
 
-      if (isColliding) {
-        if (g.frightened) {
-          // Eat Ghost!
-          g.location = "EYES";
-          g.frightened = false;
-          g.flashState = false;
-          g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
-          g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
-          g.target = this.ghostAiController.calculateTarget(
-            g,
-            this.pacman,
-            this.ghosts.BLINKY,
-            this.maze
-          );
-          this.eatenGhostsInEnergizer++;
-          const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
-          this.score += points;
-
-          // Add Score Popup
-          this.scorePopups.push({
-            id: `ghost_${this.currLevelFrame}_${type}`,
-            text: `${points}`,
-            x: g.x,
-            y: g.y,
-            life: 45,
-            color: "#00ffff",
-          });
-
-          this.emitScore();
-          this.emit({ type: "GHOST_EATEN", ghost: type, points });
-        } else {
-          if (!this.settings.invincible && !this.pacman.invincible) {
-            // Pac-Man Dies!
-            this.pacman.isDying = true;
-            this.pacman.deathProgress = 0;
-            this.setPlayState("DYING");
-
-            // Discard bonus fruit immediately upon losing a life.
-            if (this.fruit) {
-              this.fruit.active = false;
-              this.fruit = null;
-            }
-
-            this.emit({ type: "PACMAN_DIED" });
-          }
+      if (g.frightened) {
+        g.location = "EYES";
+        g.frightened = false;
+        g.flashState = false;
+        g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
+        g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
+        g.target = this.ghostAiController.calculateTarget(
+          g,
+          this.pacman,
+          this.ghosts.BLINKY,
+          this.maze
+        );
+        this.eatenGhostsInEnergizer++;
+        const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
+        this.addScore(points);
+        // The action stops while the score is shown where the ghost was (F20).
+        this.enterPhase("GHOST_EATEN_PAUSE");
+        this.sequencer.state.eatenGhost = g.type;
+        this.sequencer.state.eatenPoints = points;
+        this.emit({ type: "GHOST_EATEN", ghost: g.type, points });
+      } else if (!this.settings.invincible && !this.pacman.invincible) {
+        // Everything freezes with the ghosts visible, then the death animation starts (F21).
+        this.enterPhase("DEATH_FREEZE");
+        if (this.fruit) {
+          this.fruit.active = false;
+          this.fruit = null;
         }
       }
-    });
+    }
 
     // 3. Check Fruit Collision (Pac-Man's center anchor occupies fruit candidate tiles)
     if (this.fruit && this.fruit.active) {
@@ -711,7 +785,7 @@ export default class GameEngine {
         (pacTile.col === fruitCol || pacTile.col === 13 || pacTile.col === 14);
 
       if (isFruitTile) {
-        this.score += this.fruit.points;
+        this.addScore(this.fruit.points);
         this.fruit.active = false;
 
         const fruitX = fruitCol * TILE_SIZE + halfTile;
@@ -726,15 +800,8 @@ export default class GameEngine {
           color: "#ffcc00",
         });
 
-        this.emitScore();
         this.emit({ type: "FRUIT_EATEN", points: this.fruit.points });
       }
-    }
-
-    // High Score tracking
-    if (this.score > this.highScore) {
-      this.highScore = this.score;
-      this.emitScore();
     }
   }
 
@@ -773,7 +840,7 @@ export default class GameEngine {
       col: 13, // Standardized to absolute integer coordinate to keep pathing calculations clean
       row: 20,
       active: true,
-      duration: 600, // ~10 seconds at 60Hz
+      duration: FRUIT_MIN_FRAMES + this.simRandom.nextInt(FRUIT_EXTRA_FRAMES),
       color: fruitMeta.color,
       symbol: fruitMeta.symbol,
       bouncing: this.mode === "MS_PACMAN",
@@ -808,8 +875,8 @@ export default class GameEngine {
 
   private checkLevelClear() {
     if (this.dotsRemaining <= 0) {
-      this.levelClearTimer = 120; // 2 seconds flash
-      this.setPlayState("LEVEL_CLEAR");
+      this.fruit = null;
+      this.enterPhase("LEVEL_CLEAR_FREEZE");
       this.emit({ type: "LEVEL_CLEARED", level: this.level });
     }
   }
@@ -824,9 +891,10 @@ export default class GameEngine {
     });
 
     return {
-      version: 1,
+      version: 2,
       mode: this.mode,
-      playState: this.playState,
+      sequence: { ...this.sequencer.state },
+      paused: this.paused,
       level: this.level,
       score: this.score,
       highScore: this.highScore,
@@ -840,10 +908,10 @@ export default class GameEngine {
         waveIndex: this.timerController.waveIndex,
         waveTimer: this.timerController.waveTimer,
         frightened: this.timerController.frightenedGlobalTimer,
-        ready: this.timerController.readyTimer,
-        levelClear: this.timerController.levelClearTimer,
       },
       prng: this.prng.state,
+      simRandom: this.simRandom.state,
+      extraLifeAwarded: this.extraLifeAwarded,
       tiles: encodeTiles(this.maze.tiles),
       pacman: this.pacman.toState(),
       ghosts,
@@ -862,7 +930,8 @@ export default class GameEngine {
       this.maze = getMazeData(state.mode, state.level);
     }
     this.mode = state.mode;
-    this.playState = state.playState;
+    this.sequencer.state = { ...state.sequence };
+    this.paused = state.paused;
     this.level = state.level;
     this.timerController.level = state.level;
     this.score = state.score;
@@ -876,9 +945,9 @@ export default class GameEngine {
     this.timerController.waveIndex = state.timers.waveIndex;
     this.timerController.waveTimer = state.timers.waveTimer;
     this.timerController.frightenedGlobalTimer = state.timers.frightened;
-    this.timerController.readyTimer = state.timers.ready;
-    this.timerController.levelClearTimer = state.timers.levelClear;
     this.prng.state = state.prng;
+    this.simRandom.state = state.simRandom;
+    this.extraLifeAwarded = state.extraLifeAwarded;
     decodeTilesInto(state.tiles, this.maze.tiles);
     this.pacman.restoreFromState({ ...state.pacman });
     (Object.keys(state.ghosts) as GhostType[]).forEach((type) => {
@@ -921,7 +990,8 @@ export default class GameEngine {
       // Truncate buffer to current frame and resume live play
       this.rewindBuffer = this.rewindBuffer.slice(0, this.rewindIndex + 1);
       this.rewindIndex = -1;
-      this.setPlayState("PLAYING");
+      this.paused = false;
+      this.emit({ type: "PLAY_STATE_CHANGED", playState: this.playState });
     }
   }
 

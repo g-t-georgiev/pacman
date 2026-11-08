@@ -4,6 +4,7 @@ import type { SimEvent } from "../game/simEvents";
 import { type GameState, hashGameState } from "../game/gameState";
 import type { HouseState } from "../controllers/HouseController";
 import { TILE_SIZE } from "../game/constants";
+import type { RoundPhase } from "../game/RoundSequencer";
 import type {
   Direction,
   ElroyStage,
@@ -19,6 +20,10 @@ import type {
 export interface AgentView {
   frame: number;
   playState: PlayState;
+  /** Round phase (READY, PLAYING, GHOST_EATEN_PAUSE, DEATH_FREEZE, ...). */
+  phase: RoundPhase;
+  /** Frames left in the phase (-1 when untimed). */
+  phaseFramesLeft: number;
   level: number;
   score: number;
   lives: number;
@@ -269,6 +274,8 @@ export class AgentDriver {
     return {
       frame: e.currLevelFrame,
       playState: e.playState,
+      phase: e.phase,
+      phaseFramesLeft: e.phaseFramesLeft,
       level: e.level,
       score: e.score,
       lives: e.lives,

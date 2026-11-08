@@ -48,7 +48,7 @@ export class GameRunner {
     this.engine.update();
     this.flush();
 
-    if (this.engine.playState === "PLAYING") {
+    if (this.engine.phase === "PLAYING") {
       this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
       if (this.engine.currLevelFrame % 4 === 0) {
         GameEvents.emit("DIAGNOSTICS_TICK", this.engine.getActorsDiagnostics());
@@ -126,6 +126,9 @@ export function dispatchSimEvent(event: SimEvent): void {
     case "FRUIT_EATEN":
       soundEngine.playEatFruit();
       GameEvents.emit("FRUIT_EATEN", event.points);
+      break;
+    case "EXTRA_LIFE":
+      soundEngine.playExtraLife();
       break;
     case "PACMAN_DIED":
       soundEngine.playDeath().catch(() => {

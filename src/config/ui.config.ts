@@ -28,10 +28,6 @@ export interface UIConfig {
   timings: {
     /** Delay in milliseconds after GAME OVER text is displayed before showing the Restart Panel */
     gameOverRestartDelayMs: number;
-    /** Duration in frames for READY! banner before gameplay commences */
-    readyBannerFrames: number;
-    /** Duration in frames for LEVEL CLEAR flashing before loading next level */
-    levelClearFrames: number;
     /** Notification / score popup duration in frames */
     scorePopupLifetimeFrames: number;
   };
@@ -41,8 +37,6 @@ export interface UIConfig {
 export const uiConfig: UIConfig = {
   timings: {
     gameOverRestartDelayMs: 1200, // 1.2 seconds so player can comprehend game over
-    readyBannerFrames: 120, // 2 seconds
-    levelClearFrames: 120, // 2 seconds
     scorePopupLifetimeFrames: 45,
   },
   panels: {

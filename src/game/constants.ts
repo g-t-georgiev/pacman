@@ -288,3 +288,13 @@ export const DEFAULT_SPAWN_CANDIDATES: Record<"PACMAN" | "FRUIT" | GhostType, Du
     { col: 14, row: 20 },
   ] as const,
 } as const;
+
+/** One bonus life at this score (the arcade's default DIP-switch setting). */
+export const EXTRA_LIFE_SCORE = 10_000;
+
+/**
+ * Bonus fruit stays between 9 and 10 seconds (Dossier, "The Basics"). The exact length is drawn
+ * from the sim's random stream, so patterns can't rely on it but replays stay exact.
+ */
+export const FRUIT_MIN_FRAMES = 9 * SIM_FPS;
+export const FRUIT_EXTRA_FRAMES = SIM_FPS;

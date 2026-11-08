@@ -33,10 +33,11 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
     // Frame 1: Collision initiates death
     engine.update();
     expect(engine.playState).toBe("DYING");
-    expect(engine.pacman.isDying).toBe(true);
+    expect(engine.phase).toBe("DEATH_FREEZE");
 
-    // Run frames until death animation finishes (0.015 per frame ~ 67 frames)
-    for (let f = 0; f < 80; f++) {
+    // Freeze, animation, wait: run the whole death sequence
+    const dying = () => engine.phase.startsWith("DEATH_");
+    for (let f = 0; f < 400 && dying(); f++) {
       engine.update();
       collectEvents();
     }

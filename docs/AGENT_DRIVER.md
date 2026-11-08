@@ -25,7 +25,7 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `scenario({...})`        | Set up a situation: level, play state, dots left, wave, frightened, positions.   |
 | `save()` / `load(state)` | Capture / restore the complete `GameState`.                                      |
 | `hash()`                 | Hash of the complete state. Equal hashes mean identical games.                   |
-| `view()`                 | Frame, play state, score, lives, wave, timers, Pac-Man, all ghosts, house state. |
+| `view()`                 | Frame, play state, round phase, score, lives, wave, timers, actors, house state. |
 | `events()`               | Sim events since the last call (dots, ghosts eaten, deaths, state changes).      |
 | `diagnostics()`          | Diagnostics rules that have failed, with messages, plus the latest log entries.  |
 

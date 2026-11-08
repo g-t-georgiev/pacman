@@ -84,10 +84,7 @@ export default class GameRenderer {
   private renderMaze(engine: GameEngine) {
     const ctx = this.ctx;
     const maze = engine.maze;
-    const isLevelClearFlash =
-      engine.playState === "LEVEL_CLEAR" && Math.floor(engine.levelClearTimer / 10) % 2 === 0;
-
-    const wallColor = isLevelClearFlash ? "#ffffff" : maze.wallColor;
+    const wallColor = engine.isMazeFlashWhite ? "#ffffff" : maze.wallColor;
 
     for (let r = 0; r < maze.height; r++) {
       for (let c = 0; c < maze.width; c++) {
@@ -149,7 +146,7 @@ export default class GameRenderer {
   private renderPlayer(engine: GameEngine) {
     const ctx = this.ctx;
     const p = engine.pacmanState;
-    if (!p) return;
+    if (!p || !engine.pacmanVisible) return;
 
     ctx.save();
     ctx.translate(px(p.x), px(p.y));
@@ -244,9 +241,24 @@ export default class GameRenderer {
 
   private renderGhosts(engine: GameEngine) {
     const ctx = this.ctx;
+    if (!engine.ghostsVisible) return;
+    const { eatenGhost, eatenPoints } = engine.sequencer.state;
 
     (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       const g = engine.ghostStates[type];
+
+      // While the action is paused after eating a ghost, its score shows in its place.
+      if (type === eatenGhost) {
+        ctx.save();
+        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#00ffff";
+        ctx.fillText(`${eatenPoints}`, px(g.x), px(g.y));
+        ctx.restore();
+        return;
+      }
+
       ctx.save();
       ctx.translate(px(g.x), px(g.y));
 

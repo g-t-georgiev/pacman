@@ -95,11 +95,9 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
     engine.update();
     expect(blinky.elroyStage).toBe(2);
 
-    // Lose a life: finish the death animation
-    engine.pacman.isDying = true;
-    engine.pacman.deathProgress = 0.99;
+    // Lose a life: run the death sequence
     engine.playState = "DYING";
-    engine.update();
+    for (let f = 0; f < 400 && engine.playState === "DYING"; f++) engine.update();
     expect(engine.playState).toBe("READY");
     engine.playState = "PLAYING";
     blinky = engine.ghosts.BLINKY; // actors are recreated on respawn

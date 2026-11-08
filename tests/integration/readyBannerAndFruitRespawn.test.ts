@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import { uiConfig } from "../../src/config/ui.config";
+import { PHASE_FRAMES, READY_FRAMES_GAME_START } from "../../src/game/RoundSequencer";
+
+/** Runs frames until the play state changes (or the frame budget runs out). */
+function runWhile(engine: GameEngine, playState: string, maxFrames = 1000): void {
+  for (let f = 0; f < maxFrames && engine.playState === playState; f++) engine.update();
+}
 
 describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
   it("should initialize READY state with full countdown timer upon initGame and Start New Game", () => {
@@ -8,7 +13,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     engine.initGame("PACMAN", 1);
 
     expect(engine.playState).toBe("READY");
-    expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames); // 120 frames (2 seconds)
+    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START); // longer at game start
     expect(engine.lives).toBe(3);
     expect(engine.level).toBe(1);
 
@@ -19,7 +24,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
     engine.update();
 
-    expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames - 1);
+    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START - 1);
     expect(engine.playState).toBe("READY");
     expect(engine.pacman.x).toBe(initialPacX);
     expect(engine.pacman.y).toBe(initialPacY);
@@ -78,7 +83,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.level).toBe(5);
     expect(engine.lives).toBe(3);
     expect(engine.playState).toBe("READY");
-    expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames);
+    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START);
     expect(engine.drainEvents().some((e) => e.type === "LEVEL_CHANGED" && e.level === 5)).toBe(
       true
     );
@@ -112,16 +117,15 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
     engine.update();
 
-    // Pac-Man is dying
+    // Pac-Man is dying: first a freeze, then the animation
     expect(engine.playState).toBe("DYING");
-    expect(engine.pacman.isDying).toBe(true);
+    expect(engine.phase).toBe("DEATH_FREEZE");
 
     // In authentic arcade rules: the bonus fruit immediately vanishes upon death
     expect(engine.fruit).toBeNull();
 
-    // Fast-forward death animation to trigger actor respawn (lives 3 -> 2)
-    engine.pacman.deathProgress = 1.0;
-    engine.update();
+    // Run the death sequence to the respawn (lives 3 -> 2)
+    runWhile(engine, "DYING");
 
     // Now respawned into READY state
     expect(engine.playState).toBe("READY");
@@ -130,9 +134,9 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     // Bonus fruit MUST NOT reappear after respawn
     expect(engine.fruit).toBeNull();
 
-    // Advance through READY delay into PLAYING
-    engine.readyTimer = 1;
-    engine.update();
+    // The respawn READY is the short one
+    expect(engine.phaseFramesLeft).toBe(PHASE_FRAMES.READY);
+    runWhile(engine, "READY");
     expect(engine.playState).toBe("PLAYING");
 
     // Fruit is still null and treated as already consummated
@@ -167,8 +171,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     blinky.x = engine.pacman.x;
     blinky.y = engine.pacman.y;
     engine.update();
-    engine.pacman.deathProgress = 1.0;
-    engine.update();
+    runWhile(engine, "DYING");
 
     expect(engine.playState).toBe("GAME_OVER");
     expect(engine.fruit).toBeNull();
@@ -177,6 +180,6 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     engine.initGame("PACMAN", 1);
     expect(engine.fruit).toBeNull();
     expect(engine.playState).toBe("READY");
-    expect(engine.readyTimer).toBe(uiConfig.timings.readyBannerFrames);
+    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START);
   });
 });

@@ -99,7 +99,9 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     expect(blinky.mode).toBe("EATEN");
     expect(engine.eatenGhostsInEnergizer).toBe(1);
     expect(engine.score).toBe(200); // 200 pts for first ghost
-    expect(engine.scorePopups.length).toBeGreaterThan(0);
+    // The action pauses while Blinky's score is shown in his place
+    expect(engine.phase).toBe("GHOST_EATEN_PAUSE");
+    expect(engine.sequencer.state).toMatchObject({ eatenGhost: "BLINKY", eatenPoints: 200 });
   });
 
   it("should prime reversal upon entering fright mode and reverse when crossing tile boundary", () => {

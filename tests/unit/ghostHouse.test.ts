@@ -255,7 +255,7 @@ describe("Ghost state machine in the engine", () => {
     engine.pacman.y = blinky.y;
     engine.update();
     expect(engine.playState).toBe("DYING");
-    for (let f = 0; f < 120 && engine.playState === "DYING"; f++) engine.update();
+    for (let f = 0; f < 400 && engine.playState === "DYING"; f++) engine.update();
     expect(engine.houseController.state.globalCounterActive).toBe(true);
     expect(engine.houseController.state.globalCounter).toBe(0);
   });

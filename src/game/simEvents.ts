@@ -16,6 +16,8 @@ export type SimEvent =
   | { type: "ENERGIZER_EATEN"; level: number }
   | { type: "GHOST_EATEN"; ghost: GhostType; points: number }
   | { type: "FRUIT_EATEN"; points: number }
+  | { type: "EXTRA_LIFE"; lives: number }
+  /** The death animation starts (after the freeze), with its sound. */
   | { type: "PACMAN_DIED" };
 
 /** Background siren the sim wants this frame. Derived from state, never queued. */
