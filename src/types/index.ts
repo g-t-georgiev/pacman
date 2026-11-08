@@ -3,6 +3,7 @@ export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
 export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
 export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
+export type GhostsToHousePhase = "NONE" | "APPROACH_SEAM" | "DESCENDING_DOOR" | "MOVING_TO_SLOT";
 
 export interface ScatterChaseSchedule {
   duration: number;
@@ -33,6 +34,8 @@ export interface TileCoord {
   row: number;
 }
 
+export type DualTileCoord = readonly [TileCoord, TileCoord];
+
 export type TileType =
   | "EMPTY"
   | "WALL"
@@ -47,14 +50,34 @@ export interface MazeData {
   width: number; // usually 28 tiles
   height: number; // usually 31 tiles for active maze
   tiles: TileType[][];
-  pacmanSpawn: { x: number; y: number; dir: Direction };
-  ghostSpawns: Record<GhostType, { x: number; y: number; inHouse: boolean; initialDir: Direction }>;
+  pacmanSpawn: {
+    x: number;
+    y: number;
+    dir: Direction;
+    candidates?: DualTileCoord;
+  };
+  ghostSpawns: Record<
+    GhostType,
+    {
+      x: number;
+      y: number;
+      inHouse: boolean;
+      initialDir: Direction;
+      candidates?: DualTileCoord;
+      respawnSlot?: DualTileCoord;
+    }
+  >;
+  fruitSpawn?: {
+    candidates?: DualTileCoord;
+  };
   scatterTargets: Record<GhostType, TileCoord>;
   tunnels: Array<{ y: number; leftExit: number; rightExit: number }>;
   wallColor: string;
   dotColor: string;
   bgColor: string;
   gateColor: string;
+  specialNoUpTiles?: TileCoord[];
+  intersections?: TileCoord[];
 }
 
 export interface PacmanState {
@@ -69,12 +92,15 @@ export interface PacmanState {
   deathProgress: number; // 0 to 1
   invincible: boolean;
   eatDotCooldown: number;
+  eatingFreezeFrames?: number;
 }
 
 export interface GhostState {
   type: GhostType;
   x: number;
   y: number;
+  anchorX?: number;
+  anchorY?: number;
   dir: Direction;
   nextDir: Direction;
   mode: GhostBehavior;
@@ -91,6 +117,16 @@ export interface GhostState {
   clydeWanderState?: "CHASE" | "FLEE";
   clydeSwitchTimer?: number;
   intermediateTarget?: TileCoord;
+  reversalPrimed?: boolean;
+  lastDecisionTile?: TileCoord;
+  lastOccupiedTile?: TileCoord;
+  enteringHousePhase?: GhostsToHousePhase;
+}
+
+export interface RomQuirkSettings {
+  emulateRomQuirks: boolean; // Master switch: when true, replicates authentic Z80 hardware bugs
+  pinkyUpOverflow: boolean; // Pinky UP bug: targets 4 UP + 4 LEFT
+  inkyUpOverflow: boolean; // Inky UP bug: pivot is 2 UP + 2 LEFT
 }
 
 export interface FruitItem {
@@ -132,6 +168,8 @@ export interface GameSettings {
   soundVolume: number; // 0 to 1
   crtFilter: boolean;
   touchControls: boolean;
+  emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
+  showDiagnosticConsole: boolean; // In-game testing & diagnostics HUD console
 }
 
 export interface HighScoreRecord {

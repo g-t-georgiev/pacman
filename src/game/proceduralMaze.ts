@@ -1,5 +1,10 @@
-import type { GameMode, MazeData, TileType } from "../types";
-import { DEFAULT_SCATTER_TARGETS, MAZE_COLS, MAZE_ROWS } from "./constants";
+import type { GameMode, MazeData, TileCoord, TileType } from "../types";
+import {
+  DEFAULT_SCATTER_TARGETS,
+  DEFAULT_SPAWN_CANDIDATES,
+  MAZE_COLS,
+  MAZE_ROWS,
+} from "./constants";
 
 /**
  * Procedural maze generator for Cookie Man mode:
@@ -156,16 +161,93 @@ export function generateProceduralMaze(mode: GameMode, seed?: number): MazeData 
   tiles[26][13] = "EMPTY";
   tiles[26][14] = "EMPTY";
 
+  // Compute authentic intersections for procedural maze
+  const intersections: TileCoord[] = [];
+  for (let r = activeTop; r <= activeBottom; r++) {
+    for (let c = 1; c < width - 1; c++) {
+      const tile = tiles[r][c];
+      if (tile === "WALL" || tile === "GHOST_HOUSE" || tile === "GATE") continue;
+      let exits = 0;
+      if (
+        r > activeTop &&
+        tiles[r - 1][c] !== "WALL" &&
+        tiles[r - 1][c] !== "GHOST_HOUSE" &&
+        tiles[r - 1][c] !== "GATE"
+      )
+        exits++;
+      if (
+        r < activeBottom &&
+        tiles[r + 1][c] !== "WALL" &&
+        tiles[r + 1][c] !== "GHOST_HOUSE" &&
+        tiles[r + 1][c] !== "GATE"
+      )
+        exits++;
+      if (
+        c > 1 &&
+        tiles[r][c - 1] !== "WALL" &&
+        tiles[r][c - 1] !== "GHOST_HOUSE" &&
+        tiles[r][c - 1] !== "GATE"
+      )
+        exits++;
+      if (
+        c < width - 2 &&
+        tiles[r][c + 1] !== "WALL" &&
+        tiles[r][c + 1] !== "GHOST_HOUSE" &&
+        tiles[r][c + 1] !== "GATE"
+      )
+        exits++;
+      if (exits >= 3) {
+        intersections.push({ col: c, row: r });
+      }
+    }
+  }
+
   return {
     width,
     height,
     tiles,
-    pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
+    pacmanSpawn: {
+      x: 13,
+      y: 26,
+      dir: "LEFT",
+      candidates: DEFAULT_SPAWN_CANDIDATES.PACMAN,
+    },
     ghostSpawns: {
-      BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
-      PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
-      INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
-      CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
+      BLINKY: {
+        x: 13,
+        y: 14,
+        inHouse: false,
+        initialDir: "LEFT",
+        candidates: DEFAULT_SPAWN_CANDIDATES.BLINKY,
+        respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+      },
+      PINKY: {
+        x: 13,
+        y: 17,
+        inHouse: true,
+        initialDir: "UP",
+        candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
+        respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+      },
+      INKY: {
+        x: 11,
+        y: 17,
+        inHouse: true,
+        initialDir: "UP",
+        candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
+        respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
+      },
+      CLYDE: {
+        x: 15,
+        y: 17,
+        inHouse: true,
+        initialDir: "UP",
+        candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+        respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+      },
+    },
+    fruitSpawn: {
+      candidates: DEFAULT_SPAWN_CANDIDATES.FRUIT,
     },
     scatterTargets: {
       BLINKY: scatterTargets.BLINKY,
@@ -178,5 +260,6 @@ export function generateProceduralMaze(mode: GameMode, seed?: number): MazeData 
     dotColor: "#D2B48C", // Chocolate chip beige
     bgColor: "#1A0F0A", // Deep dark espresso oven
     gateColor: "#FF69B4", // Strawberry icing pink gate
+    intersections,
   };
 }

@@ -18,6 +18,8 @@ interface HUDProps {
   onOpenRestart: () => void;
   restartPanelOpen: boolean;
   isGameOver?: boolean;
+  showDiagnostics?: boolean;
+  onToggleDiagnostics?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -38,6 +40,8 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenRestart,
   restartPanelOpen,
   isGameOver = false,
+  showDiagnostics = false,
+  onToggleDiagnostics,
 }) => {
   return (
     <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-t-xl px-3 sm:px-4 py-2.5 flex flex-col gap-2 select-none text-white">
@@ -125,6 +129,21 @@ export const HUD: React.FC<HUDProps> = ({
         >
           <span>🛠️ PRACTICE</span>
         </button>
+
+        {/* Diagnostics Console Toggle */}
+        {onToggleDiagnostics && (
+          <button
+            onClick={onToggleDiagnostics}
+            className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+              showDiagnostics
+                ? "bg-cyan-600 text-white shadow-sm ring-1 ring-cyan-300"
+                : "bg-neutral-800 text-neutral-400 hover:text-white"
+            }`}
+            title="In-Game Diagnostics & Telemetry HUD"
+          >
+            <span>🔬 DIAG</span>
+          </button>
+        )}
 
         {/* CRT Scanlines Toggle */}
         <button

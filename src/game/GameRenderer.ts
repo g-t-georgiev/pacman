@@ -1,9 +1,9 @@
 import type { Direction, GhostType } from "../types";
+import type GameEngine from "./GameEngine";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, GHOST_COLORS, TILE_SIZE } from "./constants";
-import type { GameEngine } from "./gameEngine";
-import { chooseNextGhostDirection, getDirectionVector } from "./ghostAi";
+import { chooseNextGhostDirection, getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
 
-export class GameRenderer {
+export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
 
   constructor(ctx: CanvasRenderingContext2D) {
@@ -17,6 +17,9 @@ export class GameRenderer {
     // Clear background
     ctx.fillStyle = engine.maze.bgColor || "#000000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 1. Render Intersection and No-Up Tiles
+    this.renderIntersectionTiles(engine);
 
     // 1. Render Maze Walls, Dots, and Gates
     this.renderMaze(engine);
@@ -81,7 +84,6 @@ export class GameRenderer {
         if (tile === "WALL") {
           ctx.fillStyle = wallColor;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-
           // Subtle inset to simulate classic double-bezel arcade walls
           ctx.fillStyle = engine.maze.bgColor || "#000000";
           // Check neighbors to create hollow arcade corridors
@@ -89,7 +91,6 @@ export class GameRenderer {
           const hasBot = r < maze.height - 1 && maze.tiles[r + 1][c] === "WALL";
           const hasLeft = c > 0 && maze.tiles[r][c - 1] === "WALL";
           const hasRight = c < maze.width - 1 && maze.tiles[r][c + 1] === "WALL";
-
           if (hasTop && hasBot && hasLeft && hasRight) {
             ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
           }
@@ -157,7 +158,7 @@ export class GameRenderer {
 
   private renderPlayer(engine: GameEngine) {
     const ctx = this.ctx;
-    const p = engine.pacman;
+    const p = engine.pacmanState;
     if (!p) return;
 
     ctx.save();
@@ -323,8 +324,8 @@ export class GameRenderer {
   private renderGhosts(engine: GameEngine) {
     const ctx = this.ctx;
 
-    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
-      const g = engine.ghosts[type];
+    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
+      const g = engine.ghostStates[type];
       ctx.save();
       ctx.translate(g.x, g.y);
 
@@ -439,11 +440,11 @@ export class GameRenderer {
     };
     const showCues = engine.settings.learnMode || engine.settings.learnVisualsEnabled;
 
-    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       // Check if visual cues are enabled for this specific ghost
       if (activeVisuals[type] === false) return;
 
-      const g = engine.ghosts[type];
+      const g = engine.ghostStates[type];
       if (g.inHouse) return;
 
       const ghostColor = GHOST_COLORS[type].body;
@@ -494,7 +495,7 @@ export class GameRenderer {
       if (type === "INKY" && g.intermediateTarget && showCues) {
         const pivotX = g.intermediateTarget.col * TILE_SIZE + TILE_SIZE / 2;
         const pivotY = g.intermediateTarget.row * TILE_SIZE + TILE_SIZE / 2;
-        const blinky = engine.ghosts.BLINKY;
+        const blinky = engine.ghostStates.BLINKY;
 
         // Draw line from Blinky to Intermediate Pivot
         ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
@@ -615,24 +616,22 @@ export class GameRenderer {
       ctx.stroke();
     }
 
-    // 2. Highlight Decision Intersection Tiles (>= 3 walkable exits)
-    ctx.fillStyle = "rgba(0, 255, 180, 0.25)";
-    for (let r = 1; r < maze.height - 1; r++) {
-      for (let c = 1; c < maze.width - 1; c++) {
-        if (maze.tiles[r][c] !== "WALL") {
-          let walkableExits = 0;
-          if (maze.tiles[r - 1][c] !== "WALL") walkableExits++;
-          if (maze.tiles[r + 1][c] !== "WALL") walkableExits++;
-          if (maze.tiles[r][c - 1] !== "WALL") walkableExits++;
-          if (maze.tiles[r][c + 1] !== "WALL") walkableExits++;
-          if (walkableExits >= 3) {
-            ctx.fillRect(c * TILE_SIZE + 1, r * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-          }
-        }
-      }
-    }
-
     ctx.restore();
+  }
+
+  public renderIntersectionTiles(engine: GameEngine) {
+    const ctx = this.ctx;
+    const maze = engine.maze;
+    if (!maze.intersections) return;
+
+    for (const { col, row } of maze.intersections) {
+      if (isTileNoUpZone(col, row, maze)) {
+        ctx.fillStyle = "rgba(238, 255, 0, 0.45)";
+      } else {
+        ctx.fillStyle = "rgba(21, 255, 0, 0.45)";
+      }
+      ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
   }
 
   /**
@@ -643,8 +642,8 @@ export class GameRenderer {
     const ctx = this.ctx;
     const maze = engine.maze;
 
-    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
-      const g = engine.ghosts[type];
+    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
+      const g = engine.ghostStates[type];
       if (g.inHouse) return;
 
       const ghostColor = GHOST_COLORS[type].body;
@@ -724,10 +723,10 @@ export class GameRenderer {
    */
   private renderPracticeTargetLines(engine: GameEngine) {
     const ctx = this.ctx;
-    const pacman = engine.pacman;
+    const pacman = engine.pacmanState;
 
-    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
-      const g = engine.ghosts[type];
+    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
+      const g = engine.ghostStates[type];
       if (g.inHouse) return;
 
       const ghostColor = GHOST_COLORS[type].body;

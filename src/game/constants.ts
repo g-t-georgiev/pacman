@@ -1,4 +1,5 @@
 import type {
+  DualTileCoord,
   GameMode,
   GhostType,
   LevelSpeedConfig,
@@ -12,66 +13,88 @@ export const MAZE_ROWS = 36;
 export const CANVAS_WIDTH = MAZE_COLS * TILE_SIZE; // 448px
 export const CANVAS_HEIGHT = MAZE_ROWS * TILE_SIZE; // 576px
 
-/** Speeds based on `100% = 1.2625px/fr` at 60 FPS. */
-export const BASE_100_PERCENT_SPEED = 1.2625;
-
 /** Remaining number of dots pacman has to eat for Blinky's "Elroy 1" mode to activate. */
 export const ELROY_1_DOTS_LEFT = 20;
 /** Remaining number of dots pacman has to eat for Blinky's "Elroy 2" mode to activate. */
 export const ELROY_2_DOTS_LEFT = 10;
 
-export const SPEED_CONFIG_LEVEL_1: LevelSpeedConfig = {
-  pacmanNormal: 0.8 * BASE_100_PERCENT_SPEED, // 1.01 px
-  pacmanEating: 0.71 * BASE_100_PERCENT_SPEED, // 0.896375 px
-  pacmanFright: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanFrightEating: 0.83 * BASE_100_PERCENT_SPEED, // 1.047875 px
-  ghostNormal: 0.75 * BASE_100_PERCENT_SPEED, // 0.946875 px
-  ghostTunnel: 0.4 * BASE_100_PERCENT_SPEED, // 0.505 px
-  ghostFrightened: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  elroy1: 0.8 * BASE_100_PERCENT_SPEED, // 1.01 px
-  elroy2: 0.85 * BASE_100_PERCENT_SPEED, // 1.073125 px
+/** Default cornering tolerance in pixels for Pac-Man to initiate pre-turns */
+export const PACMAN_CORNERING_TOLERANCE = 4;
+
+/**
+ * Authentic 16-frame cycle movement bitmasks from the original arcade ROM.
+ * 1 means the actor advances 1 pixel on that frame; 0 means the actor pauses on that frame.
+ */
+export const SPEED_MASKS: Record<number, number> = {
+  100: 0b1111_1111_1111_1111, // 16 steps (1px every frame)
+  95: 0b1111_1111_1111_1101, // 15 steps
+  90: 0b1111_0111_1111_0111, // 14 steps
+  87: 0b1111_0111_1110_1110, // 14 steps
+  85: 0b1110_1110_1111_0111, // 13 steps
+  83: 0b1110_1110_1011_1101, // 13 steps
+  80: 0b1110_1111_1110_1101, // 13 steps
+  79: 0b1110_1011_1110_1011, // 12 steps (Pac-Man eating dots L2+)
+  75: 0b1110_1110_1110_1110, // 12 steps (3 out of every 4 frames = 75%)
+  71: 0b1110_1011_1110_1010, // 11 steps (Pac-Man eating dots L1)
+  60: 0b1101_0110_1101_0110, // 10 steps (Ghost frightened L5+)
+  55: 0b1010_1101_1010_0101, // 9 steps (Ghost frightened L2-4)
+  50: 0b1010_1010_1010_1010, // 8 steps (Ghost frightened L1 / Tunnel L5+)
+  45: 0b1001_0101_1001_0100, // 7 steps (Tunnel L2-4)
+  40: 0b1001_0010_0100_1001, // 6 steps (Tunnel L1)
 };
 
-export const SPEED_CONFIG_LEVELS_2_TO_4: LevelSpeedConfig = {
-  pacmanNormal: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanEating: 0.79 * BASE_100_PERCENT_SPEED, // 0.997375 px
-  pacmanFright: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.85 * BASE_100_PERCENT_SPEED, // 1.073125 px
-  ghostTunnel: 0.45 * BASE_100_PERCENT_SPEED, // 0.568125 px
-  ghostFrightened: 0.55 * BASE_100_PERCENT_SPEED, // 0.694375 px
-  elroy1: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  elroy2: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
+export const SPEED_PCT_PER_LEVEL_1: LevelSpeedConfig = {
+  pacmanNormal: 80, // 1.01 px
+  pacmanEating: 71, // 0.896375 px
+  pacmanFright: 90, // 1.13625 px
+  pacmanFrightEating: 83, // 1.047875 px
+  ghostNormal: 75, // 0.946875 px
+  ghostTunnel: 40, // 0.505 px
+  ghostFrightened: 50, // 0.63125 px
+  elroy1: 80, // 1.01 px
+  elroy2: 85, // 1.073125 px
 };
 
-export const SPEED_CONFIG_LEVELS_5_TO_20: LevelSpeedConfig = {
-  pacmanNormal: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  pacmanFright: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  ghostTunnel: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  ghostFrightened: 0.6 * BASE_100_PERCENT_SPEED, // 0.7575 px
-  elroy1: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  elroy2: 1.05 * BASE_100_PERCENT_SPEED, // 1.325625 px
+export const SPEED_PCT_PER_LEVELS_2_TO_4: LevelSpeedConfig = {
+  pacmanNormal: 90, // 1.13625 px
+  pacmanEating: 79, // 0.997375 px
+  pacmanFright: 95, // 1.199375 px
+  pacmanFrightEating: 87, // 1.098375 px
+  ghostNormal: 85, // 1.073125 px
+  ghostTunnel: 45, // 0.568125 px
+  ghostFrightened: 55, // 0.694375 px
+  elroy1: 90, // 1.13625 px
+  elroy2: 95, // 1.199375 px
 };
 
-export const SPEED_CONFIG_LEVELS_21_PLUS: LevelSpeedConfig = {
-  pacmanNormal: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanEating: 0.79 * BASE_100_PERCENT_SPEED, // 0.997375 px
-  pacmanFright: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  ghostTunnel: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  ghostFrightened: 0.6 * BASE_100_PERCENT_SPEED, // 0.7575 px
-  elroy1: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  elroy2: 1.05 * BASE_100_PERCENT_SPEED, // 1.325625 px
+export const SPEED_PCT_PER_LEVELS_5_TO_20: LevelSpeedConfig = {
+  pacmanNormal: 100, // 1.2625 px
+  pacmanEating: 87, // 1.098375 px
+  pacmanFright: 100, // 1.2625 px
+  pacmanFrightEating: 87, // 1.098375 px
+  ghostNormal: 95, // 1.199375 px
+  ghostTunnel: 50, // 0.63125 px
+  ghostFrightened: 60, // 0.7575 px
+  elroy1: 100, // 1.2625 px
+  elroy2: 105, // 1.325625 px
+};
+
+export const SPEED_PCT_PER_LEVELS_21_PLUS: LevelSpeedConfig = {
+  pacmanNormal: 90, // 1.13625 px
+  pacmanEating: 79, // 0.997375 px
+  pacmanFright: 100, // 1.2625 px
+  pacmanFrightEating: 87, // 1.098375 px
+  ghostNormal: 95, // 1.199375 px
+  ghostTunnel: 50, // 0.63125 px
+  ghostFrightened: 60, // 0.7575 px
+  elroy1: 100, // 1.2625 px
+  elroy2: 105, // 1.325625 px
 };
 
 /** Speed value for ghosts' eyes when eaten and return to the ghost house. */
-export const GHOST_EATEN_SPEED = 2.0 * BASE_100_PERCENT_SPEED; // 200% speed for returning eyes = 2.525 px;
+export const GHOST_EATEN_SPEED_PCT = 200; // 200% speed for returning eyes = 2.525 px;
 /** Speed value for ghosts inside the ghost house. */
-export const GHOST_HOUSE_SPEED = 0.8 * BASE_100_PERCENT_SPEED;
+export const GHOST_HOUSE_SPEED_PCT = 80;
 
 /**
  * Scatter / Chase timing table (in seconds).
@@ -262,4 +285,31 @@ export const GHOST_COLORS: Record<GhostType, { body: string; name: string; msNam
   PINKY: { body: "#FFB8FF", name: "Pinky", msName: "Pinky" },
   INKY: { body: "#00FFFF", name: "Inky", msName: "Inky" },
   CLYDE: { body: "#FFB852", name: "Clyde", msName: "Sue" },
+} as const;
+
+export const DEFAULT_SPAWN_CANDIDATES: Record<"PACMAN" | "FRUIT" | GhostType, DualTileCoord> = {
+  PACMAN: [
+    { col: 13, row: 26 },
+    { col: 14, row: 26 },
+  ] as const,
+  BLINKY: [
+    { col: 13, row: 14 },
+    { col: 14, row: 14 },
+  ] as const,
+  PINKY: [
+    { col: 13, row: 17 },
+    { col: 14, row: 17 },
+  ] as const,
+  INKY: [
+    { col: 11, row: 17 },
+    { col: 12, row: 17 },
+  ] as const,
+  CLYDE: [
+    { col: 15, row: 17 },
+    { col: 16, row: 17 },
+  ] as const,
+  FRUIT: [
+    { col: 13, row: 20 },
+    { col: 14, row: 20 },
+  ] as const,
 } as const;

@@ -1,4 +1,4 @@
-class ArcadeSoundEngine {
+class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private enabled: boolean = true;
@@ -16,6 +16,7 @@ class ArcadeSoundEngine {
   }
 
   private initCtx() {
+    if (typeof window === "undefined") return;
     if (!this.ctx) {
       const AudioCtxCtor =
         window.AudioContext ||
@@ -351,4 +352,6 @@ class ArcadeSoundEngine {
   }
 }
 
-export const soundEngine = new ArcadeSoundEngine();
+const soundEngine = new SoundEngine();
+
+export default soundEngine;

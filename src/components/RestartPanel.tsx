@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from "react";
 import { CLASSIC_FRUITS, COOKIE_MAN_TREATS, CRAZY_OTTO_TREATS } from "../game/constants";
 import type { GameMode } from "../types";
@@ -111,7 +106,7 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
           onClick={onRestartRound}
           className="w-full py-2.5 px-4 rounded-xl bg-neutral-850 hover:bg-neutral-800 border border-neutral-750 font-semibold text-neutral-200 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
-          <span>🔄 Restart Current Level {level}</span>
+          <span>🔄 Restart Level {level}</span>
         </button>
 
         <button

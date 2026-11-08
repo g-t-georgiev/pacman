@@ -1,5 +1,5 @@
-import type { GameMode, MazeData, TileType } from "../types";
-import { DEFAULT_SCATTER_TARGETS } from "./constants";
+import type { GameMode, MazeData, TileCoord, TileType } from "../types";
+import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES } from "./constants";
 import { generateProceduralMaze } from "./proceduralMaze";
 
 /**
@@ -25,7 +25,7 @@ const CLASSIC_PACMAN_MAP = [
   "#......##....##....##......#",
   "######.##### ## #####.######",
   "     #.##### ## #####.#     ",
-  "     #.##    X     ##.#     ",
+  "     #.##          ##.#     ",
   "     #.## ###--### ##.#     ",
   "######.## #HHHHHH# ##.######",
   "TTTTTT.   #HHHHHH#   .TTTTTT",
@@ -72,7 +72,7 @@ const MS_PACMAN_MAP = [
   "######.##....##....##.######",
   "     #.##### ## #####.#     ",
   "     #.##### ## #####.#     ",
-  "     #.##    X     ##.#     ",
+  "     #.##          ##.#     ",
   "######.## ###--### ##.######",
   "#......## #HHHHHH# ##......#",
   "#.####.   #HHHHHH#   .####.#",
@@ -118,7 +118,7 @@ const CRAZY_OTTO_MAP = [
   "#......##....##....##......#",
   "######.##### ## #####.######",
   "     #.##### ## #####.#     ",
-  "     #.##    X     ##.#     ",
+  "     #.##          ##.#     ",
   "     #.## ###--### ##.#     ",
   "######.## #HHHHHH# ##.######",
   "TTTTTT.   #HHHHHH#   .TTTTTT",
@@ -143,6 +143,86 @@ const CRAZY_OTTO_MAP = [
   "                            ",
 ];
 
+export const CLASSIC_PACMAN_INTERSECTIONS: TileCoord[] = [
+  { col: 6, row: 4 },
+  { col: 21, row: 4 },
+  { col: 1, row: 8 },
+  { col: 6, row: 8 },
+  { col: 9, row: 8 },
+  { col: 12, row: 8 },
+  { col: 15, row: 8 },
+  { col: 18, row: 8 },
+  { col: 21, row: 8 },
+  { col: 26, row: 8 },
+  { col: 6, row: 11 },
+  { col: 21, row: 11 },
+  { col: 12, row: 14 },
+  { col: 15, row: 14 },
+  { col: 6, row: 17 },
+  { col: 9, row: 17 },
+  { col: 18, row: 17 },
+  { col: 21, row: 17 },
+  { col: 9, row: 20 },
+  { col: 18, row: 20 },
+  { col: 6, row: 23 },
+  { col: 9, row: 23 },
+  { col: 18, row: 23 },
+  { col: 21, row: 23 },
+  { col: 6, row: 26 },
+  { col: 9, row: 26 },
+  { col: 12, row: 26 },
+  { col: 15, row: 26 },
+  { col: 18, row: 26 },
+  { col: 21, row: 26 },
+  { col: 3, row: 29 },
+  { col: 24, row: 29 },
+  { col: 12, row: 32 },
+  { col: 15, row: 32 },
+];
+
+export const MS_PACMAN_INTERSECTIONS: TileCoord[] = [
+  { col: 6, row: 4 },
+  { col: 21, row: 4 },
+  { col: 1, row: 8 },
+  { col: 6, row: 8 },
+  { col: 9, row: 8 },
+  { col: 12, row: 8 },
+  { col: 15, row: 8 },
+  { col: 18, row: 8 },
+  { col: 21, row: 8 },
+  { col: 26, row: 8 },
+  { col: 1, row: 10 },
+  { col: 6, row: 10 },
+  { col: 21, row: 10 },
+  { col: 26, row: 10 },
+  { col: 12, row: 14 },
+  { col: 15, row: 14 },
+  { col: 6, row: 16 },
+  { col: 21, row: 16 },
+  { col: 6, row: 17 },
+  { col: 9, row: 17 },
+  { col: 18, row: 17 },
+  { col: 21, row: 17 },
+  { col: 6, row: 20 },
+  { col: 9, row: 20 },
+  { col: 18, row: 20 },
+  { col: 21, row: 20 },
+  { col: 6, row: 23 },
+  { col: 9, row: 23 },
+  { col: 18, row: 23 },
+  { col: 21, row: 23 },
+  { col: 6, row: 26 },
+  { col: 9, row: 26 },
+  { col: 12, row: 26 },
+  { col: 15, row: 26 },
+  { col: 18, row: 26 },
+  { col: 21, row: 26 },
+  { col: 3, row: 29 },
+  { col: 24, row: 29 },
+  { col: 12, row: 32 },
+  { col: 15, row: 32 },
+];
+
 function parseMapString(map: string[]): TileType[][] {
   return map.map((row) => {
     return row.split("").map((char): TileType => {
@@ -159,8 +239,6 @@ function parseMapString(map: string[]): TileType[][] {
           return "GHOST_HOUSE";
         case "T":
           return "TUNNEL";
-        case "X":
-          return "NO_UP_ZONE";
         default:
           return "EMPTY";
       }
@@ -176,12 +254,48 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         width: 28,
         height: 36,
         tiles: parseMapString(CLASSIC_PACMAN_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
+        pacmanSpawn: {
+          x: 13,
+          y: 26,
+          dir: "LEFT",
+          candidates: DEFAULT_SPAWN_CANDIDATES.PACMAN,
+        },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
+          BLINKY: {
+            x: 13,
+            y: 14,
+            inHouse: false,
+            initialDir: "LEFT",
+            candidates: DEFAULT_SPAWN_CANDIDATES.BLINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          PINKY: {
+            x: 13,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          INKY: {
+            x: 11,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
+          },
+          CLYDE: {
+            x: 15,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+          },
+        },
+        fruitSpawn: {
+          candidates: DEFAULT_SPAWN_CANDIDATES.FRUIT,
         },
         scatterTargets: {
           BLINKY: scatterTargets.BLINKY,
@@ -194,6 +308,13 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         dotColor: "#ffb8ae", // Arcade warm peach/yellow dots
         bgColor: "#000000",
         gateColor: "#ffb8ff",
+        specialNoUpTiles: [
+          { col: 12, row: 14 },
+          { col: 15, row: 14 },
+          { col: 12, row: 26 },
+          { col: 15, row: 26 },
+        ],
+        intersections: CLASSIC_PACMAN_INTERSECTIONS,
       };
     }
     case "MS_PACMAN": {
@@ -203,12 +324,48 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         width: 28,
         height: 36,
         tiles: parseMapString(MS_PACMAN_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
+        pacmanSpawn: {
+          x: 13,
+          y: 26,
+          dir: "LEFT",
+          candidates: DEFAULT_SPAWN_CANDIDATES.PACMAN,
+        },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
+          BLINKY: {
+            x: 13,
+            y: 14,
+            inHouse: false,
+            initialDir: "LEFT",
+            candidates: DEFAULT_SPAWN_CANDIDATES.BLINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          PINKY: {
+            x: 13,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          INKY: {
+            x: 11,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
+          },
+          CLYDE: {
+            x: 15,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+          },
+        },
+        fruitSpawn: {
+          candidates: DEFAULT_SPAWN_CANDIDATES.FRUIT,
         },
         scatterTargets: {
           BLINKY: scatterTargets.BLINKY,
@@ -225,6 +382,13 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         dotColor: "#ffffff",
         bgColor: "#000000",
         gateColor: "#ffb8ff",
+        specialNoUpTiles: [
+          { col: 12, row: 15 },
+          { col: 15, row: 15 },
+          { col: 12, row: 27 },
+          { col: 15, row: 27 },
+        ],
+        intersections: MS_PACMAN_INTERSECTIONS,
       };
     }
     case "CRAZY_OTTO": {
@@ -232,12 +396,48 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         width: 28,
         height: 36,
         tiles: parseMapString(CRAZY_OTTO_MAP),
-        pacmanSpawn: { x: 13, y: 26, dir: "LEFT" },
+        pacmanSpawn: {
+          x: 13,
+          y: 26,
+          dir: "LEFT",
+          candidates: DEFAULT_SPAWN_CANDIDATES.PACMAN,
+        },
         ghostSpawns: {
-          BLINKY: { x: 13, y: 14, inHouse: false, initialDir: "LEFT" },
-          PINKY: { x: 13, y: 17, inHouse: true, initialDir: "UP" },
-          INKY: { x: 11, y: 17, inHouse: true, initialDir: "UP" },
-          CLYDE: { x: 15, y: 17, inHouse: true, initialDir: "UP" },
+          BLINKY: {
+            x: 13,
+            y: 14,
+            inHouse: false,
+            initialDir: "LEFT",
+            candidates: DEFAULT_SPAWN_CANDIDATES.BLINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          PINKY: {
+            x: 13,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
+          },
+          INKY: {
+            x: 11,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
+          },
+          CLYDE: {
+            x: 15,
+            y: 17,
+            inHouse: true,
+            initialDir: "UP",
+            candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+            respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
+          },
+        },
+        fruitSpawn: {
+          candidates: DEFAULT_SPAWN_CANDIDATES.FRUIT,
         },
         scatterTargets: {
           BLINKY: scatterTargets.BLINKY,
@@ -250,6 +450,13 @@ export function getMazeData(mode: GameMode, level: number = 1, seed?: number): M
         dotColor: "#ffff00", // Bright yellow dots
         bgColor: "#050a12",
         gateColor: "#ff4444",
+        specialNoUpTiles: [
+          { col: 12, row: 14 },
+          { col: 15, row: 14 },
+          { col: 12, row: 26 },
+          { col: 15, row: 26 },
+        ],
+        intersections: CLASSIC_PACMAN_INTERSECTIONS,
       };
     }
     case "COOKIE_MAN": {

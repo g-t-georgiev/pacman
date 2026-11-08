@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS } from "../game/constants";
-import type { GameEngine } from "../game/gameEngine";
+import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
 import { getScatterChaseSchedule } from "../utils";
 
@@ -48,6 +48,9 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
     engine.settings.learnVisualsEnabled ?? true
   );
+  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
+    engine.settings.emulateRomQuirks ?? false
+  );
   const [ghostFilters, setGhostFilters] = useState<Record<GhostType, boolean>>({
     BLINKY: engine.settings.activeGhostVisuals?.BLINKY ?? true,
     PINKY: engine.settings.activeGhostVisuals?.PINKY ?? true,
@@ -65,6 +68,14 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
     const nextVal = !visualsEnabled;
     setVisualsEnabled(nextVal);
     engine.settings.learnVisualsEnabled = nextVal;
+    if (onVisualSettingsChange) onVisualSettingsChange();
+  };
+
+  const handleToggleRomQuirks = () => {
+    const nextVal = !emulateRomQuirks;
+    setEmulateRomQuirks(nextVal);
+    engine.settings.emulateRomQuirks = nextVal;
+    engine.ghostAiController.emulateRomQuirks = nextVal;
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -263,7 +274,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             {ELROY_1_DOTS_LEFT} (Cruise Elroy) and ignores scatter!
           </p>
           <div className="text-[10px] text-red-300">
-            Target: ({engine.ghosts.BLINKY.target.col}, {engine.ghosts.BLINKY.target.row})
+            Target: ({engine.ghostStates.BLINKY.target.col}, {engine.ghostStates.BLINKY.target.row})
           </div>
         </div>
 
@@ -282,7 +293,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             (arcade overflow bug)!
           </p>
           <div className="text-[10px] text-pink-300">
-            Target: ({engine.ghosts.PINKY.target.col}, {engine.ghosts.PINKY.target.row})
+            Target: ({engine.ghostStates.PINKY.target.col}, {engine.ghostStates.PINKY.target.row})
           </div>
         </div>
 
@@ -301,7 +312,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             to trap player!
           </p>
           <div className="text-[10px] text-cyan-300">
-            Target: ({engine.ghosts.INKY.target.col}, {engine.ghosts.INKY.target.row})
+            Target: ({engine.ghostStates.INKY.target.col}, {engine.ghostStates.INKY.target.row})
           </div>
         </div>
 
@@ -315,12 +326,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghosts.CLYDE.clydeWanderState === "CHASE"
+                engine.ghostStates.CLYDE.clydeWanderState === "CHASE"
                   ? "bg-emerald-900 text-emerald-300"
                   : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghosts.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
+              {engine.ghostStates.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
@@ -328,9 +339,44 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             always retreats to bottom-left!
           </p>
           <div className="text-[10px] text-amber-300">
-            Target: ({engine.ghosts.CLYDE.target.col}, {engine.ghosts.CLYDE.target.row})
+            Target: ({engine.ghostStates.CLYDE.target.col}, {engine.ghostStates.CLYDE.target.row})
           </div>
         </div>
+      </div>
+
+      {/* 1980 Z80 ROM Quirks Configuration */}
+      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-white font-bold text-[11px] tracking-wide">
+              👾 1980 Z80 ROM OVERFLOW QUIRKS
+            </span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                emulateRomQuirks
+                  ? "bg-purple-900 text-purple-200 border border-purple-700"
+                  : "bg-neutral-800 text-neutral-400"
+              }`}
+            >
+              {emulateRomQuirks ? "ACTIVE (AUTHENTIC)" : "OFF (NORMALIZED)"}
+            </span>
+          </div>
+          <button
+            onClick={handleToggleRomQuirks}
+            className={`px-2.5 py-1 rounded font-bold text-[10px] transition-colors cursor-pointer ${
+              emulateRomQuirks
+                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-md ring-1 ring-purple-300"
+                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+            }`}
+          >
+            {emulateRomQuirks ? "Authentic Overflow" : "Normalized Math"}
+          </button>
+        </div>
+        <p className="text-[10px] text-neutral-400 leading-tight">
+          When Pac-Man faces UP, the authentic 1980 Z80 assembly code shifts Pinky's target 4 tiles
+          UP + 4 tiles LEFT, and Inky's pivot 2 tiles UP + 2 tiles LEFT. Turn OFF for normalized
+          straight forward targeting.
+        </p>
       </div>
 
       <div className="flex items-center justify-between border-t border-cyan-950 pt-2 text-[10px] text-neutral-400">

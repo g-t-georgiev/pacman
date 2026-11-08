@@ -1,5 +1,6 @@
+import type { Direction, GameMode } from "../types";
 import React, { useEffect, useRef, useState } from "react";
-import { soundEngine } from "../audio/soundEngine";
+import soundEngine from "../audio/SoundEngine";
 import { uiConfig } from "../config/ui.config";
 import {
   CANVAS_HEIGHT,
@@ -8,9 +9,9 @@ import {
   COOKIE_MAN_TREATS,
   CRAZY_OTTO_TREATS,
 } from "../game/constants";
-import { GameEngine } from "../game/gameEngine";
-import { GameRenderer } from "../game/renderer";
-import type { Direction, GameMode } from "../types";
+import GameEvents from "../core/EventBus";
+import GameEngine from "../game/GameEngine";
+import GameRenderer from "../game/GameRenderer";
 import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
 import { LearnModeOverlay } from "./LearnModeOverlay";
@@ -20,6 +21,8 @@ import { PracticePanel } from "./PracticePanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { getFruitDataPerLevel } from "../utils";
+import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
+import { useGameEvent } from "../hooks/useGameEvent";
 
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,12 +32,24 @@ export const ArcadeCabinet: React.FC = () => {
   const engineRef = useRef<GameEngine | null>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
 
-  // UI state for reactive HUD updates
+  // Decoupled reactive state subscriptions via EventBus
+  const scoreData = useGameEvent<{ score: number; highScore: number }>(
+    GameEvents,
+    "SCORE_CHANGED",
+    () => {
+      const stored = getStoredHighScores();
+      const highest = stored.length > 0 ? stored[0].score : 10000;
+      return { score: 0, highScore: highest };
+    }
+  );
+  const lives = useGameEvent<number>(GameEvents, "LIVES_CHANGED", () => 3);
+  const level = useGameEvent<number>(GameEvents, "LEVEL_CHANGED", () => 1);
+
+  const score = scoreData.score;
+  const highScore = scoreData.highScore;
+
+  // UI state for reactive modals and controls
   const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
-  const [score, setScore] = useState<number>(0);
-  const [highScore, setHighScore] = useState<number>(10000);
-  const [lives, setLives] = useState<number>(3);
-  const [level, setLevel] = useState<number>(1);
   const [turbo, setTurbo] = useState<boolean>(false);
   const [learnMode, setLearnMode] = useState<boolean>(false);
   const [learnVisualsActive, setLearnVisualsActive] = useState<boolean>(true);
@@ -45,6 +60,7 @@ export const ArcadeCabinet: React.FC = () => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [showHighScores, setShowHighScores] = useState<boolean>(false);
   const [showRestartPanel, setShowRestartPanel] = useState<boolean>(false);
+  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
   const [isGameOverState, setIsGameOverState] = useState<boolean>(false);
   const [pendingScore, setPendingScore] = useState<{
     score: number;
@@ -57,9 +73,42 @@ export const ArcadeCabinet: React.FC = () => {
 
   // Initialize engine once
   useEffect(() => {
+    const handleGameOver = (e: CustomEvent<number>) => {
+      const finalScore = e.detail;
+      setIsGameOverState(true);
+
+      // Trigger Restart Panel with configurable delay so player comprehends game over
+      if (gameOverTimerRef.current !== null) {
+        window.clearTimeout(gameOverTimerRef.current);
+      }
+
+      gameOverTimerRef.current = window.setTimeout(() => {
+        setShowRestartPanel(true);
+      }, uiConfig.timings.gameOverRestartDelayMs);
+
+      // Check if qualifies for leaderboard
+      const scores = getStoredHighScores();
+      const isTop = scores.length < 10 || finalScore > scores[scores.length - 1].score;
+
+      if (isTop && finalScore > 0 && engineRef.current) {
+        setPendingScore({
+          score: finalScore,
+          mode: engineRef.current.mode,
+          level: engineRef.current.level,
+        });
+      }
+    };
+
+    GameEvents.on("GAME_OVER", handleGameOver);
+    return () => {
+      GameEvents.off("GAME_OVER", handleGameOver);
+    };
+  }, []);
+
+  // Initialize engine & GameLoopController once on mount
+  useEffect(() => {
     const stored = getStoredHighScores();
     const highest = stored.length > 0 ? stored[0].score : 10000;
-    setHighScore(highest);
 
     const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
@@ -71,41 +120,7 @@ export const ArcadeCabinet: React.FC = () => {
       setShowDpad(true);
     }
 
-    engine.onStateChange = () => {
-      setScore(engine.score);
-      setHighScore(engine.highScore);
-      setLives(engine.lives);
-      setLevel(engine.level);
-    };
-
-    engine.onGameOver = (finalScore: number) => {
-      setIsGameOverState(true);
-
-      // Trigger Restart Panel with configurable delay so player comprehends game over
-      if (gameOverTimerRef.current !== null) {
-        window.clearTimeout(gameOverTimerRef.current);
-      }
-      gameOverTimerRef.current = window.setTimeout(() => {
-        setShowRestartPanel(true);
-      }, uiConfig.timings.gameOverRestartDelayMs);
-
-      // Check if qualifies for leaderboard
-      const scores = getStoredHighScores();
-      const isTop = scores.length < 10 || finalScore > scores[scores.length - 1].score;
-      if (isTop && finalScore > 0) {
-        setPendingScore({
-          score: finalScore,
-          mode: engine.mode,
-          level: engine.level,
-        });
-      }
-    };
-
-    engine.onNewHighScore = (newHigh: number) => {
-      setHighScore(newHigh);
-    };
-
-    // Setup Canvas
+    // Setup Canvas & Renderer
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext("2d");
@@ -115,34 +130,25 @@ export const ArcadeCabinet: React.FC = () => {
         canvas.width = CANVAS_WIDTH * dpr;
         canvas.height = CANVAS_HEIGHT * dpr;
         ctx.scale(dpr, dpr);
-        rendererRef.current = new GameRenderer(ctx);
+        const renderer = new GameRenderer(ctx);
+        rendererRef.current = renderer;
+        engine.renderer = renderer;
       }
     }
 
-    // Play intro sound
-    soundEngine.playIntro().catch(() => {
-      /* GG */
-    });
-
-    // Game loop
-    let animId: number;
-    const loop = () => {
-      // Gamepad polling
+    // Connect gamepad polling to engine's pre-update tick
+    engine.onPreUpdate = () => {
       pollGamepads(engine);
-
-      engine.update();
-
-      if (rendererRef.current) {
-        rendererRef.current.render(engine);
-      }
-
-      animId = requestAnimationFrame(loop);
     };
 
-    animId = requestAnimationFrame(loop);
+    // Play intro sound
+    void soundEngine.playIntro();
+
+    // Start deterministic game loop via GameLoopController
+    engine.start();
 
     return () => {
-      cancelAnimationFrame(animId);
+      engine.stop();
       soundEngine.stopSiren();
       if (gameOverTimerRef.current !== null) {
         window.clearTimeout(gameOverTimerRef.current);
@@ -274,16 +280,12 @@ export const ArcadeCabinet: React.FC = () => {
   const handleSelectMode = (mode: GameMode) => {
     setCurrentMode(mode);
     if (engineRef.current) {
+      soundEngine.stopSiren();
       engineRef.current.initGame(mode, 1);
-      setScore(0);
-      setLevel(1);
-      setLives(3);
       setShowMenu(false);
       setShowRestartPanel(false);
       setIsGameOverState(false);
-      soundEngine.playIntro().catch(() => {
-        /* GG */
-      });
+      void soundEngine.playIntro();
     }
   };
 
@@ -323,6 +325,13 @@ export const ArcadeCabinet: React.FC = () => {
     setCrtFilter(nextCrt);
   };
 
+  const handleToggleDiagnostics = () => {
+    if (!engineRef.current) return;
+    const nextVal = !showDiagnostics;
+    setShowDiagnostics(nextVal);
+    engineRef.current.settings.showDiagnosticConsole = nextVal;
+  };
+
   // Restart Actions
   const handleRestartRound = () => {
     if (!engineRef.current) return;
@@ -330,11 +339,7 @@ export const ArcadeCabinet: React.FC = () => {
       window.clearTimeout(gameOverTimerRef.current);
       gameOverTimerRef.current = null;
     }
-    engineRef.current.loadLevel(engineRef.current.level);
-    engineRef.current.lives = 3;
-    engineRef.current.playState = "READY";
-    engineRef.current.readyTimer = uiConfig.timings.readyBannerFrames;
-    setLives(3);
+    engineRef.current.restartLevel(engineRef.current.level);
     setShowRestartPanel(false);
     setIsGameOverState(false);
     soundEngine.playIntro().catch(() => {
@@ -349,14 +354,9 @@ export const ArcadeCabinet: React.FC = () => {
       gameOverTimerRef.current = null;
     }
     engineRef.current.initGame(currentMode, 1);
-    setScore(0);
-    setLevel(1);
-    setLives(3);
     setShowRestartPanel(false);
     setIsGameOverState(false);
-    soundEngine.playIntro().catch(() => {
-      /* GG */
-    });
+    void soundEngine.playIntro();
   };
 
   const handleOpenRestartPanel = () => {
@@ -428,6 +428,8 @@ export const ArcadeCabinet: React.FC = () => {
           onOpenRestart={handleOpenRestartPanel}
           restartPanelOpen={showRestartPanel}
           isGameOver={isGameOverState}
+          showDiagnostics={showDiagnostics || engineRef.current?.settings.showDiagnosticConsole}
+          onToggleDiagnostics={handleToggleDiagnostics}
         />
 
         {/* Canvas Screen Container */}
@@ -480,7 +482,7 @@ export const ArcadeCabinet: React.FC = () => {
           <div className="mt-3">
             <VirtualDpad
               onDirection={(dir: Direction) => engineRef.current?.setInputDirection(dir)}
-              currentDir={engineRef.current.pacman.dir}
+              currentDir={engineRef.current.pacmanState.dir}
             />
           </div>
         )}
@@ -543,7 +545,10 @@ export const ArcadeCabinet: React.FC = () => {
             engine={engineRef.current}
             onUpdate={() => {
               if (engineRef.current) {
-                setScore(engineRef.current.score);
+                GameEvents.emit("SCORE_CHANGED", {
+                  score: engineRef.current.score,
+                  highScore: engineRef.current.highScore,
+                });
                 setUiTick((t) => t + 1);
               }
             }}
@@ -602,6 +607,21 @@ export const ArcadeCabinet: React.FC = () => {
           }}
         />
       </PanelTransitionWrapper>
+
+      {/* Floating Interactive Diagnostic & Invariants Console HUD */}
+      {engineRef.current &&
+        (showDiagnostics || engineRef.current.settings.showDiagnosticConsole) && (
+          <DiagnosticConsole
+            engine={engineRef.current}
+            onClose={() => {
+              setShowDiagnostics(false);
+              if (engineRef.current) {
+                engineRef.current.settings.showDiagnosticConsole = false;
+              }
+              setUiTick((t) => t + 1);
+            }}
+          />
+        )}
 
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">

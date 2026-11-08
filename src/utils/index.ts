@@ -5,10 +5,12 @@ import {
   SCATTER_CHASE_LEVEL_1,
   SCATTER_CHASE_LEVELS_2_TO_4,
   SCATTER_CHASE_LEVELS_5_PLUS,
-  SPEED_CONFIG_LEVEL_1,
-  SPEED_CONFIG_LEVELS_2_TO_4,
-  SPEED_CONFIG_LEVELS_5_TO_20,
-  SPEED_CONFIG_LEVELS_21_PLUS,
+  SPEED_PCT_PER_LEVEL_1,
+  SPEED_PCT_PER_LEVELS_2_TO_4,
+  SPEED_PCT_PER_LEVELS_5_TO_20,
+  SPEED_PCT_PER_LEVELS_21_PLUS,
+  SPEED_MASKS,
+  GHOST_EATEN_SPEED_PCT,
 } from "../game/constants";
 import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
 
@@ -91,8 +93,49 @@ export function getScatterChaseSchedule(level: number): readonly ScatterChaseSch
  * @returns The LevelSpeedConfig for the corresponding level tier.
  */
 export function getSpeedConfigForLevel(level: number): LevelSpeedConfig {
-  if (level <= 1) return SPEED_CONFIG_LEVEL_1;
-  if (level <= 4) return SPEED_CONFIG_LEVELS_2_TO_4;
-  if (level <= 20) return SPEED_CONFIG_LEVELS_5_TO_20;
-  return SPEED_CONFIG_LEVELS_21_PLUS;
+  if (level <= 1) return SPEED_PCT_PER_LEVEL_1;
+  if (level <= 4) return SPEED_PCT_PER_LEVELS_2_TO_4;
+  if (level <= 20) return SPEED_PCT_PER_LEVELS_5_TO_20;
+  return SPEED_PCT_PER_LEVELS_21_PLUS;
+}
+
+/**
+ * Calculates the exact integer pixel movement step for the current level frame
+ * based on the authentic 16-frame cycle bitmasks.
+ *
+ * @param currLevelFrame Monotonically increasing frame counter for the level.
+ * @param speedPct Authentic speed percentage (e.g., 80, 75, 105, 200).
+ * @param turboMultiplier Optional turbo chip speed multiplier.
+ * @returns 0, 1, or 2 pixels to step this frame.
+ */
+export function getPixelStepsThisFrame(
+  currLevelFrame: number,
+  speedPct: number,
+  turboMultiplier: number = 1.0
+): number {
+  // Determine base multiplier tier (2x steps for 200% eaten speed, 1x for everything else)
+  const baseMultiplier = speedPct >= GHOST_EATEN_SPEED_PCT ? 2 : 1;
+
+  // Cap the lookup percentage to valid 16-frame table entries (max 100%)
+  const lookupPct = speedPct > 100 ? 100 : speedPct;
+  const mask = SPEED_MASKS[lookupPct] ?? SPEED_MASKS[100];
+  const frameBit = currLevelFrame % 16;
+
+  // Extract basic binary bit step (0 or 1)
+  let step = (mask >> (15 - frameBit)) & 1;
+
+  // Cruise Elroy 2 (105% speed on level 5+) adds 1 extra pixel on frame 7 of the 16-frame cycle
+  if (speedPct === SPEED_PCT_PER_LEVELS_21_PLUS.elroy2 && frameBit === 7) {
+    step += 1;
+  }
+
+  // Apply the base speed tier scalar (forces eaten eyes to baseline 2 pixels/frame)
+  step *= baseMultiplier;
+
+  // Scale cleanly by turbo settings if active
+  if (turboMultiplier > 1.0) {
+    step = Math.round(step * turboMultiplier);
+  }
+
+  return step;
 }

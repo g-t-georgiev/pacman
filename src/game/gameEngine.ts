@@ -1,12 +1,13 @@
-import { soundEngine } from "../audio/soundEngine";
+import type GameRenderer from "./GameRenderer";
+import soundEngine from "../audio/SoundEngine";
 import type {
   Direction,
   FruitItem,
   GameMode,
   GameSettings,
-  GhostBehavior,
   GhostState,
   GhostType,
+  LevelSpeedConfig,
   MazeData,
   PacmanState,
   PlayState,
@@ -16,7 +17,6 @@ import type {
 } from "../types";
 import {
   getFrightenedDuration,
-  getFrightenedFlashCount,
   getFruitDataPerLevel,
   getScatterChaseSchedule,
   getSpeedConfigForLevel,
@@ -26,20 +26,21 @@ import {
   COOKIE_MAN_TREATS,
   CRAZY_OTTO_TREATS,
   ELROY_1_DOTS_LEFT,
-  FRIGHTENED_FLASH_TOGGLE_DURATION,
   TILE_SIZE,
 } from "./constants";
-import {
-  calculateGhostTarget,
-  chooseNextGhostDirection,
-  getDirectionVector,
-  getGhostSpeed,
-  getOppositeDirection,
-  isTileWalkableForGhost,
-} from "./ghostAi";
+import GameEvents from "../core/EventBus";
+import { Pacman } from "../core/Pacman";
+import { Ghost } from "../core/Ghost";
+import { GameLoopController } from "../controllers/GameLoopController";
+import { TimerController } from "../controllers/TimerController";
+import { AnimationController } from "../controllers/AnimationController";
+import { GhostAiController } from "../controllers/GhostAiController";
+import { MovementController } from "../controllers/MovementController";
+import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
 import { getMazeData } from "./mazes";
+import { uiConfig } from "../config/ui.config";
 
-export class GameEngine {
+export default class GameEngine {
   public mode: GameMode = "PACMAN";
   public playState: PlayState = "MENU";
   public settings: GameSettings = {
@@ -63,11 +64,11 @@ export class GameEngine {
     soundVolume: 0.5,
     crtFilter: false,
     touchControls: false,
+    emulateRomQuirks: false, // Authentic 1980 Z80 hardware quirks toggle
+    showDiagnosticConsole: false, // In-game testing & diagnostics console
   };
 
   public maze!: MazeData;
-  public pacman!: PacmanState;
-  public ghosts!: Record<GhostType, GhostState>;
   public score: number = 0;
   public highScore: number = 0;
   public level: number = 1;
@@ -80,32 +81,178 @@ export class GameEngine {
   public scorePopups: ScorePopup[] = [];
   public eatenGhostsInEnergizer: number = 0;
 
-  // Wave timing
-  public waveIndex: number = 0;
-  public waveTimer: number = 0; // seconds
-  public frightenedGlobalTimer: number = 0; // seconds
+  /** Level frame counter for 16-frame bitmask speed tables */
+  public currLevelFrame: number = 0;
+
+  // Modular Controllers
+  public timerController: TimerController = new TimerController(1);
+  public animationController: AnimationController = new AnimationController();
+  public ghostAiController: GhostAiController = new GhostAiController(false);
+  public movementController: MovementController = new MovementController();
+  public diagnosticController: DiagnosticController = new DiagnosticController();
+
+  // Actors
+  public pacman!: Pacman;
+  public ghosts!: Record<GhostType, Ghost>;
+
+  // Legacy/Adapter Getters and Setters for complete backward compatibility
+  public get pacmanState(): PacmanState {
+    return this.pacman.toState();
+  }
+  public set pacmanState(val: PacmanState) {
+    if (this.pacman && val) {
+      this.pacman.restoreFromState(val);
+    }
+  }
+
+  public get ghostStates(): Record<GhostType, GhostState> {
+    return {
+      BLINKY: this.ghosts.BLINKY.toState(),
+      PINKY: this.ghosts.PINKY.toState(),
+      INKY: this.ghosts.INKY.toState(),
+      CLYDE: this.ghosts.CLYDE.toState(),
+    };
+  }
+  public set ghostStates(val: Record<GhostType, GhostState>) {
+    if (this.ghosts && val) {
+      (Object.keys(val) as GhostType[]).forEach((type) => {
+        if (this.ghosts[type] && val[type]) {
+          this.ghosts[type].restoreFromState(val[type]);
+        }
+      });
+    }
+  }
+
+  public get waveIndex(): number {
+    return this.timerController.waveIndex;
+  }
+  public set waveIndex(v: number) {
+    this.timerController.waveIndex = v;
+  }
+
+  public get waveTimer(): number {
+    return this.timerController.waveTimer;
+  }
+  public set waveTimer(v: number) {
+    this.timerController.waveTimer = v;
+  }
+
+  public get frightenedGlobalTimer(): number {
+    return this.timerController.frightenedGlobalTimer;
+  }
+  public set frightenedGlobalTimer(v: number) {
+    this.timerController.frightenedGlobalTimer = v;
+  }
+
+  public get readyTimer(): number {
+    return this.timerController.readyTimer;
+  }
+
+  public set readyTimer(v: number) {
+    this.timerController.readyTimer = v;
+  }
+
+  public get levelClearTimer(): number {
+    return this.timerController.levelClearTimer;
+  }
+
+  public set levelClearTimer(v: number) {
+    this.timerController.levelClearTimer = v;
+  }
 
   // Rewind ring buffer (up to 900 frames ~ 15 seconds)
   private rewindBuffer: SnapshotState[] = [];
   private readonly maxRewindFrames: number = 900;
   public rewindIndex: number = -1; // when scrubbing (-1 means live play)
 
-  // Level Clear Animation
-  public levelClearTimer: number = 0;
-  public readyTimer: number = 0;
-
-  // Callbacks for UI sync
-  public onStateChange?: () => void;
-  public onGameOver?: (finalScore: number) => void;
-  public onNewHighScore?: (score: number) => void;
+  // Game loop & Render linkage
+  public gameLoopController!: GameLoopController;
+  public renderer: GameRenderer | null = null;
+  public onPreUpdate?: () => void;
 
   constructor(mode: GameMode = "PACMAN", highScoresRecord: number = 0) {
     this.mode = mode;
     this.highScore = highScoresRecord;
+
+    this.gameLoopController = new GameLoopController(
+      (currLevelFrame) => {
+        this.currLevelFrame = currLevelFrame;
+        if (this.onPreUpdate) this.onPreUpdate();
+        this.update();
+      },
+      () => {
+        if (this.renderer) {
+          this.renderer.render(this);
+        }
+      }
+    );
+
     this.initGame(mode, 1);
   }
 
+  public start(): void {
+    this.gameLoopController.start();
+    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+  }
+
+  public stop(): void {
+    this.gameLoopController.stop();
+    soundEngine.stopSiren();
+  }
+
+  public buildGhostDiagnosticsData(type: GhostType) {
+    const g = this.ghosts?.[type];
+    const gx = g ? g.x : 0;
+    const gy = g ? g.y : 0;
+
+    return {
+      aiMode: g ? g.mode : "SCATTER",
+      targetTile: g ? g.target : { col: 0, row: 0 },
+      x: gx,
+      y: gy,
+      tileCol: Math.floor(gx / TILE_SIZE),
+      tileRow: Math.floor(gy / TILE_SIZE),
+      dir: g ? g.dir : "NONE",
+      speed: g ? g.speed : 0,
+      inHouse: g ? g.inHouse : false,
+      enteringHousePhase: g?.enteringHousePhase ?? "NONE",
+    };
+  }
+
+  public getActorsDiagnostics(): DiagnosticData {
+    const currentWave = this.timerController.currentWave;
+    const currentMode = currentWave?.mode ?? "CHASE";
+
+    const px = this.pacman ? this.pacman.x : 0;
+    const py = this.pacman ? this.pacman.y : 0;
+
+    return {
+      blinky: this.buildGhostDiagnosticsData("BLINKY"),
+      pinky: this.buildGhostDiagnosticsData("PINKY"),
+      inky: this.buildGhostDiagnosticsData("INKY"),
+      clyde: this.buildGhostDiagnosticsData("CLYDE"),
+      pacman: {
+        x: px,
+        y: py,
+        tileCol: Math.floor(px / TILE_SIZE),
+        tileRow: Math.floor(py / TILE_SIZE),
+        dir: this.pacman ? this.pacman.dir : "NONE",
+        speed: this.pacman ? this.pacman.speed : 0,
+        eatingFreezeFrames: this.pacman ? this.pacman.eatingFreezeFrames : 0,
+      },
+      level: this.level,
+      frame: this.currLevelFrame,
+      wave: currentMode,
+      waveTimer: this.waveTimer,
+      frightenedTimer: this.frightenedGlobalTimer,
+      score: this.score,
+      highScore: this.highScore,
+      lives: this.lives,
+    };
+  }
+
   public initGame(mode: GameMode, level: number = 1) {
+    soundEngine.stopSiren();
     this.mode = mode;
     this.level = level;
     this.score = 0;
@@ -122,17 +269,49 @@ export class GameEngine {
 
     this.loadLevel(this.level);
     this.playState = "READY";
-    this.readyTimer = 120; // 2 seconds ready screen
+    this.readyTimer = uiConfig.timings.readyBannerFrames;
+
+    GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+    GameEvents.emit("LIVES_CHANGED", this.lives);
+    GameEvents.emit("LEVEL_CHANGED", this.level);
+    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+  }
+
+  public restartLevel(level?: number) {
+    soundEngine.stopSiren();
+    if (level !== undefined) {
+      this.level = level;
+    }
+    this.lives = 3;
+    this.dotsEatenThisRound = 0;
+    this.waveIndex = 0;
+    this.waveTimer = 0;
+    this.frightenedGlobalTimer = 0;
+    this.eatenGhostsInEnergizer = 0;
+    this.fruit = null;
+    this.scorePopups = [];
+    this.rewindBuffer = [];
+    this.rewindIndex = -1;
+
+    this.loadLevel(this.level);
+    this.playState = "READY";
+    this.readyTimer = uiConfig.timings.readyBannerFrames;
+
+    GameEvents.emit("LIVES_CHANGED", this.lives);
+    GameEvents.emit("LEVEL_CHANGED", this.level);
+    GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
   }
 
   public loadLevel(lvl: number) {
+    soundEngine.stopSiren();
     this.level = lvl;
+    this.timerController.level = lvl;
     this.maze = getMazeData(this.mode, this.level);
-    this.waveIndex = 0;
-    this.waveTimer = 0;
+    this.timerController.resetTimers();
+    this.gameLoopController.resetLevelFrame();
     this.dotsRemaining = 0;
     this.dotsEatenThisRound = 0;
-    this.frightenedGlobalTimer = 0;
+    this.fruit = null;
 
     // Count dots and energizers
     for (let r = 0; r < this.maze.height; r++) {
@@ -146,133 +325,113 @@ export class GameEngine {
     this.totalDots = this.dotsRemaining;
 
     this.resetActorPositions();
+    GameEvents.emit("LEVEL_CHANGED", this.level);
   }
 
   public resetActorPositions() {
-    // Scatter/chase timer resets to the beginning whenever Pac-Man loses a life or round starts
-    this.waveIndex = 0;
-    this.waveTimer = 0;
-    this.frightenedGlobalTimer = 0;
+    // In arcade Pac-Man: if a bonus fruit was currently active when Pac-Man died,
+    // it immediately disappears and does NOT reappear after respawning (treated as already consummated).
+    if (this.fruit) {
+      this.fruit.active = false;
+      this.fruit = null;
+    }
 
     const speedConfig = getSpeedConfigForLevel(this.level);
 
-    // Pac-Man initial spawn
-    this.pacman = {
-      x: this.maze.pacmanSpawn.x * TILE_SIZE + TILE_SIZE / 2,
-      y: this.maze.pacmanSpawn.y * TILE_SIZE + TILE_SIZE / 2,
-      dir: this.maze.pacmanSpawn.dir,
-      nextDir: this.maze.pacmanSpawn.dir,
-      speed: speedConfig.pacmanNormal,
-      mouthAngle: 0.2,
-      mouthOpening: true,
-      isDying: false,
-      deathProgress: 0,
-      invincible: this.settings.invincible,
-      eatDotCooldown: 0,
+    // Pac-Man actor: spawn on candidate integer tile center
+    const pacCol = this.maze.pacmanSpawn.candidates
+      ? this.maze.pacmanSpawn.candidates[0].col
+      : this.maze.pacmanSpawn.x;
+    const pacRow = this.maze.pacmanSpawn.candidates
+      ? this.maze.pacmanSpawn.candidates[0].row
+      : this.maze.pacmanSpawn.y;
+
+    this.pacman = new Pacman(
+      pacCol * TILE_SIZE + TILE_SIZE / 2,
+      pacRow * TILE_SIZE + TILE_SIZE / 2,
+      this.maze.pacmanSpawn.dir
+    );
+    this.pacman.speed = speedConfig.pacmanNormal;
+    this.pacman.invincible = this.settings.invincible;
+
+    // Ghosts initial spawn on designated candidate integer tiles
+    const gSpawns = this.maze.ghostSpawns;
+    const getSpawnPos = (type: GhostType) => {
+      const sp = gSpawns[type];
+      const c = sp.candidates ? sp.candidates[0].col : sp.x;
+      const r = sp.candidates ? sp.candidates[0].row : sp.y;
+      return { x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2 };
     };
 
-    // Ghosts initial spawn
-    const gSpawns = this.maze.ghostSpawns;
+    const blinkyPos = getSpawnPos("BLINKY");
+    const pinkyPos = getSpawnPos("PINKY");
+    const inkyPos = getSpawnPos("INKY");
+    const clydePos = getSpawnPos("CLYDE");
+
     this.ghosts = {
-      BLINKY: {
-        type: "BLINKY",
-        x: gSpawns.BLINKY.x * TILE_SIZE + TILE_SIZE / 2,
-        y: gSpawns.BLINKY.y * TILE_SIZE + TILE_SIZE / 2,
-        dir: gSpawns.BLINKY.initialDir,
-        nextDir: gSpawns.BLINKY.initialDir,
-        mode: "SCATTER",
-        prevMode: "SCATTER",
-        speed: speedConfig.ghostNormal,
-        target: this.maze.scatterTargets.BLINKY,
-        inHouse: gSpawns.BLINKY.inHouse,
-        houseTimer: 0,
-        dotCounter: 0,
-        flashState: false,
-        frightenedTimer: 0,
-        feetAnimation: 0,
-        bouncedInHouse: false,
-      },
-      PINKY: {
-        type: "PINKY",
-        x: gSpawns.PINKY.x * TILE_SIZE + TILE_SIZE / 2,
-        y: gSpawns.PINKY.y * TILE_SIZE + TILE_SIZE / 2,
-        dir: gSpawns.PINKY.initialDir,
-        nextDir: gSpawns.PINKY.initialDir,
-        mode: "SCATTER",
-        prevMode: "SCATTER",
-        speed: speedConfig.ghostNormal,
-        target: this.maze.scatterTargets.PINKY,
-        inHouse: gSpawns.PINKY.inHouse,
-        houseTimer: 60, // leaves soon after start
-        dotCounter: 0,
-        flashState: false,
-        frightenedTimer: 0,
-        feetAnimation: 0,
-        bouncedInHouse: false,
-      },
-      INKY: {
-        type: "INKY",
-        x: gSpawns.INKY.x * TILE_SIZE + TILE_SIZE / 2,
-        y: gSpawns.INKY.y * TILE_SIZE + TILE_SIZE / 2,
-        dir: gSpawns.INKY.initialDir,
-        nextDir: gSpawns.INKY.initialDir,
-        mode: "SCATTER",
-        prevMode: "SCATTER",
-        speed: speedConfig.ghostNormal,
-        target: this.maze.scatterTargets.INKY,
-        inHouse: gSpawns.INKY.inHouse,
-        houseTimer: 180, // leaves after 30 dots or ~3 seconds
-        dotCounter: 0,
-        flashState: false,
-        frightenedTimer: 0,
-        feetAnimation: 0,
-        bouncedInHouse: false,
-      },
-      CLYDE: {
-        type: "CLYDE",
-        x: gSpawns.CLYDE.x * TILE_SIZE + TILE_SIZE / 2,
-        y: gSpawns.CLYDE.y * TILE_SIZE + TILE_SIZE / 2,
-        dir: gSpawns.CLYDE.initialDir,
-        nextDir: gSpawns.CLYDE.initialDir,
-        mode: "SCATTER",
-        prevMode: "SCATTER",
-        speed: speedConfig.ghostNormal,
-        target: this.maze.scatterTargets.CLYDE,
-        inHouse: gSpawns.CLYDE.inHouse,
-        houseTimer: 300, // leaves after 60 dots or ~5 seconds
-        dotCounter: 0,
-        flashState: false,
-        frightenedTimer: 0,
-        feetAnimation: 0,
-        bouncedInHouse: false,
-        clydeWanderState: "CHASE",
-        clydeSwitchTimer: 3.0,
-      },
+      BLINKY: new Ghost(
+        "BLINKY",
+        blinkyPos.x,
+        blinkyPos.y,
+        gSpawns.BLINKY.initialDir,
+        gSpawns.BLINKY.inHouse
+      ),
+      PINKY: new Ghost(
+        "PINKY",
+        pinkyPos.x,
+        pinkyPos.y,
+        gSpawns.PINKY.initialDir,
+        gSpawns.PINKY.inHouse
+      ),
+      INKY: new Ghost("INKY", inkyPos.x, inkyPos.y, gSpawns.INKY.initialDir, gSpawns.INKY.inHouse),
+      CLYDE: new Ghost(
+        "CLYDE",
+        clydePos.x,
+        clydePos.y,
+        gSpawns.CLYDE.initialDir,
+        gSpawns.CLYDE.inHouse
+      ),
     };
+
+    const isElroyBlinky = this.dotsRemaining <= ELROY_1_DOTS_LEFT;
+    const pacmanTilePos = {
+      col: Math.floor(this.pacman.x / TILE_SIZE),
+      row: Math.floor(this.pacman.y / TILE_SIZE),
+    };
+    this.ghosts.BLINKY.mode = isElroyBlinky ? "CHASE" : "SCATTER";
+    this.ghosts.BLINKY.prevMode = isElroyBlinky ? "CHASE" : "SCATTER";
+    this.ghosts.BLINKY.target = isElroyBlinky ? pacmanTilePos : this.maze.scatterTargets.BLINKY;
+
+    this.ghosts.PINKY.target = this.maze.scatterTargets.PINKY;
+    this.ghosts.PINKY.houseTimer = 60;
+    this.ghosts.INKY.target = this.maze.scatterTargets.INKY;
+    this.ghosts.INKY.houseTimer = 180;
+    this.ghosts.CLYDE.target = this.maze.scatterTargets.CLYDE;
+    this.ghosts.CLYDE.houseTimer = 300;
+
+    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
+      this.ghosts[type].speed = speedConfig.ghostNormal;
+    });
   }
 
   public setInputDirection(dir: Direction) {
-    if (this.playState === "READY") {
-      this.playState = "PLAYING";
-    }
     if (this.pacman && !this.pacman.isDying) {
-      this.pacman.nextDir = dir;
-      // Immediate 180 turn without waiting for intersection
-      if (getOppositeDirection(this.pacman.dir) === dir) {
-        this.pacman.dir = dir;
-      }
+      this.pacman.setRequestedDirection(dir);
     }
   }
 
   public update() {
     if (this.playState === "PAUSED" || this.rewindIndex !== -1) {
+      soundEngine.stopSiren();
       return;
     }
 
     if (this.playState === "READY") {
+      soundEngine.stopSiren();
       this.readyTimer--;
       if (this.readyTimer <= 0) {
         this.playState = "PLAYING";
+        GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
       }
       return;
     }
@@ -282,7 +441,8 @@ export class GameEngine {
       if (this.levelClearTimer <= 0) {
         this.loadLevel(this.level + 1);
         this.playState = "READY";
-        this.readyTimer = 90;
+        this.readyTimer = uiConfig.timings.readyBannerFrames;
+        GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
       }
       return;
     }
@@ -291,17 +451,31 @@ export class GameEngine {
       this.pacman.deathProgress += 0.015;
       if (this.pacman.deathProgress >= 1) {
         this.lives--;
+        GameEvents.emit("LIVES_CHANGED", this.lives);
+
+        // Discard bonus fruit immediately upon losing a life.
+        if (this.fruit) {
+          this.fruit.active = false;
+          this.fruit = null;
+        }
+
         if (this.lives <= 0) {
           this.playState = "GAME_OVER";
           soundEngine.stopSiren();
-          if (this.onGameOver) this.onGameOver(this.score);
-          if (this.score > this.highScore && this.onNewHighScore) {
-            this.onNewHighScore(this.score);
+          GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+          GameEvents.emit("GAME_OVER", this.score);
+
+          if (this.score > this.highScore) {
+            this.highScore = this.score;
+            GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
           }
         } else {
+          this.timerController.resetTimers();
+          this.gameLoopController.resetLevelFrame();
           this.resetActorPositions();
           this.playState = "READY";
-          this.readyTimer = 90;
+          this.readyTimer = uiConfig.timings.readyBannerFrames;
+          GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
         }
       }
       return;
@@ -311,14 +485,67 @@ export class GameEngine {
       return;
     }
 
-    // Advance Timers (scaled by gameSpeed)
-    this.updateTimers();
+    // Advance Timers via TimerController (scaled by gameSpeed)
+    this.timerController.level = this.level;
+    this.timerController.update(
+      this.settings.gameSpeed,
+      (newMode) => {
+        // Scatter <-> Chase wave switch: prime 180° reversal upon reaching next tile center!
+        (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
+          const g = this.ghosts[type];
+          if (g.mode === "EATEN" || g.mode === "FRIGHTENED" || g.inHouse) return;
+          // Cruise Elroy Blinky ignores scatter mode and remains in CHASE
+          if (
+            type === "BLINKY" &&
+            this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
+            newMode === "SCATTER"
+          ) {
+            g.mode = "CHASE";
+            g.prevMode = "CHASE";
+            return;
+          }
+          g.prevMode = g.mode;
+          g.mode = newMode;
+          g.primeReversal(); // Tile-aligned primed reversal!
+        });
+      },
+      () => {
+        // Frightened mode ended: revert ghosts safely
+        const currentWave = this.timerController.currentWave;
+        const defaultMode = currentWave?.mode || "CHASE";
+        (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
+          const g = this.ghosts[type];
+          if (g.mode === "FRIGHTENED") {
+            let nextMode = g.prevMode && g.prevMode !== "FRIGHTENED" ? g.prevMode : defaultMode;
+            if (
+              type === "BLINKY" &&
+              this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
+              nextMode === "SCATTER"
+            ) {
+              nextMode = "CHASE";
+            }
+            g.mode = nextMode;
+            g.prevMode = g.mode;
+          }
+          g.flashState = false;
+        });
+      }
+    );
 
-    // Update Pac-Man
-    this.updatePacman();
+    const speedConfig = getSpeedConfigForLevel(this.level);
+    // Update Pac-Man physical movement via MovementController
+    this.updatePacmanMovement(speedConfig);
+    // Update Ghosts physical movement via MovementController & GhostAiController
+    this.updateGhostsMovement(speedConfig);
 
-    // Update Ghosts
-    this.updateGhosts();
+    // Update Visual Animations via AnimationController
+    this.animationController.updatePacmanAnimation(this.pacman, this.settings.gameSpeed);
+    this.animationController.updateGhostVisuals(
+      this.ghosts,
+      this.level,
+      this.frightenedGlobalTimer,
+      this.settings.gameSpeed
+    );
 
     // Check Collisions
     this.checkCollisions();
@@ -332,481 +559,95 @@ export class GameEngine {
     // Manage Background Siren
     this.updateAudioSiren();
 
+    // Evaluate in-game diagnostic invariants
+    this.diagnosticController.evaluateRules(this, this.currLevelFrame);
+
     // Record snapshot for Rewind Buffer
     this.recordSnapshot();
 
-    if (this.onStateChange) {
-      this.onStateChange();
+    // Emit live diagnostics event for decoupled subscribers
+    if (this.currLevelFrame % 4 === 0) {
+      GameEvents.emit("DIAGNOSTICS_TICK", this.getActorsDiagnostics());
     }
   }
 
-  private updateTimers() {
-    const dt = (1 / 60) * this.settings.gameSpeed;
-
-    // Frightened mode global countdown (eating a Power Pellet pauses the scatter/chase wave timer)
-    if (this.frightenedGlobalTimer > 0) {
-      this.frightenedGlobalTimer -= dt;
-      if (this.frightenedGlobalTimer <= 0) {
-        this.frightenedGlobalTimer = 0;
-
-        // Revert frightened ghosts to their previous mode (or current scheduled wave mode)
-        const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-        const defaultMode = currentWave?.mode || "CHASE";
-
-        (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-          const g = this.ghosts[type];
-          if (g.mode === "FRIGHTENED") {
-            // Revert safely, preventing cyclic FRIGHTENED state
-            g.mode = g.prevMode && g.prevMode !== "FRIGHTENED" ? g.prevMode : defaultMode;
-            g.prevMode = g.mode;
-          }
-
-          g.flashState = false;
-        });
-      }
-    } else {
-      // Normal Scatter / Chase wave progression (resumes cleanly when frightened timer expires)
-      const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-      if (currentWave && currentWave.duration !== Infinity) {
-        this.waveTimer += dt;
-        if (this.waveTimer >= currentWave.duration) {
-          this.waveTimer = 0;
-          this.waveIndex++;
-          const nextWave = getScatterChaseSchedule(this.level)[this.waveIndex];
-          const newMode = (nextWave?.mode || "CHASE") as GhostBehavior;
-
-          // Reversing direction when switching between scatter and chase
-          (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-            const g = this.ghosts[type];
-            if (g.mode !== "EATEN" && g.mode !== "FRIGHTENED" && !g.inHouse) {
-              // Cruise Elroy Blinky ignores scatter mode and remains in CHASE
-              if (
-                type === "BLINKY" &&
-                this.dotsRemaining <= ELROY_1_DOTS_LEFT &&
-                newMode === "SCATTER"
-              ) {
-                return;
-              }
-
-              g.prevMode = g.mode;
-              g.mode = newMode;
-              g.dir = getOppositeDirection(g.dir);
-            }
-          });
-        }
-      }
-    }
-  }
-
-  private updatePacman() {
-    // Effective speed derived from speed tables
-    const speedConfig = getSpeedConfigForLevel(this.level);
-    const isTurbo = this.settings.turbo;
+  private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
     const isFrightened = this.frightenedGlobalTimer > 0;
+    const speedPct = this.pacman.getSpeedPercentage(this.level, isFrightened, speedConfig);
+    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
 
-    let baseSpeed: number;
-    if (isFrightened) {
-      baseSpeed =
-        this.pacman.eatDotCooldown > 0 ? speedConfig.pacmanFrightEating : speedConfig.pacmanFright;
-    } else {
-      baseSpeed =
-        this.pacman.eatDotCooldown > 0 ? speedConfig.pacmanEating : speedConfig.pacmanNormal;
-    }
-
-    if (isTurbo) {
-      baseSpeed *= this.settings.turboSpeedMultiplier;
-    }
-
-    const speed = baseSpeed * this.settings.gameSpeed;
-    this.pacman.speed = speed;
-
-    if (this.pacman.eatDotCooldown > 0) {
-      this.pacman.eatDotCooldown--;
-    }
-
-    // Try buffered next direction turn
-    if (this.pacman.nextDir !== this.pacman.dir && this.pacman.nextDir !== "NONE") {
-      if (this.canPacmanMove(this.pacman.x, this.pacman.y, this.pacman.nextDir)) {
-        // Snap to center of tile axis for clean corner rounding
-        const halfTile = TILE_SIZE / 2;
-        if (this.pacman.nextDir === "UP" || this.pacman.nextDir === "DOWN") {
-          const targetX = Math.floor(this.pacman.x / TILE_SIZE) * TILE_SIZE + halfTile;
-          if (Math.abs(this.pacman.x - targetX) < 4) {
-            this.pacman.x = targetX;
-            this.pacman.dir = this.pacman.nextDir;
-          }
-        } else {
-          const targetY = Math.floor(this.pacman.y / TILE_SIZE) * TILE_SIZE + halfTile;
-          if (Math.abs(this.pacman.y - targetY) < 4) {
-            this.pacman.y = targetY;
-            this.pacman.dir = this.pacman.nextDir;
-          }
-        }
-      }
-    }
-
-    // Move in current direction if possible
-    if (this.canPacmanMove(this.pacman.x, this.pacman.y, this.pacman.dir)) {
-      const { dx, dy } = getDirectionVector(this.pacman.dir);
-      this.pacman.x += dx * speed;
-      this.pacman.y += dy * speed;
-
-      // Wrap around tunnel
-      this.handleTunnelWrap(this.pacman);
-
-      // Mouth chomp animation
-      if (this.pacman.mouthOpening) {
-        this.pacman.mouthAngle += 0.05 * this.settings.gameSpeed;
-        if (this.pacman.mouthAngle >= 0.45) this.pacman.mouthOpening = false;
-      } else {
-        this.pacman.mouthAngle -= 0.05 * this.settings.gameSpeed;
-        if (this.pacman.mouthAngle <= 0.05) this.pacman.mouthOpening = true;
-      }
-    }
+    this.movementController.updatePacmanMovement(
+      this.pacman,
+      this.currLevelFrame,
+      speedPct,
+      turboMult,
+      this.settings.gameSpeed,
+      this.maze
+    );
   }
 
-  private canPacmanMove(x: number, y: number, dir: Direction): boolean {
-    const { dx, dy } = getDirectionVector(dir);
-    // Probe ahead
-    const checkDist = TILE_SIZE / 2 + 1;
-    const probeX = x + dx * checkDist;
-    const probeY = y + dy * checkDist;
-
-    const col = Math.floor(probeX / TILE_SIZE);
-    const row = Math.floor(probeY / TILE_SIZE);
-
-    if (row < 0 || row >= this.maze.height) return false;
-
-    // Check tunnel wrap
-    if (col < 0 || col >= this.maze.width) {
-      return this.maze.tunnels.some((t) => t.y === row);
-    }
-
-    const tile = this.maze.tiles[row][col];
-    // Pac-Man cannot enter walls, gate, or ghost house
-    return tile !== "WALL" && tile !== "GATE" && tile !== "GHOST_HOUSE";
-  }
-
-  private handleTunnelWrap(entity: { x: number; y: number }) {
-    const row = Math.floor(entity.y / TILE_SIZE);
-    const isTunnel = this.maze.tunnels.some((t) => t.y === row);
-    if (isTunnel) {
-      if (entity.x < -TILE_SIZE / 2) {
-        entity.x = this.maze.width * TILE_SIZE + TILE_SIZE / 2 - 2;
-      } else if (entity.x > this.maze.width * TILE_SIZE + TILE_SIZE / 2) {
-        entity.x = -TILE_SIZE / 2 + 2;
-      }
-    }
-  }
-
-  private updateGhosts() {
+  private updateGhostsMovement(speedConfig: LevelSpeedConfig) {
     const blinky = this.ghosts.BLINKY;
-    const speedConfig = getSpeedConfigForLevel(this.level);
+    const doorX = 13 * TILE_SIZE + TILE_SIZE / 2;
 
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      g.feetAnimation = (g.feetAnimation + 0.15 * this.settings.gameSpeed) % 1;
 
-      // House exit management
+      // Cruise Elroy Blinky immunity: Blinky must NEVER be in SCATTER when dotsRemaining <= ELROY_1_DOTS_LEFT
+      if (type === "BLINKY" && this.dotsRemaining <= ELROY_1_DOTS_LEFT && g.mode === "SCATTER") {
+        g.mode = "CHASE";
+        g.prevMode = "CHASE";
+      }
+
+      // 1. House emergence management
       if (g.inHouse) {
-        this.updateGhostInHouse(g);
+        this.ghostAiController.updateHouseEmergence(g, doorX, this.settings.gameSpeed);
         return;
       }
 
-      // Check if eaten eyes have returned through the gate into the pen interior to revive
-      if (g.mode === "EATEN") {
-        const doorX = 13 * TILE_SIZE + TILE_SIZE / 2; // 216
-        const ghostRow = Math.floor(g.y / TILE_SIZE);
-        const ghostCol = Math.floor(g.x / TILE_SIZE);
-
-        // Eyes must have entered through the front door (cols 13-14), moving DOWN and reached the pen interior (row 17)
-        if (
-          (ghostCol === 13 || ghostCol === 14) &&
-          ghostRow >= 17 &&
-          g.dir === "DOWN" &&
-          Math.abs(g.x - doorX) <= 16
-        ) {
-          // Successfully arrived inside the pen! Revive!
-          g.x = doorX;
-          g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
-          g.inHouse = true;
-          g.mode = "CHASE";
-          g.prevMode = "CHASE";
-          g.flashState = false;
-          g.houseTimer = 60; // brief recovery before exiting
-          g.dir = "UP";
-          g.nextDir = "UP";
-          return;
-        }
-      }
-
-      // Warning flash state calculation based on authentic arcade flash counts and 14-frame toggle periods
-      if (g.mode === "FRIGHTENED" && this.frightenedGlobalTimer > 0) {
-        const flashCount = getFrightenedFlashCount(this.level);
-        if (flashCount > 0) {
-          const halfCyclesLeft = Math.floor(
-            this.frightenedGlobalTimer / FRIGHTENED_FLASH_TOGGLE_DURATION
-          );
-          // In arcade Pac-Man, each flash cycle is 28 frames (14 frames white, 14 frames blue).
-          // Odd half-cycles (1, 3, 5, 7, 9...) display WHITE, while even half-cycles display BLUE.
-          g.flashState = halfCyclesLeft < 2 * flashCount && halfCyclesLeft % 2 === 1;
-        } else {
-          g.flashState = false;
-        }
-      } else {
-        g.flashState = false;
-      }
-
-      // Clyde's far-distance random behavior switching
+      // 2. Clyde's Proximity Targeting Update (Arcade-Accurate 8-Tile Circle Rule)
+      // Clyde does not use custom sub-state clocks or Math.random inside this tick loop.
       if (type === "CLYDE") {
-        const pacCol = Math.floor(this.pacman.x / TILE_SIZE);
-        const pacRow = Math.floor(this.pacman.y / TILE_SIZE);
-        const ghostCol = Math.floor(g.x / TILE_SIZE);
-        const ghostRow = Math.floor(g.y / TILE_SIZE);
-        const distSq = (pacCol - ghostCol) ** 2 + (pacRow - ghostRow) ** 2;
+        const pacTile = this.pacman.tileCoord;
+        const clydeTile = g.tileCoord;
 
-        if (distSq >= 64) {
-          // Far away from Pac-Man (>= 8 tiles): decrement timer and randomly switch between CHASE and FLEE
-          g.clydeSwitchTimer = (g.clydeSwitchTimer || 0) - (1 / 60) * this.settings.gameSpeed;
-          if (g.clydeSwitchTimer <= 0) {
-            // Randomly switch state: 60% chance to chase, 40% chance to flee
-            g.clydeWanderState = Math.random() < 0.6 ? "CHASE" : "FLEE";
-            // Random duration between 2.5 and 5.0 seconds
-            g.clydeSwitchTimer = 2.5 + Math.random() * 2.5;
-          }
-        } else {
-          // Closer than 8 tiles: Clyde immediately flees
-          g.clydeWanderState = "FLEE";
-        }
+        // Calculate true Euclidean squared tile distance
+        const dx = clydeTile.col - pacTile.col;
+        const dy = clydeTile.row - pacTile.row;
+        const distanceSquared = dx * dx + dy * dy;
+
+        // If closer than 8 tiles (64 squared), Clyde panics and flees to his home corner.
+        // Otherwise, he targets Pac-Man directly using normal Chase target parameters.
+        g.clydeWanderState = distanceSquared < 64 ? "FLEE" : "CHASE";
       }
 
-      // Update Target Tile
-      g.target = calculateGhostTarget(g, this.pacman, blinky, this.maze, this.dotsRemaining);
+      // 3. Update Target Tile with configurable 1980 ROM quirks flag
+      this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
+      g.target = this.ghostAiController.calculateTarget(
+        g,
+        this.pacman,
+        blinky,
+        this.maze,
+        this.dotsRemaining
+      );
 
-      // Speed calculation
+      // 4. Discrete 16-frame bitmask speed & tile-to-tile movement
       const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
-      g.speed =
-        getGhostSpeed(g, this.maze, this.dotsRemaining, turboMult, speedConfig) *
-        this.settings.gameSpeed;
+      const speedPct = g.getSpeedPercentage(this.maze, this.dotsRemaining, speedConfig);
 
-      // Airtight movement: never penetrates walls, stays centered on tile axis
-      this.moveGhost(g, g.speed);
-
-      // Check if eaten eyes reached the inside of the pen following movement
-      if (g.mode === "EATEN") {
-        const doorX = 13 * TILE_SIZE + TILE_SIZE / 2;
-        const ghostRow = Math.floor(g.y / TILE_SIZE);
-        const ghostCol = Math.floor(g.x / TILE_SIZE);
-
-        if (
-          (ghostCol === 13 || ghostCol === 14) &&
-          ghostRow >= 17 &&
-          g.dir === "DOWN" &&
-          Math.abs(g.x - doorX) <= 16
-        ) {
-          g.x = doorX;
-          g.y = 17 * TILE_SIZE + TILE_SIZE / 2;
-          g.inHouse = true;
-          g.mode = "CHASE";
-          g.prevMode = "CHASE";
-          g.flashState = false;
-          g.houseTimer = 60;
-          g.dir = "UP";
-          g.nextDir = "UP";
-        }
-      }
+      this.movementController.updateGhostMovement(
+        g,
+        blinky,
+        this.pacman,
+        this.currLevelFrame,
+        speedPct,
+        turboMult,
+        this.settings.gameSpeed,
+        this.maze,
+        this.dotsRemaining,
+        this.ghostAiController
+      );
     });
-  }
-
-  /**
-   * Evaluates ghost direction at tile centers with 1-tile lookahead
-   */
-  private updateGhostTileArrival(g: GhostState, col: number, row: number) {
-    // Determine the next valid direction from current tile center
-    g.dir = chooseNextGhostDirection(g, g.target, this.maze, col, row, g.dir);
-
-    // Pre-calculate decision for next tile ahead (1-tile lookahead)
-    const { dx, dy } = getDirectionVector(g.dir);
-    const lookCol = col + dx;
-    const lookRow = row + dy;
-    const blinky = this.ghosts.BLINKY;
-    g.target = calculateGhostTarget(g, this.pacman, blinky, this.maze, this.dotsRemaining);
-    g.nextDir = chooseNextGhostDirection(g, g.target, this.maze, lookCol, lookRow, g.dir);
-  }
-
-  private moveGhost(g: GhostState, speed: number) {
-    if (g.dir === "NONE" || speed <= 0) return;
-
-    const half = TILE_SIZE / 2;
-    let remaining = speed;
-
-    // Check tunnel wrap-around before moving
-    const curRow = Math.floor(g.y / TILE_SIZE);
-    const inTunnel = this.maze.tunnels.some((t) => t.y === curRow);
-    if (inTunnel) {
-      if (g.x < -half) {
-        g.x = this.maze.width * TILE_SIZE + half - 2;
-        return;
-      } else if (g.x > this.maze.width * TILE_SIZE + half) {
-        g.x = -half + 2;
-        return;
-      }
-    }
-
-    const { dx, dy } = getDirectionVector(g.dir);
-
-    if (dx !== 0) {
-      // Horizontal movement: lock Y strictly to center of current row
-      const row = Math.floor(g.y / TILE_SIZE);
-      g.y = row * TILE_SIZE + half;
-
-      const col = Math.floor(g.x / TILE_SIZE);
-      const tileCenterX = col * TILE_SIZE + half;
-
-      if (dx > 0) {
-        // Moving RIGHT
-        const nextCol = col + 1;
-        const nextCenterX = nextCol * TILE_SIZE + half;
-
-        if (g.x >= tileCenterX && !isTileWalkableForGhost(nextCol, row, g, this.maze)) {
-          g.x = tileCenterX;
-          this.updateGhostTileArrival(g, col, row);
-          return;
-        }
-
-        const targetCenter = g.x < tileCenterX ? tileCenterX : nextCenterX;
-        const dist = targetCenter - g.x;
-
-        if (remaining < dist) {
-          g.x += remaining;
-        } else {
-          g.x = targetCenter;
-          remaining -= dist;
-          const reachedCol = Math.floor(targetCenter / TILE_SIZE);
-          this.updateGhostTileArrival(g, reachedCol, row);
-          if (remaining > 0) {
-            this.moveGhost(g, remaining);
-          }
-        }
-      } else {
-        // Moving LEFT
-        const nextCol = col - 1;
-        const nextCenterX = nextCol * TILE_SIZE + half;
-
-        if (g.x <= tileCenterX && !isTileWalkableForGhost(nextCol, row, g, this.maze)) {
-          g.x = tileCenterX;
-          this.updateGhostTileArrival(g, col, row);
-          return;
-        }
-
-        const targetCenter = g.x > tileCenterX ? tileCenterX : nextCenterX;
-        const dist = g.x - targetCenter;
-
-        if (remaining < dist) {
-          g.x -= remaining;
-        } else {
-          g.x = targetCenter;
-          remaining -= dist;
-          const reachedCol = Math.floor(targetCenter / TILE_SIZE);
-          this.updateGhostTileArrival(g, reachedCol, row);
-          if (remaining > 0) {
-            this.moveGhost(g, remaining);
-          }
-        }
-      }
-    } else if (dy !== 0) {
-      // Vertical movement: lock X strictly to center of current column
-      const col = Math.floor(g.x / TILE_SIZE);
-      g.x = col * TILE_SIZE + half;
-
-      const row = Math.floor(g.y / TILE_SIZE);
-      const tileCenterY = row * TILE_SIZE + half;
-
-      if (dy > 0) {
-        // Moving DOWN
-        const nextRow = row + 1;
-        const nextCenterY = nextRow * TILE_SIZE + half;
-
-        if (g.y >= tileCenterY && !isTileWalkableForGhost(col, nextRow, g, this.maze)) {
-          g.y = tileCenterY;
-          this.updateGhostTileArrival(g, col, row);
-          return;
-        }
-
-        const targetCenter = g.y < tileCenterY ? tileCenterY : nextCenterY;
-        const dist = targetCenter - g.y;
-
-        if (remaining < dist) {
-          g.y += remaining;
-        } else {
-          g.y = targetCenter;
-          remaining -= dist;
-          const reachedRow = Math.floor(targetCenter / TILE_SIZE);
-          this.updateGhostTileArrival(g, col, reachedRow);
-          if (remaining > 0) {
-            this.moveGhost(g, remaining);
-          }
-        }
-      } else {
-        // Moving UP
-        const nextRow = row - 1;
-        const nextCenterY = nextRow * TILE_SIZE + half;
-
-        if (g.y <= tileCenterY && !isTileWalkableForGhost(col, nextRow, g, this.maze)) {
-          g.y = tileCenterY;
-          this.updateGhostTileArrival(g, col, row);
-          return;
-        }
-
-        const targetCenter = g.y > tileCenterY ? tileCenterY : nextCenterY;
-        const dist = g.y - targetCenter;
-
-        if (remaining < dist) {
-          g.y -= remaining;
-        } else {
-          g.y = targetCenter;
-          remaining -= dist;
-          const reachedRow = Math.floor(targetCenter / TILE_SIZE);
-          this.updateGhostTileArrival(g, col, reachedRow);
-          if (remaining > 0) {
-            this.moveGhost(g, remaining);
-          }
-        }
-      }
-    }
-  }
-
-  private updateGhostInHouse(g: GhostState) {
-    if (g.houseTimer > 0) {
-      g.houseTimer -= 1 * this.settings.gameSpeed;
-      // Bounce up and down in house
-      const topY = 16 * TILE_SIZE;
-      const botY = 17.5 * TILE_SIZE;
-      if (g.y <= topY) g.bouncedInHouse = true;
-      if (g.y >= botY) g.bouncedInHouse = false;
-      g.y += (g.bouncedInHouse ? 0.6 : -0.6) * this.settings.gameSpeed;
-      g.dir = g.bouncedInHouse ? "DOWN" : "UP";
-    } else {
-      // Move toward center door and exit
-      const targetDoorX = 13 * TILE_SIZE + TILE_SIZE / 2; // Exact center of col 13 (216)
-      const targetDoorY = 14 * TILE_SIZE + TILE_SIZE / 2; // Exact center of row 14 (232)
-
-      if (Math.abs(g.x - targetDoorX) > 2) {
-        g.x += Math.sign(targetDoorX - g.x) * 0.8 * this.settings.gameSpeed;
-        g.dir = targetDoorX > g.x ? "RIGHT" : "LEFT";
-      } else {
-        g.x = targetDoorX;
-        g.y -= 0.8 * this.settings.gameSpeed;
-        g.dir = "UP";
-        if (g.y <= targetDoorY) {
-          g.x = targetDoorX;
-          g.y = targetDoorY;
-          g.inHouse = false;
-          g.dir = "LEFT";
-          g.nextDir = "LEFT";
-        }
-      }
-    }
   }
 
   private checkCollisions() {
@@ -824,32 +665,51 @@ export class GameEngine {
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
         this.pacman.eatDotCooldown = 2;
+        this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
         soundEngine.playWaka();
         this.checkFruitSpawn();
         this.checkLevelClear();
+        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
       } else if (tile === "ENERGIZER") {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.score += 50;
         this.dotsRemaining--;
         this.dotsEatenThisRound++;
+        this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
         this.eatenGhostsInEnergizer = 0;
         soundEngine.playWaka();
         this.triggerFrightenedMode();
         this.checkFruitSpawn();
         this.checkLevelClear();
+        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+        GameEvents.emit("ENERGIZER_EATEN", { level: this.level });
       }
     }
 
-    // 2. Check Ghost Collision
+    // 2. Check Ghost Collision (Strict Single-Point Anchor Integer Tile Occupancy)
+    const pacTile = this.pacman.tileCoord;
+
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
       if (g.inHouse) return;
 
-      const dist = Math.hypot(this.pacman.x - g.x, this.pacman.y - g.y);
-      if (dist < TILE_SIZE * 0.75) {
+      const ghostTile = g.tileCoord;
+      const isColliding = pacTile.col === ghostTile.col && pacTile.row === ghostTile.row;
+
+      if (isColliding) {
         if (g.mode === "FRIGHTENED") {
           // Eat Ghost!
           g.mode = "EATEN";
+          g.flashState = false;
+          g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
+          g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
+          g.target = this.ghostAiController.calculateTarget(
+            g,
+            this.pacman,
+            this.ghosts.BLINKY,
+            this.maze,
+            this.dotsRemaining
+          );
           this.eatenGhostsInEnergizer++;
           const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
           this.score += points;
@@ -865,11 +725,22 @@ export class GameEngine {
             life: 45,
             color: "#00ffff",
           });
+
+          GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+          GameEvents.emit("GHOST_EATEN", { type, points });
         } else if (g.mode === "CHASE" || g.mode === "SCATTER") {
           if (!this.settings.invincible && !this.pacman.invincible) {
             // Pac-Man Dies!
             this.pacman.isDying = true;
+            this.pacman.deathProgress = 0;
             this.playState = "DYING";
+
+            // Discard bonus fruit immediately upon losing a life.
+            if (this.fruit) {
+              this.fruit.active = false;
+              this.fruit = null;
+            }
+
             soundEngine.playDeath().catch(() => {
               /* GG */
             });
@@ -878,15 +749,21 @@ export class GameEngine {
       }
     });
 
-    // 3. Check Fruit Collision
+    // 3. Check Fruit Collision (Pac-Man's center anchor occupies fruit candidate tiles)
     if (this.fruit && this.fruit.active) {
-      const fruitX = this.fruit.col * TILE_SIZE + halfTile;
-      const fruitY = this.fruit.row * TILE_SIZE + halfTile;
-      const dist = Math.hypot(this.pacman.x - fruitX, this.pacman.y - fruitY);
-      if (dist < TILE_SIZE * 0.9) {
+      const fruitRow = this.fruit.row;
+      const fruitCol = this.fruit.col;
+      const isFruitTile =
+        pacTile.row === fruitRow &&
+        (pacTile.col === fruitCol || pacTile.col === 13 || pacTile.col === 14);
+
+      if (isFruitTile) {
         this.score += this.fruit.points;
         this.fruit.active = false;
         soundEngine.playEatFruit();
+
+        const fruitX = fruitCol * TILE_SIZE + halfTile;
+        const fruitY = fruitRow * TILE_SIZE + halfTile;
 
         this.scorePopups.push({
           id: `fruit_${Date.now()}`,
@@ -896,19 +773,23 @@ export class GameEngine {
           life: 50,
           color: "#ffcc00",
         });
+
+        GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
+        GameEvents.emit("FRUIT_EATEN", this.fruit.points);
       }
     }
 
     // High Score tracking
     if (this.score > this.highScore) {
       this.highScore = this.score;
+      GameEvents.emit("SCORE_CHANGED", { score: this.score, highScore: this.highScore });
     }
   }
 
   public triggerFrightenedMode() {
     const duration = getFrightenedDuration(this.level);
 
-    this.frightenedGlobalTimer = duration;
+    this.timerController.triggerFrightened(duration);
 
     const currentWave = getScatterChaseSchedule(this.level)[this.waveIndex];
     const defaultMode = currentWave?.mode || "CHASE";
@@ -916,9 +797,11 @@ export class GameEngine {
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
 
+      // Eaten ghosts (eyes returning to house) and ghosts already in the house are immune to frightened mode
       if (g.mode === "EATEN" || g.inHouse) return;
 
-      g.dir = getOppositeDirection(g.dir);
+      // Frightened mode primes a 180° direction reversal upon crossing into the next tile boundary
+      g.primeReversal();
 
       if (duration <= 0) return;
 
@@ -952,10 +835,10 @@ export class GameEngine {
     this.fruit = {
       name: fruitMeta.name,
       points: fruitMeta.points,
-      col: 13.5,
+      col: 13, // Standardized to absolute integer coordinate to keep pathing calculations clean
       row: 20,
       active: true,
-      duration: 600, // ~10 seconds
+      duration: 600, // ~10 seconds at 60Hz
       color: fruitMeta.color,
       symbol: fruitMeta.symbol,
       bouncing: this.mode === "MS_PACMAN" || this.mode === "CRAZY_OTTO",
@@ -992,6 +875,8 @@ export class GameEngine {
       this.playState = "LEVEL_CLEAR";
       this.levelClearTimer = 120; // 2 seconds flash
       soundEngine.stopSiren();
+      GameEvents.emit("PLAY_STATE_CHANGED", this.playState);
+      GameEvents.emit("LEVEL_CLEARED", this.level);
     }
   }
 
@@ -1001,8 +886,8 @@ export class GameEngine {
       return;
     }
 
-    const anyFrightened = Object.values(this.ghosts).some((g) => g.mode === "FRIGHTENED");
-    const anyEaten = Object.values(this.ghosts).some((g) => g.mode === "EATEN");
+    const anyFrightened = Object.values(this.ghostStates).some((g) => g.mode === "FRIGHTENED");
+    const anyEaten = Object.values(this.ghostStates).some((g) => g.mode === "EATEN");
 
     if (anyEaten) {
       soundEngine.updateSiren("EYES");
@@ -1019,8 +904,11 @@ export class GameEngine {
   private recordSnapshot() {
     // Deep clone tiles array state to preserve dot consumption history
     const clonedTiles: TileType[][] = this.maze.tiles.map((row) => [...row]);
-    const clonedGhosts = JSON.parse(JSON.stringify(this.ghosts)) as Record<GhostType, GhostState>;
-    const clonedPacman: PacmanState = { ...this.pacman };
+    const clonedGhosts = JSON.parse(JSON.stringify(this.ghostStates)) as Record<
+      GhostType,
+      GhostState
+    >;
+    const clonedPacman: PacmanState = { ...this.pacmanState };
 
     const snapshot: SnapshotState = {
       pacman: clonedPacman,
@@ -1053,7 +941,6 @@ export class GameEngine {
     this.rewindIndex = frameIndex;
     const snap = this.rewindBuffer[frameIndex];
     this.restoreSnapshot(snap);
-    if (this.onStateChange) this.onStateChange();
   }
 
   public rewindSeconds(seconds: number) {
@@ -1068,13 +955,12 @@ export class GameEngine {
       this.rewindBuffer = this.rewindBuffer.slice(0, this.rewindIndex + 1);
       this.rewindIndex = -1;
       this.playState = "PLAYING";
-      if (this.onStateChange) this.onStateChange();
     }
   }
 
   public restoreSnapshot(snap: SnapshotState) {
-    this.pacman = { ...snap.pacman };
-    this.ghosts = JSON.parse(JSON.stringify(snap.ghosts)) as Record<GhostType, GhostState>;
+    this.pacmanState = { ...snap.pacman };
+    this.ghostStates = JSON.parse(JSON.stringify(snap.ghosts)) as Record<GhostType, GhostState>;
     this.score = snap.score;
     this.level = snap.level;
     this.lives = snap.lives;
@@ -1091,12 +977,19 @@ export class GameEngine {
     const gSpawns = this.maze.ghostSpawns;
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
+      const isElroyBlinky = type === "BLINKY" && this.dotsRemaining <= ELROY_1_DOTS_LEFT;
+
       g.x = gSpawns[type].x * TILE_SIZE + TILE_SIZE / 2;
       g.y = gSpawns[type].y * TILE_SIZE + TILE_SIZE / 2;
       g.dir = gSpawns[type].initialDir;
+      g.nextDir = gSpawns[type].initialDir;
       g.inHouse = gSpawns[type].inHouse;
       g.houseTimer = 30;
-      g.mode = "SCATTER";
+      g.mode = isElroyBlinky ? "CHASE" : "SCATTER";
+      g.prevMode = isElroyBlinky ? "CHASE" : "SCATTER";
+      g.flashState = false;
+      g.reversalPrimed = false;
+      g.lastDecisionTile = undefined;
     });
   }
 
