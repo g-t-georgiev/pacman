@@ -1,4 +1,4 @@
-import type { MazeData, TileCoord } from "../types";
+import type { MazeData, TileCoord, TileType } from "../types";
 
 /**
  * What can be worked out from a maze's tiles alone (plan A4): its corridors, its intersections,
@@ -13,6 +13,18 @@ const STEPS = [
 ] as const;
 
 const key = (col: number, row: number) => `${col},${row}`;
+
+/**
+ * The one way to read a tile (Decision 1). Off the grid, a tunnel row continues as open tunnel
+ * (actors wrap through it); everything else off the grid is wall.
+ */
+export function tileAt(maze: MazeData, col: number, row: number): TileType {
+  if (row < 0 || row >= maze.height) return "WALL";
+  if (col < 0 || col >= maze.width) {
+    return maze.tunnels.some((t) => t.y === row) ? "TUNNEL" : "WALL";
+  }
+  return maze.tiles[row][col];
+}
 
 /** Tiles Pac-Man may stand on (walls, the gate and the house interior excluded). */
 function isWalkable(maze: MazeData, col: number, row: number): boolean {

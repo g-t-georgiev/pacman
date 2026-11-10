@@ -215,3 +215,81 @@ describe("Dossier · Maze Logic 101", () => {
     expect(visited.size).toBeGreaterThan(10); // moving round the loop, not parked
   });
 });
+
+describe("Dossier · Meet the Ghosts", () => {
+  it("Pinky's head-fake: met head-on within 4 tiles, she turns away at the next junction", () => {
+    // Row 8, Pac-Man heading right toward Pinky heading left. Pinky's target is 4 tiles ahead of
+    // Pac-Man, which is now behind her, so at the junction (18, 8) she turns down, not into him.
+    const agent = playing();
+    const e = agent.engine;
+    agent.scenario({
+      waveIndex: 1, // chase
+      pacman: { col: 14, row: 8, dir: "RIGHT" },
+      ghosts: { PINKY: { col: 20, row: 8, dir: "LEFT" } },
+    });
+    for (const x of [15, 16, 17, 19, 20]) e.maze.tiles[8][x] = "EMPTY";
+    const result = agent.runUntil((v) => v.ghosts.PINKY.dir !== "LEFT", 60);
+    expect(result.reached).toBe(true);
+    expect(result.view.ghosts.PINKY).toMatchObject({ col: 18, row: 8, dir: "DOWN" });
+  });
+
+  it("Clyde loops around Pac-Man's 8-tile circle and never reaches a still Pac-Man", () => {
+    // Pac-Man stays still against the wall in the top-left corner (not Clyde's lower-left one).
+    const agent = playing();
+    const e = agent.engine;
+    e.settings.invincible = true;
+    e.pacman.invincible = true;
+    agent.scenario({
+      waveIndex: 1,
+      pacman: { col: 1, row: 4, dir: "LEFT" },
+      ghosts: { CLYDE: { col: 21, row: 8, dir: "LEFT" } },
+    });
+    const near: boolean[] = [];
+    let minDistSq = Infinity;
+    for (let f = 0; f < 3000; f++) {
+      e.timerController.waveIndex = 1; // hold chase
+      e.timerController.waveTimer = 0;
+      agent.step(1);
+      const c = e.ghosts.CLYDE.tileCoord;
+      const d = (c.col - 1) ** 2 + (c.row - 4) ** 2;
+      if (f >= 1000) {
+        minDistSq = Math.min(minDistSq, d);
+        near.push(d < 64);
+      }
+    }
+    expect(e.pacman.tileCoord).toEqual({ col: 1, row: 4 }); // Pac-Man really stayed put
+    expect(minDistSq).toBeGreaterThan(0); // never on Pac-Man's tile
+    const crossings = near.filter((n, i) => i > 0 && n !== near[i - 1]).length;
+    expect(crossings).toBeGreaterThanOrEqual(4); // in and out of the circle, again and again
+  });
+});
+
+describe("Dossier · Home Sweet Home", () => {
+  it("stuck-ghosts trick: if Clyde is out when the global counter passes 32, a ghost eaten later stays home while Pac-Man keeps eating", () => {
+    const agent = playing();
+    const e = agent.engine;
+    const house = e.houseController;
+    e.settings.invincible = true; // no ghost may end the round while we wait
+    e.pacman.invincible = true;
+    // After a life was lost: the global counter runs, and has passed 32 with Clyde outside
+    house.state.globalCounterActive = true;
+    house.state.globalCounter = 40;
+    // Clyde back home (eaten earlier); Pinky and Inky out in the maze
+    agent.scenario({
+      ghosts: {
+        CLYDE: { col: 13, row: 17, location: "HOUSE", dir: "UP" },
+        PINKY: { col: 6, row: 8, dir: "LEFT" },
+        INKY: { col: 21, row: 8, dir: "RIGHT" },
+      },
+    });
+    // Pac-Man eats a dot every few frames along row 32, so the idle timer never fires
+    agent.scenario({ pacman: { col: 1, row: 32, dir: "RIGHT" } });
+    for (let c = 2; c <= 26; c++) e.maze.tiles[32][c] = "DOT";
+    agent.runUntil((v) => v.pacman.col === 26, 400);
+    expect(e.ghosts.CLYDE.location).toBe("HOUSE"); // the counter is past 32: nothing releases him
+    expect(house.state.globalCounterActive).toBe(true);
+    // Stop eating: the idle timer frees him
+    agent.runUntil((v) => v.ghosts.CLYDE.location !== "HOUSE", 5 * 60);
+    expect(e.ghosts.CLYDE.location).not.toBe("HOUSE");
+  });
+});

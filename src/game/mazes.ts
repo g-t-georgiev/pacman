@@ -1,4 +1,4 @@
-import type { GameMode, MazeData, TileCoord, TileType } from "../types";
+import type { GameMode, MazeData, TileType } from "../types";
 import { deriveIntersections } from "./mazeAnalysis";
 import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES, TILE_SIZE } from "./constants";
 import type { DualTileCoord, GhostType } from "../types";

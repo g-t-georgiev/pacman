@@ -93,6 +93,10 @@ export interface Scenario {
   waveTimer?: number;
   /** Starts frightened mode for this level's duration (ghosts reverse, as on an energizer). */
   frightened?: boolean;
+  /** Position of the frightened-ghost PRNG (0..8191; reset to 0 at level start and per life). */
+  prngIndex?: number;
+  /** Seed of the sim's other random stream (fruit timer). */
+  randomSeed?: number;
   pacman?: Placement;
   ghosts?: Partial<
     Record<GhostType, Placement & { location?: GhostLocation; frightened?: boolean }>
@@ -239,6 +243,8 @@ export class AgentDriver {
       if (g.frightened !== undefined) ghost.frightened = g.frightened;
     }
     if (s.frightened) e.triggerFrightenedMode();
+    if (s.prngIndex !== undefined) e.prng.state = s.prngIndex;
+    if (s.randomSeed !== undefined) e.simRandom.reset(s.randomSeed);
     if (s.playState) e.playState = s.playState;
     e.replayLog.reset(e); // the edits above are not inputs: recordings start from here
     this.render();

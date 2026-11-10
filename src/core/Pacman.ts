@@ -1,4 +1,5 @@
 import { Actor } from "./Actor";
+import { tileAt } from "../game/mazeAnalysis";
 import type { Direction, LevelSpeedConfig, MazeData, PacmanState } from "../types";
 import { CORNER_WINDOW_LOW, TILE_SIZE } from "../game/constants";
 import { getDirectionVector, getOppositeDirection } from "../game/ghostAiUtils";
@@ -78,9 +79,7 @@ export class Pacman extends Actor {
 
   /** Whether Pac-Man may occupy a tile. Off-grid columns are open only on tunnel rows. */
   public static isOpen(col: number, row: number, maze: MazeData): boolean {
-    if (row < 0 || row >= maze.height) return false;
-    if (col < 0 || col >= maze.width) return maze.tunnels.some((t) => t.y === row);
-    const tile = maze.tiles[row][col];
+    const tile = tileAt(maze, col, row);
     return tile !== "WALL" && tile !== "GATE" && tile !== "GHOST_HOUSE";
   }
 

@@ -72,3 +72,23 @@ describe("AgentDriver (headless)", () => {
     expect(agent.diagnostics().failing).toEqual([]);
   });
 });
+
+describe("Scenario seeds (T6)", () => {
+  it("prngIndex and randomSeed pin the sim's two random streams", () => {
+    const run = (prngIndex: number) => {
+      const agent = driver();
+      agent.scenario({ frightened: true, prngIndex, randomSeed: 99 });
+      return agent.trace(240, (v) => `${v.ghosts.BLINKY.x},${v.ghosts.BLINKY.y}`).join(" ");
+    };
+    expect(run(123)).toBe(run(123));
+    expect(run(123)).not.toBe(run(4567));
+
+    const fruit = (seed: number) => {
+      const agent = driver();
+      agent.scenario({ randomSeed: seed });
+      agent.engine.spawnFruit();
+      return agent.engine.fruit!.duration;
+    };
+    expect(fruit(7)).toBe(fruit(7));
+  });
+});

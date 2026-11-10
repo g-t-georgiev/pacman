@@ -1,6 +1,7 @@
 import type { Direction, GhostState, MazeData, TileCoord } from "../types";
 import { PRNG_DIRECTIONS } from "../core/PRNG";
 import { TILE_SIZE } from "./constants";
+import { tileAt } from "./mazeAnalysis";
 
 export function getOppositeDirection(dir: Direction): Direction {
   switch (dir) {
@@ -41,15 +42,7 @@ export function isTileWalkableForGhost(
   ghost: GhostState,
   maze: MazeData
 ): boolean {
-  if (row < 0 || row >= maze.height) return false;
-
-  // Tunnel wrap-around check
-  if (col < 0 || col >= maze.width) {
-    const isTunnelRow = maze.tunnels.some((t) => t.y === row);
-    return isTunnelRow;
-  }
-
-  const tile = maze.tiles[row][col];
+  const tile = tileAt(maze, col, row);
 
   if (tile === "WALL") return false;
 
