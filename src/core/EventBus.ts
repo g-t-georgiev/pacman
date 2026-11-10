@@ -9,7 +9,10 @@ export interface GameEventMap {
   SCORE_CHANGED: { score: number; highScore: number };
   LIVES_CHANGED: number;
   LEVEL_CHANGED: number;
+  /** The coarse state the UI shows, pauses included (also re-sent on UI syncs). */
   PLAY_STATE_CHANGED: PlayState;
+  /** A real round change from the sim (death, READY, level clear, game over...); never a pause. */
+  ROUND_STATE_CHANGED: PlayState;
   /** Final score. */
   GAME_OVER: number;
   /** The level just cleared. (No listener yet.) */

@@ -1,9 +1,4 @@
-export type PanelId =
-  | "RESTART_PANEL"
-  | "LEARN_PANEL"
-  | "PRACTICE_PANEL"
-  | "MODE_SELECTOR"
-  | "HIGH_SCORES";
+export type PanelId = "RESTART_PANEL" | "LAB_PANEL" | "MODE_SELECTOR" | "HIGH_SCORES";
 
 export type TransitionEffect =
   | "fade-slide-up"
@@ -49,16 +44,7 @@ export const uiConfig: UIConfig = {
       position: "center-viewport",
       closeOnBackdropClick: false, // Prevent accidental dismissal on game over
     },
-    LEARN_PANEL: {
-      effect: "fade-slide-up",
-      durationMs: 250,
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-      backdropBlur: true,
-      backdropColor: "rgba(0, 0, 0, 0.7)",
-      position: "center-viewport",
-      closeOnBackdropClick: true,
-    },
-    PRACTICE_PANEL: {
+    LAB_PANEL: {
       effect: "scale-fade",
       durationMs: 250,
       easing: "cubic-bezier(0.16, 1, 0.3, 1)",

@@ -6,6 +6,9 @@ import type GameRenderer from "./GameRenderer";
 import type { SimEvent } from "./simEvents";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
+/** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
+export type PauseReason = "user" | "panel" | "agent";
+
 /**
  * The shell around the pure simulation. It owns everything with side effects: the real-time
  * loop, the renderer, audio, the UI event bus and the diagnostics pass. `GameEngine` only
@@ -24,6 +27,28 @@ export class GameRunner {
   /** Whether the real-time loop is running (false while an agent drives frames by hand). */
   public get running(): boolean {
     return this.loop.isRunning;
+  }
+
+  /**
+   * Who is holding the game (plan T11). The game runs only when nobody is: closing a panel
+   * never resumes a game the player or the agent paused.
+   */
+  private pauses = new Set<PauseReason>();
+
+  public get pausedBy(): PauseReason[] {
+    return [...this.pauses];
+  }
+
+  /** Adds or removes one reason to hold the game. */
+  public setPaused(reason: PauseReason, paused: boolean): void {
+    const before = this.pauses.size > 0;
+    if (paused) this.pauses.add(reason);
+    else this.pauses.delete(reason);
+    this.engine.paused = this.pauses.size > 0;
+    if (this.engine.paused !== before) {
+      GameEvents.emit("PLAY_STATE_CHANGED", this.engine.playState);
+    }
+    this.syncSiren();
   }
 
   /** Ticks the real-time loop runs per real second: 60.606 (arcade) or 60, × practice speed. */
@@ -58,7 +83,7 @@ export class GameRunner {
    * early once `until()` is true, then holds again. Returns the frames run (0 when not paused, or
    * while rewinding).
    */
-  public stepWhilePaused(maxFrames: number, until?: () => boolean): number {
+  public stepWhilePaused(maxFrames: number, until?: () => boolean, render = true): number {
     const engine = this.engine;
     if (!engine.paused || engine.rewindIndex !== -1) return 0;
     engine.paused = false;
@@ -72,7 +97,7 @@ export class GameRunner {
     } finally {
       engine.paused = true;
     }
-    this.renderer?.render(engine);
+    if (render) this.renderer?.render(engine);
     return frames;
   }
 
@@ -144,6 +169,7 @@ export function dispatchSimEvent(event: SimEvent): void {
       break;
     case "PLAY_STATE_CHANGED":
       GameEvents.emit("PLAY_STATE_CHANGED", event.playState);
+      GameEvents.emit("ROUND_STATE_CHANGED", event.playState);
       break;
     case "GAME_OVER":
       GameEvents.emit("GAME_OVER", event.score);

@@ -6,11 +6,14 @@ interface HUDProps {
   level: number;
   turbo: boolean;
   onToggleTurbo: () => void;
-  learnMode: boolean;
-  onToggleLearnMode: () => void;
+  /** The Lab panel (Learn / Practice / Debug) is open. */
+  labOpen: boolean;
+  onToggleLab: () => void;
   learnVisualsEnabled?: boolean;
-  practiceMode: boolean;
-  onTogglePracticeMode: () => void;
+  /** The game is held, and by whom (T11). */
+  paused: boolean;
+  pausedBy: string[];
+  onTogglePause: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   crtFilter: boolean;
@@ -28,11 +31,12 @@ export const HUD: React.FC<HUDProps> = ({
   level,
   turbo,
   onToggleTurbo,
-  learnMode,
-  onToggleLearnMode,
+  labOpen,
+  onToggleLab,
   learnVisualsEnabled = true,
-  practiceMode,
-  onTogglePracticeMode,
+  paused,
+  pausedBy,
+  onTogglePause,
   soundEnabled,
   onToggleSound,
   crtFilter,
@@ -96,38 +100,25 @@ export const HUD: React.FC<HUDProps> = ({
           {turbo && <span className="text-[9px] bg-black/20 px-1 rounded">ON</span>}
         </button>
 
-        {/* Learn Mode Toggle */}
+        {/* Lab: Learn, Practice and Debug tabs */}
         <button
-          onClick={onToggleLearnMode}
+          onClick={onToggleLab}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-            learnMode
+            labOpen
               ? "bg-cyan-500 text-black shadow-sm ring-1 ring-cyan-300"
               : learnVisualsEnabled
                 ? "bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white"
                 : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
-          title="Learn Mode: AI Targeting Lab & Maze Visualizer"
+          title="Lab: ghost AI (L), practice & rewind (P), debug overlay (F1)"
         >
-          <span>🎯 LEARN</span>
-          {learnVisualsEnabled && !learnMode && (
+          <span>🧪 LAB</span>
+          {learnVisualsEnabled && !labOpen && (
             <span
               className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"
               title="Visual cues active on maze"
             />
           )}
-        </button>
-
-        {/* Practice Mode Toggle */}
-        <button
-          onClick={onTogglePracticeMode}
-          className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-            practiceMode
-              ? "bg-emerald-500 text-black shadow-sm ring-1 ring-emerald-300"
-              : "bg-neutral-800 text-neutral-400 hover:text-white"
-          }`}
-          title="Practice Mode: rewind, slow-mo, invincibility"
-        >
-          <span>🛠️ PRACTICE</span>
         </button>
 
         {/* Diagnostics Console Toggle */}
@@ -157,6 +148,25 @@ export const HUD: React.FC<HUDProps> = ({
         >
           CRT
         </button>
+
+        {/* Pause / resume (dev builds; Space works everywhere). Shows who holds the game. */}
+        {import.meta.env.DEV && (
+          <button
+            onClick={onTogglePause}
+            className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
+              paused
+                ? "bg-amber-500 text-black"
+                : "bg-neutral-800 text-neutral-300 hover:text-white"
+            }`}
+            title={
+              paused
+                ? `Paused by: ${pausedBy.join(", ") || "game"} (Space to play)`
+                : "Pause (Space)"
+            }
+          >
+            {paused ? "▶" : "⏸"}
+          </button>
+        )}
 
         {/* Audio Toggle */}
         <button

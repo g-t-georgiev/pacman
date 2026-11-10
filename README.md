@@ -20,16 +20,17 @@ vp run golden:update # re-record golden replays after an intended mechanics chan
 
 ## Controls
 
-| Action                            | Keys                   |
-| :-------------------------------- | :--------------------- |
-| Move                              | Arrow keys or W A S D  |
-| Pause / resume                    | Space or Escape        |
-| Turbo (1.6×)                      | T                      |
-| Learn panel (ghost targeting lab) | L                      |
-| Practice panel                    | P                      |
-| Rewind 2 s (Practice panel open)  | R                      |
-| Debug overlay (dev builds)        | F1                     |
-| Step 1 frame / to next mode (dev) | `.` / `>` while paused |
+| Action                            | Keys                         |
+| :-------------------------------- | :--------------------------- |
+| Move                              | Arrow keys or W A S D        |
+| Pause / resume (closes panels)    | Space, or ⏸ in the HUD (dev) |
+| Close panel, else pause           | Escape                       |
+| Turbo (1.6×)                      | T                            |
+| Lab: Learn tab (ghost AI lab)     | L                            |
+| Lab: Practice tab (rewind, speed) | P                            |
+| Rewind 2 s (Lab open)             | R                            |
+| Debug overlay (dev builds)        | F1                           |
+| Step 1 frame / to next mode (dev) | `.` / `>` while paused       |
 
 Touch swipes, an on-screen D-pad and gamepads work too.
 
@@ -76,7 +77,7 @@ questions.
   run until a condition, set up scenarios, inspect state, record speeds, save and verify
   replays. Works headless in tests too.
 - **Replays.** The game keeps a rolling recording (a keyframe every second, inputs, state
-  hashes). The last 2 minutes can be rewound exactly from the Practice panel, saved as a file,
+  hashes). The last 2 minutes can be rewound exactly from the Lab's Practice tab, saved as a file,
   and verified on another build.
 - **Golden replays.** `tests/golden/*.json` must replay hash for hash; a mechanics change fails
   at the first second that differs.

@@ -8,6 +8,8 @@ interface LearnModeOverlayProps {
   engine: GameEngine;
   onClose: () => void;
   onVisualSettingsChange?: () => void;
+  /** Inside the Lab panel: no frame or header of its own. */
+  embedded?: boolean;
 }
 
 // Mini SVG Arcade Ghost Avatar
@@ -49,6 +51,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   engine,
   onClose,
   onVisualSettingsChange,
+  embedded = false,
 }) => {
   const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
     engine.settings.learnVisualsEnabled ?? true
@@ -109,28 +112,36 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const noneActive = ghostList.every((g) => !ghostFilters[g]);
 
   return (
-    <div className="w-full max-w-[500px] bg-neutral-950/95 border-2 border-cyan-700/80 rounded-2xl p-4 sm:p-5 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3.5 select-none ring-1 ring-cyan-500/30">
+    <div
+      className={
+        embedded
+          ? "w-full text-xs font-mono text-neutral-300 flex flex-col gap-3.5 select-none"
+          : "w-full max-w-[500px] bg-neutral-950/95 border-2 border-cyan-700/80 rounded-2xl p-4 sm:p-5 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3.5 select-none ring-1 ring-cyan-500/30"
+      }
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-cyan-800/60 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🎯</span>
-          <div>
-            <h2 className="text-cyan-400 font-bold text-sm sm:text-base tracking-wider">
-              GHOST AI INTELLIGENCE LAB
-            </h2>
-            <span className="text-[10px] text-neutral-400">
-              Interactive Targeting & Path Visualization
-            </span>
+      {!embedded && (
+        <div className="flex items-center justify-between border-b border-cyan-800/60 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🎯</span>
+            <div>
+              <h2 className="text-cyan-400 font-bold text-sm sm:text-base tracking-wider">
+                GHOST AI INTELLIGENCE LAB
+              </h2>
+              <span className="text-[10px] text-neutral-400">
+                Interactive Targeting & Path Visualization
+              </span>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-neutral-800 transition-colors text-sm font-bold border border-neutral-800"
+            title="Close lab and return to game"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="text-neutral-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-neutral-800 transition-colors text-sm font-bold border border-neutral-800"
-          title="Close lab and return to game"
-        >
-          ✕
-        </button>
-      </div>
+      )}
 
       {/* Persistent Visual Cues & Ghost Checkboxes Section */}
       <div className="p-3 rounded-xl bg-neutral-900/90 border border-cyan-900/50 flex flex-col gap-2.5">

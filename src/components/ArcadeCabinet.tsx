@@ -1,4 +1,4 @@
-import type { Direction, GameMode } from "../types";
+import type { Direction, GameMode, PlayState } from "../types";
 import React, { useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { uiConfig } from "../config/ui.config";
@@ -10,12 +10,10 @@ import { AgentDriver } from "../agent/AgentDriver";
 import GameRenderer from "../game/GameRenderer";
 import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
-import { LearnModeOverlay } from "./LearnModeOverlay";
 import { ModeSelector } from "./ModeSelector";
 import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
-import { PracticePanel } from "./PracticePanel";
+import { LabPanel, type LabTab } from "./LabPanel";
 import { RULESETS } from "../game/rulesets";
-import { DebugOverlayPanel } from "./DebugOverlayPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { getFruitDataPerLevel } from "../utils";
@@ -30,8 +28,6 @@ export const ArcadeCabinet: React.FC = () => {
   const engineRef = useRef<GameEngine | null>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
   const runnerRef = useRef<GameRunner | null>(null);
-  /** Dev builds: the debug overlay (F1) and its layer panel. */
-  const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
 
   // Decoupled reactive state subscriptions via EventBus
   const scoreData = useGameEvent(GameEvents, "SCORE_CHANGED", () => {
@@ -48,9 +44,9 @@ export const ArcadeCabinet: React.FC = () => {
   // UI state for reactive modals and controls
   const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
   const [turbo, setTurbo] = useState<boolean>(false);
-  const [learnMode, setLearnMode] = useState<boolean>(false);
+  /** The Lab panel (Learn / Practice / Debug tabs), or null when closed (plan T11). */
+  const [lab, setLab] = useState<LabTab | null>(null);
   const [learnVisualsActive, setLearnVisualsActive] = useState<boolean>(true);
-  const [practiceMode, setPracticeMode] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [crtFilter, setCrtFilter] = useState<boolean>(false);
   const [showDpad, setShowDpad] = useState<boolean>(false);
@@ -65,6 +61,61 @@ export const ArcadeCabinet: React.FC = () => {
     level: number;
   } | null>(null);
   const [, setUiTick] = useState<number>(0);
+  const playState = useGameEvent(GameEvents, "PLAY_STATE_CHANGED", () => "READY");
+
+  // Panels hold the game while open (T11). The keyboard handler reads these through refs.
+  const anyPanelOpen = lab !== null || showRestartPanel || showMenu || showHighScores;
+  const anyPanelOpenRef = useRef(anyPanelOpen);
+  anyPanelOpenRef.current = anyPanelOpen;
+  const labRef = useRef(lab);
+  labRef.current = lab;
+
+  useEffect(() => {
+    runnerRef.current?.setPaused("panel", anyPanelOpen);
+  }, [anyPanelOpen]);
+
+  /** Closes the Lab. A rewound game plays on from the frame shown, never stays held. */
+  const closeLab = () => {
+    engineRef.current?.resumeFromScrub();
+    setLab(null);
+  };
+
+  /** Closes every panel (Escape, Space, and live game events). */
+  const closeAllPanels = () => {
+    closeLab();
+    setShowRestartPanel(false);
+    setShowMenu(false);
+    setShowHighScores(false);
+  };
+
+  /** Opens the Lab on a tab, or closes it when it is already open on that tab. */
+  const toggleLab = (tab: LabTab) => {
+    if (labRef.current === tab) closeLab();
+    else setLab(tab);
+  };
+
+  /** Space and the HUD pause button: with a panel open, close it and play on; else toggle. */
+  const togglePause = () => {
+    const runner = runnerRef.current;
+    if (!runner) return;
+    if (anyPanelOpenRef.current) {
+      closeAllPanels();
+      runner.setPaused("user", false);
+    } else {
+      runner.setPaused("user", !runner.pausedBy.includes("user"));
+    }
+    setUiTick((t) => t + 1);
+  };
+
+  // Panels close on live game events (T11): a death, a respawn or new level/game (READY), a level
+  // clear or game over. These come from the sim itself, never from a pause or a UI sync.
+  useEffect(() => {
+    const onRoundChange = (e: CustomEvent<PlayState>) => {
+      if (["DYING", "READY", "LEVEL_CLEAR", "GAME_OVER"].includes(e.detail)) closeAllPanels();
+    };
+    GameEvents.on("ROUND_STATE_CHANGED", onRoundChange);
+    return () => GameEvents.off("ROUND_STATE_CHANGED", onRoundChange);
+  }, []);
 
   const gameOverTimerRef = useRef<number | null>(null);
 
@@ -151,6 +202,12 @@ export const ArcadeCabinet: React.FC = () => {
     // Start deterministic game loop via GameLoopController
     runner.start();
 
+    // A new engine (first load, or a dev-server reload) starts with every panel closed
+    setLab(null);
+    setShowRestartPanel(false);
+    setShowMenu(false);
+    setShowHighScores(false);
+
     // Dev builds: expose the agent driver for automated play-testing from the console or tools
     if (import.meta.env.DEV) window.pacmanAgent = new AgentDriver(engine, runner);
 
@@ -181,8 +238,8 @@ export const ArcadeCabinet: React.FC = () => {
         if (e.key === "F1") {
           e.preventDefault(); // not the browser's help page
           engine.settings.debugOverlay = !engine.settings.debugOverlay;
-          setDebugOverlay(engine.settings.debugOverlay);
           runner?.renderer?.render(engine);
+          setUiTick((t) => t + 1);
           return;
         }
         if (runner && (e.key === "." || e.key === ">")) {
@@ -226,12 +283,12 @@ export const ArcadeCabinet: React.FC = () => {
           engine.setInputDirection("RIGHT");
           break;
         case " ":
+          togglePause();
+          break;
         case "Escape":
-          if (engine.playState === "PLAYING") {
-            engine.playState = "PAUSED";
-          } else if (engine.playState === "PAUSED") {
-            engine.playState = "PLAYING";
-          }
+          // Close what is open; with nothing open, pause or resume
+          if (anyPanelOpenRef.current) closeAllPanels();
+          else togglePause();
           break;
         case "t":
         case "T":
@@ -239,15 +296,15 @@ export const ArcadeCabinet: React.FC = () => {
           break;
         case "l":
         case "L":
-          handleToggleLearnMode();
+          toggleLab("LEARN");
           break;
         case "p":
         case "P":
-          handleTogglePracticeMode();
+          toggleLab("PRACTICE");
           break;
         case "r":
         case "R":
-          if (engine.settings.practiceMode) {
+          if (labRef.current !== null) {
             engine.rewindSeconds(2);
             setUiTick((t) => t + 1); // show the panel's "Resume from Here"
           }
@@ -332,32 +389,6 @@ export const ArcadeCabinet: React.FC = () => {
     const nextTurbo = !engineRef.current.settings.turbo;
     engineRef.current.settings.turbo = nextTurbo;
     setTurbo(nextTurbo);
-  };
-
-  const handleToggleLearnMode = () => {
-    if (!engineRef.current) return;
-    const nextLearn = !learnMode;
-    setLearnMode(nextLearn);
-  };
-
-  /** Closes the Practice panel. A rewound game plays on from the frame shown, never stays held. */
-  const closePractice = () => {
-    const engine = engineRef.current;
-    if (engine) {
-      engine.resumeFromScrub();
-      engine.settings.practiceMode = false;
-    }
-    setPracticeMode(false);
-  };
-
-  const handleTogglePracticeMode = () => {
-    if (!engineRef.current) return;
-    if (engineRef.current.settings.practiceMode) {
-      closePractice();
-      return;
-    }
-    engineRef.current.settings.practiceMode = true;
-    setPracticeMode(true);
   };
 
   const handleToggleSound = () => {
@@ -456,11 +487,12 @@ export const ArcadeCabinet: React.FC = () => {
           level={level}
           turbo={turbo}
           onToggleTurbo={handleToggleTurbo}
-          learnMode={learnMode}
-          onToggleLearnMode={handleToggleLearnMode}
+          labOpen={lab !== null}
+          onToggleLab={() => toggleLab(labRef.current ?? "LEARN")}
           learnVisualsEnabled={learnVisualsActive}
-          practiceMode={practiceMode}
-          onTogglePracticeMode={handleTogglePracticeMode}
+          paused={playState === "PAUSED"}
+          pausedBy={runnerRef.current?.pausedBy ?? []}
+          onTogglePause={togglePause}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
           crtFilter={crtFilter}
@@ -550,54 +582,29 @@ export const ArcadeCabinet: React.FC = () => {
         />
       </PanelTransitionWrapper>
 
-      {/* Learn Mode AI Intelligence Lab Modal */}
-      <PanelTransitionWrapper
-        panelId="LEARN_PANEL"
-        isOpen={learnMode}
-        onClose={() => setLearnMode(false)}
-      >
-        {engineRef.current && (
-          <LearnModeOverlay
+      {/* Lab: Learn, Practice and (dev) Debug tabs in one panel (T11) */}
+      <PanelTransitionWrapper panelId="LAB_PANEL" isOpen={lab !== null} onClose={closeLab}>
+        {engineRef.current && lab && (
+          <LabPanel
             engine={engineRef.current}
-            onClose={() => setLearnMode(false)}
+            tab={lab}
+            onTab={setLab}
+            onClose={closeLab}
+            onUpdate={() => {
+              const engine = engineRef.current;
+              if (!engine) return;
+              GameEvents.emit("SCORE_CHANGED", {
+                score: engine.score,
+                highScore: engine.highScore,
+              });
+              runnerRef.current?.renderer?.render(engine);
+              setUiTick((t) => t + 1);
+            }}
             onVisualSettingsChange={() => {
               if (engineRef.current) {
                 setLearnVisualsActive(engineRef.current.settings.learnVisualsEnabled);
               }
             }}
-          />
-        )}
-      </PanelTransitionWrapper>
-
-      {import.meta.env.DEV && debugOverlay && engineRef.current && (
-        <DebugOverlayPanel
-          engine={engineRef.current}
-          onClose={() => {
-            if (engineRef.current) engineRef.current.settings.debugOverlay = false;
-            setDebugOverlay(false);
-          }}
-        />
-      )}
-
-      {/* Practice Sandbox Panel Modal */}
-      <PanelTransitionWrapper
-        panelId="PRACTICE_PANEL"
-        isOpen={practiceMode}
-        onClose={closePractice}
-      >
-        {engineRef.current && (
-          <PracticePanel
-            engine={engineRef.current}
-            onUpdate={() => {
-              if (engineRef.current) {
-                GameEvents.emit("SCORE_CHANGED", {
-                  score: engineRef.current.score,
-                  highScore: engineRef.current.highScore,
-                });
-                setUiTick((t) => t + 1);
-              }
-            }}
-            onClose={closePractice}
           />
         )}
       </PanelTransitionWrapper>

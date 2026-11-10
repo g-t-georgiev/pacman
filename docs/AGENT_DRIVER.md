@@ -5,10 +5,12 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 
 ## Where it runs
 
-- **Browser, dev builds:** `window.pacmanAgent` wraps the live game. `pause()` stops the
-  real-time loop; after that, frames only advance through `step()` / `runUntil()` / `trace()`.
-  They go through the normal runner, so sounds, the HUD and the diagnostics console react as in
-  real play, and the canvas is redrawn after every call. `resume()` hands control back.
+- **Browser, dev builds:** `window.pacmanAgent` wraps the live game. `pause()` holds it (the
+  "agent" pause reason); after that, frames only advance through `step()` / `runUntil()` /
+  `trace()`. Steps also work while the player or an open panel holds the game, and
+  `view().pausedBy` says who does. They go through the normal runner, so sounds, the HUD and the
+  diagnostics console react as in real play, and the canvas is redrawn after every call.
+  `resume()` releases only the agent's hold.
 - **Headless (tests, scripts):** `new AgentDriver(new GameEngine("PACMAN", 0))` drives
   `engine.update()` directly. See `tests/unit/agentDriver.test.ts`.
 
@@ -16,7 +18,7 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 
 | Call                     | What it does                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------------ |
-| `pause()` / `resume()`   | Stop / restart the real-time loop (browser only).                                    |
+| `pause()` / `resume()`   | Hold / release the game for the agent (browser). Other holds stay in place.          |
 | `setSpeed(x)`            | Practice time scale for the real-time loop (0.25 = slow motion).                     |
 | `input(dir)`             | Buffer a direction, like a key press.                                                |
 | `step(n)`                | Advance exactly `n` frames. Returns `{ frames, events, view }`.                      |
@@ -43,8 +45,8 @@ are applied on top. Ghost placements default to `location: "ACTIVE"`. `dotsRemai
 dots from the maze (plain dots first, then energizers) so the board matches the count.
 
 In the browser, every call redraws the canvas and pushes score, lives, level and play state to
-the HUD and panels, so they stay correct while the loop is paused. The Practice panel's pause
-button does not follow `pause()` yet: the two are separate pauses (see T11 in the plan).
+the HUD and panels, so they stay correct while the game is held. The HUD's pause button (dev
+builds) follows `pause()` too, and its tooltip names who holds the game.
 
 ## Replays and bug reports
 

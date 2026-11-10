@@ -1,6 +1,6 @@
 import GameEngine from "../game/GameEngine";
 import { type Replay, type ReplayResult, playReplay } from "../game/replay";
-import type { GameRunner } from "../game/GameRunner";
+import type { GameRunner, PauseReason } from "../game/GameRunner";
 import type { SimEvent } from "../game/simEvents";
 import { type GameState, hashGameState } from "../game/gameState";
 import type { HouseState } from "../controllers/HouseController";
@@ -23,6 +23,8 @@ import type {
 export interface AgentView {
   frame: number;
   playState: PlayState;
+  /** Who holds the game (browser): "user", "panel", "agent". Empty while it runs. */
+  pausedBy: PauseReason[];
   /** Round phase (READY, PLAYING, GHOST_EATEN_PAUSE, DEATH_FREEZE, ...). */
   phase: RoundPhase;
   /** Frames left in the phase (-1 when untimed). */
@@ -140,15 +142,19 @@ export class AgentDriver {
 
   // --- Real-time loop ---------------------------------------------------------------------------
 
-  /** Stops the real-time loop (browser). Frames then only advance through step()/runUntil(). */
+  /**
+   * Holds the game for the agent (browser): frames then only advance through step()/runUntil().
+   * It is one pause reason among others (T11): resume() releases only the agent's, so a game the
+   * player paused, or one held by an open panel, stays paused.
+   */
   public pause(): AgentView {
-    this.runner?.stop();
+    this.runner?.setPaused("agent", true);
     return this.view();
   }
 
-  /** Restarts the real-time loop (browser). */
+  /** Releases the agent's pause (browser). */
   public resume(): void {
-    this.runner?.start();
+    this.runner?.setPaused("agent", false);
   }
 
   /** Practice time scale (0.25 = slow motion). Only affects the real-time loop. */
@@ -319,7 +325,7 @@ export class AgentDriver {
    * tick `stopAt`, and leaves it paused there: inspect it, step it, or `resume()`.
    */
   public loadReplay(replay: Replay, stopAt?: number): ReplayResult & { view: AgentView } {
-    this.runner?.stop();
+    this.runner?.setPaused("agent", true);
     const end = stopAt === undefined ? replay.endTick : Math.min(stopAt, replay.endTick);
     const result = playReplay(this.engine, {
       ...replay,
@@ -411,6 +417,7 @@ export class AgentDriver {
     return {
       frame: e.currLevelFrame,
       playState: e.playState,
+      pausedBy: this.runner?.pausedBy ?? (e.paused ? ["user"] : []),
       phase: e.phase,
       phaseFramesLeft: e.phaseFramesLeft,
       level: e.level,
@@ -461,7 +468,9 @@ export class AgentDriver {
 
   private tick(): void {
     if (this.runner) {
-      this.runner.tick();
+      // Step whoever holds the game (agent, player, panel), then hold it again
+      if (this.engine.paused) this.runner.stepWhilePaused(1, undefined, false);
+      else this.runner.tick();
     } else {
       this.speedRecorder?.before();
       this.engine.update();

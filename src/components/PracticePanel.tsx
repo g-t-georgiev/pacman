@@ -5,9 +5,16 @@ interface PracticePanelProps {
   engine: GameEngine;
   onUpdate: () => void;
   onClose: () => void;
+  /** Inside the Lab panel: no frame or header of its own. */
+  embedded?: boolean;
 }
 
-export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, onClose }) => {
+export const PracticePanel: React.FC<PracticePanelProps> = ({
+  engine,
+  onUpdate,
+  onClose,
+  embedded = false,
+}) => {
   const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
   const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
@@ -19,7 +26,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
   const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
-  const isPaused = engine.playState === "PAUSED" || isScrubbing;
 
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
@@ -86,37 +92,33 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
     onUpdate();
   };
 
-  const togglePause = () => {
-    // While scrubbing, PLAY plays on from the frame shown (like "Resume from Here")
-    if (isScrubbing) {
-      engine.resumeFromScrub();
-    } else if (engine.playState === "PAUSED") {
-      engine.playState = "PLAYING";
-    } else if (engine.playState === "PLAYING") {
-      engine.playState = "PAUSED";
-    }
-    onUpdate();
-  };
-
   return (
-    <div className="w-full max-w-[480px] bg-neutral-950/95 border border-emerald-800/80 rounded-xl p-4 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3">
+    <div
+      className={
+        embedded
+          ? "w-full text-xs font-mono text-neutral-300 flex flex-col gap-3"
+          : "w-full max-w-[480px] bg-neutral-950/95 border border-emerald-800/80 rounded-xl p-4 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3"
+      }
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-emerald-800/50 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-400 font-bold text-sm tracking-wider">
-            🛠️ PRACTICE & REWIND SANDBOX
-          </span>
-          <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">
-            PRACTICE
-          </span>
+      {!embedded && (
+        <div className="flex items-center justify-between border-b border-emerald-800/50 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 font-bold text-sm tracking-wider">
+              🛠️ PRACTICE & REWIND SANDBOX
+            </span>
+            <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">
+              PRACTICE
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-white px-2 py-0.5 rounded hover:bg-neutral-800"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="text-neutral-400 hover:text-white px-2 py-0.5 rounded hover:bg-neutral-800"
-        >
-          ✕
-        </button>
-      </div>
+      )}
 
       {/* Playback & Speed Controls */}
       <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
@@ -202,18 +204,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
         />
 
         <div className="flex items-center justify-between gap-1 text-[10px]">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={togglePause}
-              className={`px-2.5 py-1 rounded font-bold transition-colors ${
-                isPaused
-                  ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 hover:bg-neutral-700 text-white"
-              }`}
-            >
-              {isPaused ? "▶ PLAY" : "⏸ PAUSE"}
-            </button>
-          </div>
+          <span className="text-neutral-500">Pause: Space or ⏸ in the HUD</span>
 
           <div className="flex items-center gap-1">
             <button
