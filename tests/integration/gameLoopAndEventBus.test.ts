@@ -34,7 +34,9 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
       diagReceived = e.detail;
     });
 
-    // Run 4 frames to trigger DIAGNOSTICS_TICK (the runner owns diagnostics, not the sim)
+    // Run 4 frames to trigger DIAGNOSTICS_TICK (the runner owns diagnostics, not the sim). The
+    // console's telemetry only flows while the console is open (T8).
+    engine.settings.showDiagnosticConsole = true;
     const runner = new GameRunner(engine);
     for (let i = 0; i < 4; i++) {
       runner.tick();
@@ -43,6 +45,12 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     expect(diagReceived).toBeDefined();
     expect(diagReceived.blinky).toBeDefined();
     expect(diagReceived.level).toBe(1);
+
+    // Closed console: no telemetry
+    diagReceived = undefined as unknown as DiagnosticData;
+    engine.settings.showDiagnosticConsole = false;
+    for (let i = 0; i < 8; i++) runner.tick();
+    expect(diagReceived).toBeUndefined();
   });
 
   it("Blinky adheres to Cruise Elroy Scatter Immunity when dotsRemaining <= 20", () => {

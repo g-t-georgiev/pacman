@@ -84,9 +84,12 @@ export class GameRunner {
     this.onAfterTick?.();
     this.flush();
 
-    if (this.engine.phase === "PLAYING") {
+    // Runtime invariants cost time every frame: dev builds, or with the console open (T8).
+    // In CI the same rules run in the soak tests, which require zero failures.
+    const consoleOpen = this.engine.settings.showDiagnosticConsole;
+    if (this.engine.phase === "PLAYING" && (import.meta.env.DEV || consoleOpen)) {
       this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
-      if (this.engine.currLevelFrame % 4 === 0) {
+      if (consoleOpen && this.engine.currLevelFrame % 4 === 0) {
         GameEvents.emit("DIAGNOSTICS_TICK", this.engine.getActorsDiagnostics());
       }
     }

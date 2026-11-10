@@ -12,23 +12,13 @@ export interface DiagnosticRule {
   evaluate: (engine: GameEngine) => { pass: boolean; message?: string };
 }
 
+/**
+ * Runtime invariants: states that must never happen, checked every frame in dev builds or with
+ * the diagnostics console open (T8). Behavior specs (wave timer paused while frightened,
+ * reversals on tile entry, ...) live in the tests instead.
+ */
 export function createDefaultDiagnosticRules(): DiagnosticRule[] {
   return [
-    {
-      id: "RULE_TIMER_PAUSES_WHEN_FRIGHTENED",
-      name: "Timer Pauses During Frightened",
-      description: "Scatter/Chase wave timer must remain frozen while Frightened global timer > 0",
-      enabled: true,
-      passes: 0,
-      failures: 0,
-      evaluate: (engine: GameEngine) => {
-        if (engine.frightenedGlobalTimer > 0) {
-          // If frightened is active, wave timer should remain paused
-          return { pass: true };
-        }
-        return { pass: true };
-      },
-    },
     {
       id: "RULE_BLINKY_ELROY_SCATTER_IMMUNITY",
       name: "Blinky Cruise Elroy Scatter Immunity",
@@ -112,26 +102,6 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
                 message: `${type} eyes in maze (col ${gCol}, row ${gRow}) targeting row ${t.row} instead of doorstep row 14!`,
               };
             }
-          }
-        }
-        return { pass: true };
-      },
-    },
-    {
-      id: "RULE_GHOSTS_NO_MIDTILE_REVERSAL",
-      name: "Ghosts Reverse at Tile Boundaries",
-      description: "Ghosts must only reverse direction at tile boundaries upon wave switches",
-      enabled: true,
-      passes: 0,
-      failures: 0,
-      evaluate: (engine: GameEngine) => {
-        for (const type of Object.keys(engine.ghostStates) as Array<
-          keyof typeof engine.ghostStates
-        >) {
-          const g = engine.ghostStates[type];
-          if (g.reversalPrimed) {
-            // Reversal primed: ghost should advance to tile boundary before executing reversal
-            return { pass: true };
           }
         }
         return { pass: true };
