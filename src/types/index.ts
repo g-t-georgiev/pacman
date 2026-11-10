@@ -191,6 +191,31 @@ export interface GameSettings {
   touchControls: boolean;
   emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
   showDiagnosticConsole: boolean; // In-game testing & diagnostics HUD console
+  /** Debug overlay (F1, dev builds): the master switch and its layers (plan T1-T3). */
+  debugOverlay: boolean;
+  debugLayers: DebugLayers;
+}
+
+/** The debug overlay's layers, each toggled on its own (plan T1-T3). */
+export interface DebugLayers {
+  /** Tile grid lines. */
+  grid: boolean;
+  /** Each actor's occupied tile and exact sim position. */
+  occupiedTiles: boolean;
+  /** Ghost target tiles and the line to them. */
+  targets: boolean;
+  /** Ghost decisions: the turn at the next center (nextDir) and the planned one after (plannedDir). */
+  decisions: boolean;
+  /** No-up tiles and the tunnel slow zones. */
+  zones: boolean;
+  /** Intersections derived from the tiles, compared with the maze's hand-made list. */
+  intersections: boolean;
+  /** Pac-Man's turn window on his lane and whether his buffered turn is open. */
+  cornerWindow: boolean;
+  /** Per actor: speed %, its source, and pixels moved this frame. */
+  readout: boolean;
+  /** Scatter/chase timeline (bottom rows) and ghost house counters (top rows). */
+  timeline: boolean;
 }
 
 export interface HighScoreRecord {

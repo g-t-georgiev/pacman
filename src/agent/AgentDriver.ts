@@ -8,6 +8,7 @@ import { TILE_SIZE } from "../game/constants";
 import type { RoundPhase } from "../game/RoundSequencer";
 import { SpeedRecorder, type SpeedReport } from "./SpeedRecorder";
 import type {
+  DebugLayers,
   Direction,
   ElroyStage,
   GhostBehavior,
@@ -258,6 +259,23 @@ export class AgentDriver {
   /** Hash of the complete state: equal hashes mean identical games. */
   public hash(): number {
     return hashGameState(this.engine.getState());
+  }
+
+  // --- Debug overlay (T1-T3) -----------------------------------------------------------------
+
+  /**
+   * Shows the debug overlay (`true`), hides it (`false`), or switches layers on and off
+   * (`{ readout: true, grid: false }`, which also shows it). Returns the current layers.
+   */
+  public debug(layers: boolean | Partial<DebugLayers> = true): DebugLayers {
+    const settings = this.engine.settings;
+    if (typeof layers === "boolean") settings.debugOverlay = layers;
+    else {
+      settings.debugOverlay = true;
+      settings.debugLayers = { ...settings.debugLayers, ...layers };
+    }
+    this.render();
+    return { ...settings.debugLayers };
   }
 
   // --- Replays (T4) ---------------------------------------------------------------------------

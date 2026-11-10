@@ -1,7 +1,7 @@
+export type { SpeedSource } from "../game/speedSource";
 import type GameEngine from "../game/GameEngine";
 import type { Actor } from "../core/Actor";
-import type { Ghost } from "../core/Ghost";
-import { getSpeedConfigForLevel } from "../utils";
+import { type SpeedSource, ghostSpeed, pacmanSpeed } from "../game/speedSource";
 import { SIM_FPS, TILE_SIZE } from "../game/constants";
 import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 
@@ -9,19 +9,6 @@ import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 export const ARCADE_PX_PER_SEC_AT_100 = 75.7576;
 /** 80% is one pixel every frame (16 of 16 mask bits), so 1% = 1/80 px per frame. */
 const PCT_PER_PX_PER_FRAME = 80;
-
-/** Why an actor moves at the speed it does this frame. */
-export type SpeedSource =
-  | "pacman-normal"
-  | "pacman-fright"
-  | "pacman-stall" // the 1- or 3-frame stop after eating a dot or an energizer
-  | "ghost-normal"
-  | "ghost-tunnel"
-  | "ghost-fright"
-  | "ghost-elroy1"
-  | "ghost-elroy2"
-  | "ghost-eyes"
-  | "ghost-house";
 
 export interface SpeedRow {
   actor: string;
@@ -93,22 +80,10 @@ export class SpeedRecorder {
     const e = this.engine;
     if (e.phase !== "PLAYING" || e.paused) return;
 
-    const cfg = getSpeedConfigForLevel(e.level);
     const p = e.pacman;
-    const frightened = e.frightenedGlobalTimer > 0;
-    const pacSource: SpeedSource =
-      p.eatingFreezeFrames > 0 ? "pacman-stall" : frightened ? "pacman-fright" : "pacman-normal";
-    const pacPct =
-      pacSource === "pacman-stall" ? 0 : frightened ? cfg.pacmanFright : cfg.pacmanNormal;
-    this.pending.set("PACMAN", { x: p.x, y: p.y, source: pacSource, pct: pacPct });
-
+    this.pending.set("PACMAN", { x: p.x, y: p.y, ...pacmanSpeed(e) });
     for (const g of Object.values(e.ghosts)) {
-      this.pending.set(g.type, {
-        x: g.x,
-        y: g.y,
-        source: this.ghostSource(g),
-        pct: g.getSpeedPercentage(e.maze, cfg),
-      });
+      this.pending.set(g.type, { x: g.x, y: g.y, ...ghostSpeed(e, g) });
     }
   }
 
@@ -182,20 +157,6 @@ export class SpeedRecorder {
       ticksPerSecond: activeSeconds > 0 ? round(this.ticks / activeSeconds) : SIM_FPS,
       rows,
     };
-  }
-
-  private ghostSource(g: Ghost): SpeedSource {
-    if (g.isEyes) return "ghost-eyes";
-    if (g.inHouse) return "ghost-house";
-    const { col, row } = g.tileCoord;
-    const maze = this.engine.maze;
-    if (maze.tunnels.some((t) => t.y === row && (col <= 5 || col >= maze.width - 6))) {
-      return "ghost-tunnel";
-    }
-    if (g.frightened) return "ghost-fright";
-    if (g.elroyStage === 2) return "ghost-elroy2";
-    if (g.elroyStage === 1) return "ghost-elroy1";
-    return "ghost-normal";
   }
 }
 

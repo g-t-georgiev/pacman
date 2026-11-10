@@ -53,6 +53,29 @@ export class GameRunner {
     soundEngine.stopSiren();
   }
 
+  /**
+   * Frame stepping while the game is paused (plan T3): runs up to `maxFrames` frames, stopping
+   * early once `until()` is true, then holds again. Returns the frames run (0 when not paused, or
+   * while rewinding).
+   */
+  public stepWhilePaused(maxFrames: number, until?: () => boolean): number {
+    const engine = this.engine;
+    if (!engine.paused || engine.rewindIndex !== -1) return 0;
+    engine.paused = false;
+    let frames = 0;
+    try {
+      while (frames < maxFrames) {
+        this.tick();
+        frames++;
+        if (until?.()) break;
+      }
+    } finally {
+      engine.paused = true;
+    }
+    this.renderer?.render(engine);
+    return frames;
+  }
+
   /** Runs one simulation tick and everything that follows it. */
   public tick(): void {
     this.onPreUpdate?.();

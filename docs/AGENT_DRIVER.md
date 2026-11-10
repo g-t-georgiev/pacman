@@ -14,28 +14,29 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 
 ## API
 
-| Call                     | What it does                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------- |
-| `pause()` / `resume()`   | Stop / restart the real-time loop (browser only).                                 |
-| `setSpeed(x)`            | Practice time scale for the real-time loop (0.25 = slow motion).                  |
-| `input(dir)`             | Buffer a direction, like a key press.                                             |
-| `step(n)`                | Advance exactly `n` frames. Returns `{ frames, events, view }`.                   |
-| `runUntil(pred, max)`    | Step until `pred(view)` is true. Returns `{ reached, frames, events, view }`.     |
-| `trace(n, pick)`         | Step `n` frames, sampling `pick(view)` after each one.                            |
-| `scenario({...})`        | Set up a situation: level, play state, dots left, wave, frightened, positions.    |
-| `save()` / `load(state)` | Capture / restore the complete `GameState`.                                       |
-| `hash()`                 | Hash of the complete state. Equal hashes mean identical games.                    |
-| `view()`                 | Frame, play state, round phase, score, lives, wave, timers, actors, house state.  |
-| `events()`               | Sim events since the last call (dots, ghosts eaten, deaths, state changes).       |
-| `saveReplay(s?)`         | The last `s` seconds (or ~2 min) of play as a replay: keyframe + inputs + hashes. |
-| `downloadReplay(s?)`     | Browser: the same, saved as a `.json` file to attach to a bug report.             |
-| `verifyReplay(r)`        | Re-run a replay headless and report whether it matched, or where it diverged.     |
-| `loadReplay(r, stopAt?)` | Fast-forward this game through a replay (to its end or `stopAt`), left paused.    |
-| `recordSpeeds()`         | Start recording every actor's movement per play frame (live play or stepping).    |
-| `speedReport()`          | Measured vs table px/frame per actor and speed source, and real ticks per second. |
-| `stopSpeeds()`           | Stop recording and return the final report.                                       |
-| `measureTickRate(s)`     | Count real-time ticks over the next `s` seconds (browser). Returns a promise.     |
-| `diagnostics()`          | Diagnostics rules that have failed, with messages, plus the latest log entries.   |
+| Call                     | What it does                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| `pause()` / `resume()`   | Stop / restart the real-time loop (browser only).                                    |
+| `setSpeed(x)`            | Practice time scale for the real-time loop (0.25 = slow motion).                     |
+| `input(dir)`             | Buffer a direction, like a key press.                                                |
+| `step(n)`                | Advance exactly `n` frames. Returns `{ frames, events, view }`.                      |
+| `runUntil(pred, max)`    | Step until `pred(view)` is true. Returns `{ reached, frames, events, view }`.        |
+| `trace(n, pick)`         | Step `n` frames, sampling `pick(view)` after each one.                               |
+| `scenario({...})`        | Set up a situation: level, play state, dots left, wave, frightened, positions.       |
+| `save()` / `load(state)` | Capture / restore the complete `GameState`.                                          |
+| `hash()`                 | Hash of the complete state. Equal hashes mean identical games.                       |
+| `view()`                 | Frame, play state, round phase, score, lives, wave, timers, actors, house state.     |
+| `events()`               | Sim events since the last call (dots, ghosts eaten, deaths, state changes).          |
+| `debug(layers?)`         | Debug overlay: `true`/`false`, or `{ readout: true, ... }` to switch layers (T1-T3). |
+| `saveReplay(s?)`         | The last `s` seconds (or ~2 min) of play as a replay: keyframe + inputs + hashes.    |
+| `downloadReplay(s?)`     | Browser: the same, saved as a `.json` file to attach to a bug report.                |
+| `verifyReplay(r)`        | Re-run a replay headless and report whether it matched, or where it diverged.        |
+| `loadReplay(r, stopAt?)` | Fast-forward this game through a replay (to its end or `stopAt`), left paused.       |
+| `recordSpeeds()`         | Start recording every actor's movement per play frame (live play or stepping).       |
+| `speedReport()`          | Measured vs table px/frame per actor and speed source, and real ticks per second.    |
+| `stopSpeeds()`           | Stop recording and return the final report.                                          |
+| `measureTickRate(s)`     | Count real-time ticks over the next `s` seconds (browser). Returns a promise.        |
+| `diagnostics()`          | Diagnostics rules that have failed, with messages, plus the latest log entries.      |
 
 `scenario()` with a `level` loads that level first (fresh maze, timers, house); the other fields
 are applied on top. Ghost placements default to `location: "ACTIVE"`. `dotsRemaining` removes

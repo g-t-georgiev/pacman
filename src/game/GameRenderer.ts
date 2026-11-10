@@ -8,6 +8,7 @@ import {
   RENDER_TILE_SIZE as TILE_SIZE,
 } from "./constants";
 import { chooseNextGhostDirection, getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
+import { renderDebugOverlay } from "./debugOverlay";
 
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
@@ -66,6 +67,9 @@ export default class GameRenderer {
 
     // Render Pac-Man / Hero
     this.renderPlayer(engine);
+
+    // Debug overlay layers (F1, dev builds; plan T1-T3)
+    if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine);
 
     // Render Floating Score Popups
     this.renderScorePopups(engine);

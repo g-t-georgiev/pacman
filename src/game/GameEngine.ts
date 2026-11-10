@@ -119,6 +119,18 @@ export default class GameEngine {
     /** The arcade's targeting overflow for Pinky and Inky when Pac-Man faces up (F15). Off = "fixed AI". */
     emulateRomQuirks: true,
     showDiagnosticConsole: false, // In-game testing & diagnostics console
+    debugOverlay: false,
+    debugLayers: {
+      grid: true,
+      occupiedTiles: true,
+      targets: true,
+      decisions: true,
+      zones: false,
+      intersections: false,
+      cornerWindow: true,
+      readout: false,
+      timeline: true,
+    },
   };
 
   public maze!: MazeData;

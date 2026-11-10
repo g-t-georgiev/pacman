@@ -14,6 +14,7 @@ import { LearnModeOverlay } from "./LearnModeOverlay";
 import { ModeSelector } from "./ModeSelector";
 import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
 import { PracticePanel } from "./PracticePanel";
+import { DebugOverlayPanel } from "./DebugOverlayPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { getFruitDataPerLevel } from "../utils";
@@ -27,6 +28,9 @@ export const ArcadeCabinet: React.FC = () => {
   // Engine & Renderer instances
   const engineRef = useRef<GameEngine | null>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
+  const runnerRef = useRef<GameRunner | null>(null);
+  /** Dev builds: the debug overlay (F1) and its layer panel. */
+  const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
 
   // Decoupled reactive state subscriptions via EventBus
   const scoreData = useGameEvent<{ score: number; highScore: number }>(
@@ -114,6 +118,7 @@ export const ArcadeCabinet: React.FC = () => {
     const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
     const runner = new GameRunner(engine);
+    runnerRef.current = runner;
     setLearnVisualsActive(engine.settings.learnVisualsEnabled ?? true);
 
     // Detect mobile touch capability to show D-pad automatically
@@ -171,6 +176,35 @@ export const ArcadeCabinet: React.FC = () => {
       // Prevent scrolling on arrow keys or space
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
         e.preventDefault();
+      }
+
+      // Dev builds: debug overlay (F1) and frame stepping while paused (plan T1, T3)
+      if (import.meta.env.DEV) {
+        const runner = runnerRef.current;
+        if (e.key === "F1") {
+          e.preventDefault(); // not the browser's help page
+          engine.settings.debugOverlay = !engine.settings.debugOverlay;
+          setDebugOverlay(engine.settings.debugOverlay);
+          runner?.renderer?.render(engine);
+          return;
+        }
+        if (runner && (e.key === "." || e.key === ">")) {
+          if (e.key === ".") {
+            runner.stepWhilePaused(1);
+          } else {
+            // Next mode change: a scatter/chase switch, or frightened starting or ending
+            const wave = engine.timerController.waveIndex;
+            const fright = engine.frightenedGlobalTimer > 0;
+            runner.stepWhilePaused(
+              20 * 60 * 60,
+              () =>
+                engine.timerController.waveIndex !== wave ||
+                engine.frightenedGlobalTimer > 0 !== fright
+            );
+          }
+          setUiTick((t) => t + 1);
+          return;
+        }
       }
 
       switch (e.key) {
@@ -537,6 +571,16 @@ export const ArcadeCabinet: React.FC = () => {
           />
         )}
       </PanelTransitionWrapper>
+
+      {import.meta.env.DEV && debugOverlay && engineRef.current && (
+        <DebugOverlayPanel
+          engine={engineRef.current}
+          onClose={() => {
+            if (engineRef.current) engineRef.current.settings.debugOverlay = false;
+            setDebugOverlay(false);
+          }}
+        />
+      )}
 
       {/* Practice Sandbox Panel Modal */}
       <PanelTransitionWrapper
