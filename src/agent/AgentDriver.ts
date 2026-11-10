@@ -52,7 +52,8 @@ export interface AgentView {
       location: GhostLocation;
       mode: GhostBehavior;
       frightened: boolean;
-      target: TileCoord;
+      /** null while frightened */
+      target: TileCoord | null;
       elroyStage: ElroyStage;
       reversalPrimed: boolean;
     }
@@ -265,7 +266,7 @@ export class AgentDriver {
         location: g.location,
         mode: g.mode,
         frightened: g.frightened,
-        target: { ...g.target },
+        target: g.target && { ...g.target },
         elroyStage: g.elroyStage,
         reversalPrimed: g.reversalPrimed,
       };

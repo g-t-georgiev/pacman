@@ -22,8 +22,8 @@ import { getSpeedConfigForLevel } from "../utils";
  * - `frightened`: set for every non-eyes ghost when an energizer is eaten, cleared when the
  *   frightened timer ends or the ghost is eaten. Ghosts inside the house turn blue too.
  * - `wave`: the global scatter/chase wave, which is also the mode to return to after frightened.
- * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on their next tile
- *   center; a ghost that was inside during a mode change leaves the house to the right.
+ * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on entering their next
+ *   tile; a ghost that was inside during a mode change keeps it and turns around once outside.
  *
  * `mode` and `inHouse` are derived from these and are read-only.
  */
@@ -39,7 +39,14 @@ export class Ghost extends Actor {
   /** Cruise Elroy stage (Blinky only), set by the engine every frame. */
   public elroyStage: ElroyStage = 0;
 
-  public target: TileCoord = { col: 0, row: 0 };
+  /** Target tile; null while frightened (turns come from the PRNG). */
+  public target: TileCoord | null = { col: 0, row: 0 };
+  /**
+   * Decision timing (F14; Dossier "Looking Ahead"). On entering a tile the ghost decides the turn
+   * for the tile after it (`plannedDir`); at a tile center it turns to `nextDir`, which then
+   * takes `plannedDir`. "NONE" means "plan from where you are" (after spawning or leaving home).
+   */
+  public plannedDir: Direction = "NONE";
   public intermediateTarget?: TileCoord;
 
   // Frightened visuals
@@ -96,7 +103,8 @@ export class Ghost extends Actor {
 
   /**
    * Latches a 180-degree reversal (any scatter/chase switch, or entering frightened mode).
-   * Active ghosts obey it at their next tile center; ghosts in the house keep it and exit right.
+   * Active ghosts obey it on entering their next tile; ghosts in the house keep it, leave to the
+   * left and turn around at the first tile outside.
    */
   public primeReversal(): void {
     if (this.isEyes) return;
@@ -122,6 +130,7 @@ export class Ghost extends Actor {
       anchorY: this.anchorY,
       dir: this.dir,
       nextDir: this.nextDir,
+      plannedDir: this.plannedDir,
       location: this.location,
       frightened: this.frightened,
       wave: this.wave,
@@ -151,6 +160,7 @@ export class Ghost extends Actor {
     this.anchorY = state.anchorY ?? 0.5;
     this.dir = state.dir;
     this.nextDir = state.nextDir;
+    this.plannedDir = state.plannedDir;
     this.location = state.location;
     this.frightened = state.frightened;
     this.wave = state.wave;

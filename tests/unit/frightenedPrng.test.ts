@@ -7,6 +7,7 @@ import { Pacman } from "../../src/core/Pacman";
 import { getMazeData } from "../../src/game/mazes";
 import { TILE_SIZE } from "../../src/game/constants";
 import type { Direction } from "../../src/types";
+import GameEngine from "../../src/game/GameEngine";
 
 /** A PRNG whose next() returns the given direction code. */
 function prngThatRolls(code: number): PRNG {
@@ -101,8 +102,8 @@ describe("Frightened direction choice", () => {
     ghost.frightened = true;
     const pacman = new Pacman(1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
 
-    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 13, 14);
-    expect(ghost.nextDir).toBe("UP");
+    const planned = ai.planNextTile(ghost, pacman, ghost, maze, 13, 14, ghost.dir);
+    expect(planned).toBe("UP");
   });
 
   it("advances the PRNG on corridor tiles too", () => {
@@ -114,8 +115,31 @@ describe("Frightened direction choice", () => {
     ghost.frightened = true;
     const pacman = new Pacman(1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
 
-    ai.evaluateTileEntryLookahead(ghost, pacman, ghost, maze, 2, 8);
+    const planned = ai.planNextTile(ghost, pacman, ghost, maze, 2, 8, ghost.dir);
     expect(prng.state).toBe(1);
-    expect(ghost.nextDir).toBe("RIGHT"); // the only way on
+    expect(planned).toBe("RIGHT"); // the only way on
+  });
+});
+
+describe("Frightened ghosts have no target (F18)", () => {
+  it("calculateTarget returns null, and the engine's ghosts drop their target on the next tile", () => {
+    const engine = new GameEngine("PACMAN", 0);
+    engine.playState = "PLAYING";
+    const blinky = engine.ghosts.BLINKY;
+    engine.triggerFrightenedMode();
+    const pacman = engine.pacman;
+    expect(
+      engine.ghostAiController.calculateTarget(blinky, pacman, blinky, engine.maze)
+    ).toBeNull();
+    for (let f = 0; f < 30; f++) engine.update();
+    expect(blinky.target).toBeNull();
+  });
+});
+
+describe("ROM quirks (F15)", () => {
+  it("are on by default, as in the arcade", () => {
+    const engine = new GameEngine("PACMAN", 0);
+    expect(engine.settings.emulateRomQuirks).toBe(true);
+    expect(engine.ghostAiController.emulateRomQuirks).toBe(true);
   });
 });

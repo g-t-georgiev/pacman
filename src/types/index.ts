@@ -113,7 +113,10 @@ export interface GhostState {
   anchorX?: number;
   anchorY?: number;
   dir: Direction;
+  /** The turn to take at the next tile center the ghost reaches. */
   nextDir: Direction;
+  /** Decided on tile entry: the turn for the tile after the current one (see F14). */
+  plannedDir: Direction;
   location: GhostLocation;
   frightened: boolean;
   /** This ghost's copy of the global wave, set by the engine at round start and on every switch. */
@@ -125,7 +128,8 @@ export interface GhostState {
   /** Derived: location is HOUSE or LEAVING (read-only; ignored by restore). */
   inHouse: boolean;
   speed: number;
-  target: TileCoord;
+  /** Target tile; null while frightened (turns come from the PRNG). */
+  target: TileCoord | null;
   flashState: boolean; // white or blue when frightened ending
   feetAnimation: number;
   clydeWanderState?: "CHASE" | "FLEE";

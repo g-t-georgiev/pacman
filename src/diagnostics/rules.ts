@@ -40,10 +40,11 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
         const blinky = engine.ghostStates.BLINKY;
         if (blinky.elroyStage > 0 && blinky.location === "ACTIVE" && blinky.mode === "SCATTER") {
           const pac = engine.pacman.tileCoord;
-          if (blinky.target.col !== pac.col || blinky.target.row !== pac.row) {
+          const t = blinky.target;
+          if (!t || t.col !== pac.col || t.row !== pac.row) {
             return {
               pass: false,
-              message: `Elroy Blinky targets (${blinky.target.col}, ${blinky.target.row}) in SCATTER instead of Pac-Man with ${engine.dotsRemaining} dots left!`,
+              message: `Elroy Blinky targets (${t?.col}, ${t?.row}) in SCATTER instead of Pac-Man with ${engine.dotsRemaining} dots left!`,
             };
           }
         }
@@ -63,7 +64,8 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
           keyof typeof engine.ghostStates
         >) {
           const g = engine.ghostStates[type];
-          if (g.mode === "EATEN" && !g.inHouse) {
+          const t = g.target;
+          if (g.mode === "EATEN" && !g.inHouse && t) {
             const gRow = Math.floor(g.y / TILE_SIZE);
             const gCol = Math.floor(g.x / TILE_SIZE);
 
@@ -79,44 +81,35 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
               (gRow === 17 && gCol >= 10 && gCol <= 17);
 
             if (isEnteringHouse) {
-              const targetsDoorstep =
-                g.target.row === 14 && (g.target.col === 13 || g.target.col === 14);
+              const targetsDoorstep = t.row === 14 && (t.col === 13 || t.col === 14);
 
               // Inside pen at row 17, ghosts navigate to their designated respawn slots:
               // Blinky / Pinky: col 13 or 14
               // Inky: col 11 or 12 (or 13-14 during seam descent)
               // Clyde: col 15 or 16 (or 13-14 during seam descent)
               const targetsPenSlot =
-                g.target.row === 17 &&
+                t.row === 17 &&
                 ((type === "INKY" &&
-                  (g.target.col === 11 ||
-                    g.target.col === 12 ||
-                    g.target.col === 13 ||
-                    g.target.col === 14)) ||
+                  (t.col === 11 || t.col === 12 || t.col === 13 || t.col === 14)) ||
                   (type === "CLYDE" &&
-                    (g.target.col === 15 ||
-                      g.target.col === 16 ||
-                      g.target.col === 13 ||
-                      g.target.col === 14)) ||
-                  ((type === "BLINKY" || type === "PINKY") &&
-                    (g.target.col === 13 || g.target.col === 14)));
+                    (t.col === 15 || t.col === 16 || t.col === 13 || t.col === 14)) ||
+                  ((type === "BLINKY" || type === "PINKY") && (t.col === 13 || t.col === 14)));
 
               if (!targetsDoorstep && !targetsPenSlot) {
                 return {
                   pass: false,
-                  message: `${type} eyes entering house (col ${gCol}, row ${gRow}) targeting (${g.target.col}, ${g.target.row}) instead of doorway/pen!`,
+                  message: `${type} eyes entering house (col ${gCol}, row ${gRow}) targeting (${t.col}, ${t.row}) instead of doorway/pen!`,
                 };
               }
               continue;
             }
 
             // Outside the doorway corridor anywhere in the maze, eaten eyes must target the doorstep (col 13-14, row 14)
-            const targetsDoorstep =
-              g.target.row === 14 && (g.target.col === 13 || g.target.col === 14);
+            const targetsDoorstep = t.row === 14 && (t.col === 13 || t.col === 14);
             if (!targetsDoorstep) {
               return {
                 pass: false,
-                message: `${type} eyes in maze (col ${gCol}, row ${gRow}) targeting row ${g.target.row} instead of doorstep row 14!`,
+                message: `${type} eyes in maze (col ${gCol}, row ${gRow}) targeting row ${t.row} instead of doorstep row 14!`,
               };
             }
           }

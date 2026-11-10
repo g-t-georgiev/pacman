@@ -22,7 +22,8 @@ export type ActorDiagnosticDataBase = {
 export type GhostDiagnosticData = {
   [K in Lowercase<GhostType>]: {
     aiMode: GhostBehavior;
-    targetTile: TileCoord;
+    /** null while frightened */
+    targetTile: TileCoord | null;
     inHouse: boolean;
     enteringHousePhase?: GhostsToHousePhase;
   } & ActorDiagnosticDataBase;

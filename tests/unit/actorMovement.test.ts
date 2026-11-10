@@ -23,7 +23,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(pacman.dir).toBe("LEFT");
   });
 
-  it("should NOT immediately reverse a ghost mid-tile; should prime reversal until reaching tile center", () => {
+  it("a ghost obeys a pending reversal when it enters its next tile, not before (Dossier)", () => {
     // Blinky positioned 2 pixels before the tile boundary.
     // Speed 80% moves exactly 1 pixel every frame.
     const blinky = new Ghost(
@@ -43,7 +43,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     // Wave switch primes reversal
     blinky.primeReversal();
     expect(blinky.reversalPrimed).toBe(true);
-    expect(blinky.dir).toBe("RIGHT"); // Still moving RIGHT until center!
+    expect(blinky.dir).toBe("RIGHT"); // keeps going until the next tile
 
     // Step 1: Blinky moves 1 pixel -> still within col 10
     movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, ghostAi);
@@ -51,21 +51,48 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
-    // Step 2: Blinky moves another pixel and crosses the boundary into col 11
+    // Step 2: Blinky crosses the boundary into col 11 and turns around right there
     movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, ghostAi);
     expect(blinky.x).toBe(11 * TILE_SIZE);
-    // Across boundary into col 11: reversal remains primed because the center is not reached yet
-    expect(blinky.reversalPrimed).toBe(true);
-    expect(blinky.dir).toBe("RIGHT");
-
-    // Advance 4 more pixels (4 frames) to reach the center of col 11
-    for (let f = 2; f < 6; f++) {
-      movement.updateGhostMovement(blinky, blinky, pacman, f, 80, 1.0, maze, ghostAi);
-    }
-    expect(blinky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2);
-    // At tile center, reversal executes immediately
     expect(blinky.reversalPrimed).toBe(false);
     expect(blinky.dir).toBe("LEFT");
+
+    // It heads back through col 10 (re-entering it plans from there, heading left)
+    movement.updateGhostMovement(blinky, blinky, pacman, 2, 80, 1.0, maze, ghostAi);
+    expect(blinky.tileCoord.col).toBe(10);
+    expect(blinky.dir).toBe("LEFT");
+    expect(blinky.lastDecisionTile).toEqual({ col: 9, row: 11 });
+  });
+
+  it("decides on tile entry and turns at the tile center (F14)", () => {
+    // Moving right along row 8 toward the intersection at (6, 8), with Pac-Man straight above it.
+    const inky = new Ghost(
+      "INKY",
+      4 * TILE_SIZE + TILE_SIZE / 2,
+      8 * TILE_SIZE + TILE_SIZE / 2,
+      "RIGHT"
+    );
+    inky.wave = "CHASE";
+    inky.nextDir = "NONE";
+    const pacman = new Pacman(6 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
+    const blinky = new Ghost("BLINKY", 1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
+    const step = (f: number) =>
+      movement.updateGhostMovement(inky, blinky, pacman, f, 80, 1.0, maze, ghostAi);
+
+    // From (4, 8) the first plan is for (5, 8): straight on
+    step(0);
+    expect(inky.nextDir).toBe("RIGHT");
+
+    // Entering (5, 8): the decision for (6, 8) is made now, half a tile before (5, 8)'s center
+    let f = 1;
+    while (inky.tileCoord.col < 5) step(f++);
+    expect(inky.x).toBe(5 * TILE_SIZE);
+    expect(inky.plannedDir).toBe("UP");
+    expect(inky.lastDecisionTile).toEqual({ col: 6, row: 8 });
+
+    // At (6, 8)'s center it turns up
+    while (inky.x < 6 * TILE_SIZE + TILE_SIZE / 2) step(f++);
+    expect(inky.dir).toBe("UP");
   });
 
   it("should evaluate straight corridor lookahead without querying AI target", () => {
@@ -85,10 +112,18 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       "LEFT"
     );
 
-    ghostAi.evaluateTileEntryLookahead(blinky, pacman, blinky, maze, blinkyCurrCol, blinkyCurrRow);
+    const planned = ghostAi.planNextTile(
+      blinky,
+      pacman,
+      blinky,
+      maze,
+      blinkyCurrCol,
+      blinkyCurrRow,
+      blinky.dir
+    );
 
     // Straight path continuation sets nextDir without changing target
-    expect(blinky.nextDir).toBe("RIGHT");
+    expect(planned).toBe("RIGHT");
   });
 
   it("should detect corner tile lookahead and assign the single valid turn exit without querying target", () => {
@@ -108,10 +143,18 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       "LEFT"
     );
 
-    ghostAi.evaluateTileEntryLookahead(blinky, pacman, blinky, maze, blinkyCurrCol, blinkyCurrRow);
+    const planned = ghostAi.planNextTile(
+      blinky,
+      pacman,
+      blinky,
+      maze,
+      blinkyCurrCol,
+      blinkyCurrRow,
+      blinky.dir
+    );
 
     // Corner at (1, 4): path above is blocked, only valid exit is RIGHT
-    expect(blinky.nextDir).toBe("RIGHT");
+    expect(planned).toBe("RIGHT");
   });
 
   it("should detect intersection tile lookahead and query target in Chase mode", () => {
@@ -136,11 +179,19 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       false
     );
 
-    ghostAi.evaluateTileEntryLookahead(inky, pacman, blinky, maze, inkyCurrCol, inkyCurrRow);
+    const planned = ghostAi.planNextTile(
+      inky,
+      pacman,
+      blinky,
+      maze,
+      inkyCurrCol,
+      inkyCurrRow,
+      inky.dir
+    );
 
     // Next tile (6, 8) is an authentic intersection: pokes AI and records decision tile
     expect(inky.lastDecisionTile).toEqual({ col: 6, row: 8 });
-    expect(["UP", "DOWN", "RIGHT"]).toContain(inky.nextDir);
+    expect(["UP", "DOWN", "RIGHT"]).toContain(planned);
   });
 
   it("should correctly compute tile coordinates with default anchor point (0.5, 0.5)", () => {

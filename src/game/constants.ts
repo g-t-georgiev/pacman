@@ -149,17 +149,17 @@ export const SCATTER_CHASE_LEVELS_2_TO_4: readonly ScatterChaseSchedule[] = [
  *
  * - SCATTER: 5s, CHASE: 20s
  * - SCATTER: 5s, CHASE: 20s
- * - SCATTER: 1/60s, CHASE: 1037s (~17.3 min)
+ * - SCATTER: 5s, CHASE: 1037s (~17.3 min)
  * - SCATTER: 1/60s, CHASE: permanent
  *
- * *Note: In level 5 and beyond every 3rd scatter drops down to 1 frame here due to an integer underflow in the ROM*
+ * The third scatter is 5 s on every level (Dossier, Scatter/Chase table).
  */
 export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
   { mode: "SCATTER", frames: 5 * SIM_FPS },
   { mode: "CHASE", frames: 20 * SIM_FPS },
   { mode: "SCATTER", frames: 5 * SIM_FPS },
   { mode: "CHASE", frames: 20 * SIM_FPS },
-  { mode: "SCATTER", frames: 1 },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
   { mode: "CHASE", frames: 1037 * SIM_FPS },
   { mode: "SCATTER", frames: 1 },
   { mode: "CHASE", frames: Infinity },
@@ -244,14 +244,14 @@ export const DEFAULT_SCATTER_TARGETS: Record<GameMode, Record<GhostType, TileCoo
   PACMAN: {
     BLINKY: { col: 25, row: 0 },
     PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
+    INKY: { col: 27, row: 35 },
+    CLYDE: { col: 0, row: 35 },
   },
   MS_PACMAN: {
     BLINKY: { col: 25, row: 0 },
     PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
+    INKY: { col: 27, row: 35 },
+    CLYDE: { col: 0, row: 35 },
   },
 } as const;
 

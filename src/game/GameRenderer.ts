@@ -370,11 +370,12 @@ export default class GameRenderer {
       if (activeVisuals[type] === false) return;
 
       const g = engine.ghostStates[type];
-      if (g.inHouse) return;
+      const target = g.target;
+      if (g.inHouse || !target) return; // frightened ghosts have no target
 
       const ghostColor = GHOST_COLORS[type].body;
-      const targetX = g.target.col * TILE_SIZE + TILE_SIZE / 2;
-      const targetY = g.target.row * TILE_SIZE + TILE_SIZE / 2;
+      const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
+      const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
 
       // 1. Target Connecting Lines (dashed)
       if (showCues) {
@@ -394,8 +395,8 @@ export default class GameRenderer {
       ctx.beginPath();
       // Reticle Box
       ctx.strokeRect(
-        g.target.col * TILE_SIZE + 2,
-        g.target.row * TILE_SIZE + 2,
+        target.col * TILE_SIZE + 2,
+        target.row * TILE_SIZE + 2,
         TILE_SIZE - 4,
         TILE_SIZE - 4
       );
@@ -408,12 +409,12 @@ export default class GameRenderer {
 
       // Target Coordinate Pill at Reticle
       ctx.save();
-      const coordTag = `[${g.target.col},${g.target.row}]`;
+      const coordTag = `[${target.col},${target.row}]`;
       ctx.font = "bold 8px monospace";
       ctx.fillStyle = ghostColor;
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
-      ctx.fillText(coordTag, targetX, g.target.row * TILE_SIZE);
+      ctx.fillText(coordTag, targetX, target.row * TILE_SIZE);
       ctx.restore();
 
       // Inky Pincer Vector Visualization
@@ -473,7 +474,8 @@ export default class GameRenderer {
           modeStr = "EYES";
         }
 
-        const label = `${ghostName} · ${modeStr} [${g.target.col},${g.target.row}]`;
+        const targetTag = g.target ? `[${g.target.col},${g.target.row}]` : "[random]";
+        const label = `${ghostName} · ${modeStr} ${targetTag}`;
 
         ctx.save();
         ctx.font = "bold 8.5px monospace";
@@ -569,7 +571,8 @@ export default class GameRenderer {
 
     (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       const g = engine.ghostStates[type];
-      if (g.inHouse) return;
+      const target = g.target;
+      if (g.inHouse || !target) return; // a frightened ghost's path is random
 
       const ghostColor = GHOST_COLORS[type].body;
       const startCol = Math.floor(px(g.x) / TILE_SIZE);
@@ -582,7 +585,7 @@ export default class GameRenderer {
       let curDir = g.dir;
 
       for (let step = 0; step < 7; step++) {
-        const nextDir = chooseNextGhostDirection(g, g.target, maze, curCol, curRow, curDir);
+        const nextDir = chooseNextGhostDirection(g, target, maze, curCol, curRow, curDir);
         const { dx, dy } = getDirectionVector(nextDir);
         curCol += dx;
         curRow += dy;
@@ -653,11 +656,12 @@ export default class GameRenderer {
 
     (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       const g = engine.ghostStates[type];
-      if (g.inHouse) return;
+      const target = g.target;
+      if (g.inHouse || !target) return;
 
       const ghostColor = GHOST_COLORS[type].body;
-      const targetX = g.target.col * TILE_SIZE + TILE_SIZE / 2;
-      const targetY = g.target.row * TILE_SIZE + TILE_SIZE / 2;
+      const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
+      const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
 
       // Distance to target in tiles
       const targetDistTiles = (

@@ -1,6 +1,6 @@
 import type { Ghost } from "../core/Ghost";
 import type { Pacman } from "../core/Pacman";
-import type { MazeData, TileCoord } from "../types";
+import type { Direction, MazeData, TileCoord } from "../types";
 import { TILE_SIZE } from "../game/constants";
 import {
   chooseNextGhostDirection,
@@ -15,11 +15,11 @@ import { PRNG } from "../core/PRNG";
  * house emergence, and 1-tile advance intersection lookahead.
  */
 export class GhostAiController {
-  public emulateRomQuirks: boolean = false;
+  public emulateRomQuirks: boolean = true;
   /** The sim's PRNG, shared with (and reset by) the engine. Advanced only by frightened decisions. */
   public prng: PRNG;
 
-  constructor(emulateRomQuirks: boolean = false, prng: PRNG = new PRNG()) {
+  constructor(emulateRomQuirks: boolean = true, prng: PRNG = new PRNG()) {
     this.emulateRomQuirks = emulateRomQuirks;
     this.prng = prng;
   }
@@ -27,7 +27,12 @@ export class GhostAiController {
   /**
    * Calculates the authentic target tile for a ghost, with optional 1980 ROM quirk emulation.
    */
-  public calculateTarget(ghost: Ghost, pacman: Pacman, blinky: Ghost, maze: MazeData): TileCoord {
+  public calculateTarget(
+    ghost: Ghost,
+    pacman: Pacman,
+    blinky: Ghost,
+    maze: MazeData
+  ): TileCoord | null {
     const pacCol = Math.floor(pacman.x / TILE_SIZE);
     const pacRow = Math.floor(pacman.y / TILE_SIZE);
     const ghostCol = Math.floor(ghost.x / TILE_SIZE);
@@ -49,13 +54,8 @@ export class GhostAiController {
       if (ghost.elroyStage === 0) return maze.scatterTargets[ghost.type];
     }
 
-    // 3. FRIGHTENED Mode: Pseudo-random wander target
-    if (ghost.mode === "FRIGHTENED") {
-      return {
-        col: Math.floor(Math.sin(ghost.x * 0.1) * 10) + 14,
-        row: Math.floor(Math.cos(ghost.y * 0.1) * 10) + 17,
-      };
-    }
+    // 3. FRIGHTENED: no target at all. Turns come from the PRNG (see planNextTile).
+    if (ghost.mode === "FRIGHTENED") return null;
 
     // 4. CHASE Mode: Individual Ghost Personalities
     switch (ghost.type) {
@@ -139,53 +139,38 @@ export class GhostAiController {
   }
 
   /**
-   * Evaluates lookahead upon crossing into a new tile boundary.
-   * If next tile in path is an intersection, pokes AI for target (or random if frightened).
-   * If next tile is straight, assigns current dir (no AI poke).
-   * If next tile is a corner, assigns the only valid turn exit (no AI poke).
+   * Looks one tile ahead (Dossier "Looking Ahead"; RGME: on every tile entry). The ghost is in
+   * tile (col, row) and will leave it heading `heading`; this decides which way it will turn when
+   * it reaches the center of the next tile along that heading.
    *
-   * **Refactored for Arcade Accuracy**
-   *
-   * Evaluates the tile *ahead* of the target tile (lookahead + 1) to determine the next turn direction.
-   * This is executed only when the ghost is centered on the current tile.
+   * It runs for corridors and corners too, as the arcade does, so the frightened PRNG advances
+   * exactly once per tile. The target is refreshed here (null while frightened).
    */
-  public evaluateTileEntryLookahead(
+  public planNextTile(
     ghost: Ghost,
     pacman: Pacman,
     blinky: Ghost,
     maze: MazeData,
-    evalCol: number, // The tile the ghost is currently on (already centered)
-    evalRow: number // The tile the ghost is currently on (already centered)
-  ): void {
-    const { dx, dy } = getDirectionVector(ghost.dir);
-    // The tile the ghost is physically moving into next frame
-    const lookaheadCol = evalCol + dx;
-    const lookaheadRow = evalRow + dy;
+    col: number,
+    row: number,
+    heading: Direction
+  ): Direction {
+    const { dx, dy } = getDirectionVector(heading);
+    const nextCol = col + dx;
+    const nextRow = row + dy;
+    ghost.lastDecisionTile = { col: nextCol, row: nextRow };
 
-    ghost.lastDecisionTile = { col: lookaheadCol, row: lookaheadRow };
-
-    // 1. Frightened: a PRNG direction with a clockwise fallback, on every tile (corridors too, which
-    // advances the PRNG exactly as often as the arcade's). No-up zones are ignored.
-    if (ghost.mode === "FRIGHTENED") {
-      const state = ghost.toState();
-      ghost.nextDir = pickFrightenedDirection(this.prng.next(), ghost.dir, (candidate) => {
-        const v = getDirectionVector(candidate);
-        return isTileWalkableForGhost(lookaheadCol + v.dx, lookaheadRow + v.dy, state, maze);
-      });
-      return;
-    }
-
-    // 2. Unified Target Evaluation Loop (Chase / Scatter / Eaten)
-    // The arcade uses this exact block for corridors, corners, and intersections alike.
     ghost.target = this.calculateTarget(ghost, pacman, blinky, maze);
 
-    ghost.nextDir = chooseNextGhostDirection(
-      ghost.toState(),
-      ghost.target,
-      maze,
-      lookaheadCol,
-      lookaheadRow,
-      ghost.dir
-    );
+    // Frightened: a PRNG direction with a clockwise fallback. No-up zones are ignored.
+    if (ghost.target === null) {
+      const state = ghost.toState();
+      return pickFrightenedDirection(this.prng.next(), heading, (candidate) => {
+        const v = getDirectionVector(candidate);
+        return isTileWalkableForGhost(nextCol + v.dx, nextRow + v.dy, state, maze);
+      });
+    }
+
+    return chooseNextGhostDirection(ghost.toState(), ghost.target, maze, nextCol, nextRow, heading);
   }
 }

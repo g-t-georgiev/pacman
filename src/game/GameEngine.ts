@@ -50,7 +50,7 @@ import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
 function copyGhostState(g: GhostState): GhostState {
   return {
     ...g,
-    target: { ...g.target },
+    target: g.target && { ...g.target },
     intermediateTarget: g.intermediateTarget && { ...g.intermediateTarget },
     lastDecisionTile: g.lastDecisionTile && { ...g.lastDecisionTile },
     lastOccupiedTile: g.lastOccupiedTile && { ...g.lastOccupiedTile },
@@ -114,7 +114,8 @@ export default class GameEngine {
     soundVolume: 0.5,
     crtFilter: false,
     touchControls: false,
-    emulateRomQuirks: false, // Authentic 1980 Z80 hardware quirks toggle
+    /** The arcade's targeting overflow for Pinky and Inky when Pac-Man faces up (F15). Off = "fixed AI". */
+    emulateRomQuirks: true,
     showDiagnosticConsole: false, // In-game testing & diagnostics console
   };
 
@@ -147,7 +148,7 @@ export default class GameEngine {
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
   public animationController: AnimationController = new AnimationController();
-  public ghostAiController: GhostAiController = new GhostAiController(false, this.prng);
+  public ghostAiController: GhostAiController = new GhostAiController(true, this.prng);
   public movementController: MovementController = new MovementController();
   public houseController: HouseController = new HouseController();
   public diagnosticController: DiagnosticController = new DiagnosticController();

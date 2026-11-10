@@ -1,7 +1,7 @@
 import type { Ghost } from "../core/Ghost";
 import type { Pacman } from "../core/Pacman";
 import type { GhostAiController } from "./GhostAiController";
-import type { MazeData } from "../types";
+import type { Direction, MazeData } from "../types";
 import { TILE_SIZE } from "../game/constants";
 
 /** The house door: the seam between columns 13 and 14. */
@@ -24,9 +24,12 @@ import { getPixelStepsThisFrame } from "../utils";
  * Controller executing authentic discrete movement physics:
  * - 16-frame cyclical bitmask step evaluation
  * - Pac-Man cornering tolerance & subpixel axis alignment
- * - Ghost tile-to-tile movement, advance lookahead evaluation, and primed reversal execution
+ * - Ghost movement: look-ahead decisions and pending reversals on tile entry, turns at tile centers
  */
 export class MovementController {
+  /** Times a ghost's planned turn pointed into a wall and the safety net picked another way. */
+  public fallbackTurns: number = 0;
+
   /**
    * Updates Pac-Man's physical movement for the current frame.
    */
@@ -93,104 +96,75 @@ export class MovementController {
       return;
     }
 
-    // Initialize lookahead if game just started or reset
-    if (!ghost.nextDir || ghost.nextDir === "NONE") {
-      ghostAiController.evaluateTileEntryLookahead(
-        ghost,
-        pacman,
-        blinky,
-        maze,
-        ghost.tileCoord.col,
-        ghost.tileCoord.row
-      );
-    }
-
     const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
     ghost.speed = steps;
-
     if (steps <= 0) return;
 
-    const halfTile = TILE_SIZE / 2;
+    const plan = (col: number, row: number, heading: Direction) =>
+      ghostAiController.planNextTile(ghost, pacman, blinky, maze, col, row, heading);
+
+    // Just spawned, placed, or out of the house: we are past this tile's center, so plan the turn
+    // for the next tile from here.
+    if (ghost.nextDir === "NONE") {
+      const { col, row } = ghost.tileCoord;
+      ghost.nextDir = plan(col, row, ghost.dir);
+      ghost.plannedDir = "NONE";
+      ghost.lastOccupiedTile = { col, row };
+    }
 
     for (let step = 0; step < steps; step++) {
       const { dx, dy } = getDirectionVector(ghost.dir);
-      const prevX = ghost.x;
-      const prevY = ghost.y;
-
       ghost.x += dx;
       ghost.y += dy;
       ghost.handleTunnelWrap(maze);
 
-      // Recalculate current tile coordinate relative to physical position
-      const ghostCurrCol = ghost.tileCoord.col;
-      const ghostCurrRow = ghost.tileCoord.row;
+      const tile = ghost.tileCoord;
+      const last = ghost.lastOccupiedTile;
 
-      // ARCADE SYNC: All critical pathing changes occur only when crossing the center pixel
-      const centerX = ghost.tileCoord.col * TILE_SIZE + halfTile;
-      const centerY = ghost.tileCoord.row * TILE_SIZE + halfTile;
+      if (!last || last.col !== tile.col || last.row !== tile.row) {
+        // Entered a new tile (Dossier: reversals and look-ahead both happen here)
+        ghost.lastOccupiedTile = { col: tile.col, row: tile.row };
 
-      let crossedCenter = false;
-      if (dx > 0 && prevX < centerX && ghost.x >= centerX) crossedCenter = true;
-      else if (dx < 0 && prevX > centerX && ghost.x <= centerX) crossedCenter = true;
-      else if (dy > 0 && prevY < centerY && ghost.y >= centerY) crossedCenter = true;
-      else if (dy < 0 && prevY > centerY && ghost.y <= centerY) crossedCenter = true;
-
-      if (crossedCenter) {
-        // Snap alignment perfectly
-        ghost.x = centerX;
-        ghost.y = centerY;
-
-        // 1. Execute mode switches (Forced 180-degree Reversals)
         if (ghost.reversalPrimed) {
+          // Turn around now, and decide the turn for the tile it is heading back into (this is
+          // its look-ahead for this tile entry). It never reaches this tile's center.
           ghost.reversalPrimed = false;
           ghost.dir = getOppositeDirection(ghost.dir);
-
-          // Re-evaluate lookahead immediately for the new reversed pathway
-          ghostAiController.evaluateTileEntryLookahead(
-            ghost,
-            pacman,
-            blinky,
-            maze,
-            ghostCurrCol,
-            ghostCurrRow
-          );
+          ghost.nextDir = plan(tile.col, tile.row, ghost.dir);
+          ghost.plannedDir = "NONE";
           continue;
         }
 
-        // 2. Commit to the lookahead choice calculated during the previous tile center pass
-        if (ghost.nextDir !== "NONE" && ghost.nextDir !== ghost.dir) {
-          ghost.dir = ghost.nextDir;
-        }
+        // Decide the turn for the tile after this one, leaving this tile by its planned exit.
+        ghost.plannedDir = plan(tile.col, tile.row, ghost.nextDir);
+        continue;
+      }
 
-        // 3. Fallback Collision Check (Wall Collision Safety Guard)
-        const ahead = getDirectionVector(ghost.dir);
-        if (
-          !isTileWalkableForGhost(
-            ghostCurrCol + ahead.dx,
-            ghostCurrRow + ahead.dy,
-            ghost.toState(),
-            maze
-          )
-        ) {
-          ghost.dir = chooseNextGhostDirection(
-            ghost.toState(),
-            ghost.target,
-            maze,
-            ghostCurrCol,
-            ghostCurrRow,
-            ghost.dir
-          );
-        }
+      // Reached this tile's center: take the turn decided earlier.
+      const centerX = tile.col * TILE_SIZE + TILE_SIZE / 2;
+      const centerY = tile.row * TILE_SIZE + TILE_SIZE / 2;
+      if (ghost.x !== centerX || ghost.y !== centerY) continue;
 
-        // 4. Run next lookahead check immediately after completing the movement adjustments
-        ghostAiController.evaluateTileEntryLookahead(
-          ghost,
-          pacman,
-          blinky,
+      ghost.dir = ghost.nextDir;
+      ghost.nextDir =
+        ghost.plannedDir !== "NONE" ? ghost.plannedDir : plan(tile.col, tile.row, ghost.dir);
+      ghost.plannedDir = "NONE";
+
+      // Safety net: never walk into a wall. Should never trigger; counted so tests can tell.
+      const ahead = getDirectionVector(ghost.dir);
+      if (
+        !isTileWalkableForGhost(tile.col + ahead.dx, tile.row + ahead.dy, ghost.toState(), maze)
+      ) {
+        this.fallbackTurns++;
+        ghost.dir = chooseNextGhostDirection(
+          ghost.toState(),
+          ghost.target ?? { col: tile.col, row: tile.row },
           maze,
-          ghostCurrCol,
-          ghostCurrRow
+          tile.col,
+          tile.row,
+          ghost.dir
         );
+        ghost.nextDir = plan(tile.col, tile.row, ghost.dir);
       }
     }
   }
@@ -232,7 +206,7 @@ export class MovementController {
         if (ghost.y <= HOUSE_EXIT_Y) this.exitHouse(ghost);
       }
     }
-    ghost.nextDir = ghost.dir;
+    if (ghost.inHouse) ghost.nextDir = ghost.dir;
   }
 
   private exitHouse(ghost: Ghost): void {
@@ -240,7 +214,8 @@ export class MovementController {
     ghost.location = "ACTIVE";
     // Always leave to the left. Any latched reversal is kept and obeyed at the next tile.
     ghost.dir = "LEFT";
-    ghost.nextDir = "LEFT";
+    ghost.nextDir = "NONE"; // plan from the first tile outside (see updateGhostMovement)
+    ghost.plannedDir = "NONE";
     ghost.lastDecisionTile = undefined;
     ghost.lastOccupiedTile = ghost.tileCoord;
   }

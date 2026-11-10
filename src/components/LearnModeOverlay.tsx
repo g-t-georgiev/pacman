@@ -40,6 +40,11 @@ const GhostAvatar: React.FC<{ type: GhostType; size?: number; active: boolean }>
   );
 };
 
+/** A ghost's target tile, or "random" while frightened (no target). */
+function formatTarget(target: { col: number; row: number } | null): string {
+  return target ? `(${target.col}, ${target.row})` : "random";
+}
+
 export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   engine,
   onClose,
@@ -274,7 +279,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
           </p>
           <div className="text-[10px] text-red-300">
-            Target: ({engine.ghostStates.BLINKY.target.col}, {engine.ghostStates.BLINKY.target.row})
+            Target: {formatTarget(engine.ghostStates.BLINKY.target)}
           </div>
         </div>
 
@@ -293,7 +298,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             (arcade overflow bug)!
           </p>
           <div className="text-[10px] text-pink-300">
-            Target: ({engine.ghostStates.PINKY.target.col}, {engine.ghostStates.PINKY.target.row})
+            Target: {formatTarget(engine.ghostStates.PINKY.target)}
           </div>
         </div>
 
@@ -312,7 +317,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             to trap player!
           </p>
           <div className="text-[10px] text-cyan-300">
-            Target: ({engine.ghostStates.INKY.target.col}, {engine.ghostStates.INKY.target.row})
+            Target: {formatTarget(engine.ghostStates.INKY.target)}
           </div>
         </div>
 
@@ -339,7 +344,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             always retreats to bottom-left!
           </p>
           <div className="text-[10px] text-amber-300">
-            Target: ({engine.ghostStates.CLYDE.target.col}, {engine.ghostStates.CLYDE.target.row})
+            Target: {formatTarget(engine.ghostStates.CLYDE.target)}
           </div>
         </div>
       </div>

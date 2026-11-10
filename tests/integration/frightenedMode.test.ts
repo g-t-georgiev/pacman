@@ -156,7 +156,7 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
 
     expect(inky.mode).toBe("EATEN");
     // Target must immediately be doorstep row 14
-    expect(inky.target.row).toBe(14);
+    expect(inky.target?.row).toBe(14);
 
     // Diagnostic rules should have 0 unread discrepancies for doorstep routing
     const doorstepRule = engine.diagnosticController.rules.find(

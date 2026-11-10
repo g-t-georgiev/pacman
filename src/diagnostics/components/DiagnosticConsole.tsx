@@ -323,11 +323,13 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ engine, on
                         </span>
                       ) : ghost.aiMode === "EATEN" ? (
                         <span className="text-cyan-400 font-semibold">
-                          DOOR [{ghost.targetTile.col},{ghost.targetTile.row}]
+                          DOOR [{ghost.targetTile?.col},{ghost.targetTile?.row}]
                         </span>
                       ) : (
                         <span>
-                          [{ghost.targetTile.col},{ghost.targetTile.row}]
+                          {ghost.targetTile
+                            ? `[${ghost.targetTile.col},${ghost.targetTile.row}]`
+                            : "[random]"}
                         </span>
                       )}
                     </span>
