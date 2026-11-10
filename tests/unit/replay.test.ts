@@ -108,7 +108,7 @@ describe("Replay log (T4)", () => {
 
   it("saveReplay(seconds) starts at a keyframe at least that far back", () => {
     const agent = playing();
-    playRandomly(agent, 3 * KEYFRAME_TICKS + 100);
+    playRandomly(agent, 1900);
     const now = agent.engine.tick;
     const replay = agent.saveReplay(5);
     expect(replay.start.tick).toBeLessThanOrEqual(now - 5 * 60);

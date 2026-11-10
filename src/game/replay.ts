@@ -3,7 +3,7 @@ import { type GameState, hashGameState } from "./gameState";
 import type GameEngine from "./GameEngine";
 
 /**
- * Input recording and replay (plan T4).
+ * Input recording and replay (plan T4), also the basis of rewind (T7).
  *
  * The sim is deterministic: the same state plus the same inputs on the same ticks always gives
  * the same game. So a replay is a starting state (a keyframe), the joystick inputs after it keyed
@@ -45,10 +45,10 @@ export interface ReplayResult {
 
 /** A state hash every second. */
 export const CHECKPOINT_TICKS = 60;
-/** A full keyframe every 10 seconds... */
-export const KEYFRAME_TICKS = 600;
-/** ...keeping about the last two minutes. */
-export const MAX_KEYFRAMES = 13;
+/** A full keyframe every second (rewind re-simulates at most this many frames)... */
+export const KEYFRAME_TICKS = 60;
+/** ...keeping the last two minutes. */
+export const MAX_KEYFRAMES = 121;
 
 export function simSettingsOf(settings: GameSettings): SimSettings {
   const { emulateRomQuirks, invincible, turbo, turboSpeedMultiplier } = settings;
@@ -78,12 +78,41 @@ export class ReplayLog {
   private keyframes: Keyframe[] = [];
   private inputs: Array<[number, Direction]> = [];
   private checkpoints: Array<[number, number]> = [];
+  /** The newest tick recorded. */
+  private head = 0;
 
   /** Starts over from the engine's current state. */
   public reset(engine: GameEngine): void {
     this.keyframes = [{ state: engine.getState(), settings: simSettingsOf(engine.settings) }];
     this.inputs = [];
     this.checkpoints = [];
+    this.head = engine.tick;
+  }
+
+  /** The oldest tick that can be rebuilt (the oldest keyframe). */
+  public get oldestTick(): number {
+    return this.keyframes[0]?.state.tick ?? this.head;
+  }
+
+  /** The newest tick recorded. */
+  public get headTick(): number {
+    return this.head;
+  }
+
+  /** The newest keyframe at or before `tick`, and the inputs from it up to `tick` (rewind). */
+  public pathTo(tick: number): { start: GameState; inputs: Array<[number, Direction]> } {
+    let start = this.keyframes[0];
+    for (const k of this.keyframes) if (k.state.tick <= tick) start = k;
+    const from = start.state.tick;
+    return { start: start.state, inputs: this.inputs.filter(([t]) => t > from && t <= tick) };
+  }
+
+  /** Forgets everything after `tick` (play resumes from there after a rewind). */
+  public truncate(tick: number): void {
+    this.keyframes = this.keyframes.filter((k) => k.state.tick <= tick);
+    this.inputs = this.inputs.filter(([t]) => t <= tick);
+    this.checkpoints = this.checkpoints.filter(([t]) => t <= tick);
+    this.head = tick;
   }
 
   /** Logs a joystick input, to be applied before the next sim frame (tick + 1). */
@@ -99,6 +128,7 @@ export class ReplayLog {
     if (!sameSettings(latest.settings, simSettingsOf(engine.settings))) return this.reset(engine);
 
     const tick = engine.tick;
+    this.head = tick;
     if (tick % CHECKPOINT_TICKS === 0) {
       this.checkpoints.push([tick, hashGameState(engine.getState())]);
     }

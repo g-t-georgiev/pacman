@@ -17,9 +17,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
     engine.settings.emulateRomQuirks ?? false
   );
   const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
-  const [isPaused, setIsPaused] = useState<boolean>(
-    engine.playState === "PAUSED" || engine.rewindIndex !== -1
-  );
+  // Read from the engine on every render, so it is right however the state changed (R key...)
+  const isScrubbing = engine.rewindIndex !== -1;
+  const isPaused = engine.playState === "PAUSED" || isScrubbing;
 
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
@@ -73,29 +73,28 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
 
   const handleRewindSeconds = (secs: number) => {
     engine.rewindSeconds(secs);
-    setIsPaused(true);
     onUpdate();
   };
 
   const handleScrub = (idx: number) => {
     engine.scrubToFrame(idx);
-    setIsPaused(true);
     onUpdate();
   };
 
   const handleResume = () => {
     engine.resumeFromScrub();
-    setIsPaused(engine.playState === "PAUSED");
     onUpdate();
   };
 
   const togglePause = () => {
-    if (engine.playState === "PAUSED") {
+    // While scrubbing, PLAY plays on from the frame shown (like "Resume from Here")
+    if (isScrubbing) {
+      engine.resumeFromScrub();
+    } else if (engine.playState === "PAUSED") {
       engine.playState = "PLAYING";
     } else if (engine.playState === "PLAYING") {
       engine.playState = "PAUSED";
     }
-    setIsPaused(engine.playState === "PAUSED" || engine.rewindIndex !== -1);
     onUpdate();
   };
 
@@ -181,7 +180,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               ({(bufferLen / 60).toFixed(1)}s recorded)
             </span>
           </div>
-          {engine.rewindIndex !== -1 && (
+          {isScrubbing && (
             <button
               onClick={handleResume}
               className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shadow"

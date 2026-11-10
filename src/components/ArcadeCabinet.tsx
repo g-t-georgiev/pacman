@@ -218,6 +218,7 @@ export const ArcadeCabinet: React.FC = () => {
         case "R":
           if (engine.settings.practiceMode) {
             engine.rewindSeconds(2);
+            setUiTick((t) => t + 1); // show the panel's "Resume from Here"
           }
           break;
       }
@@ -308,11 +309,24 @@ export const ArcadeCabinet: React.FC = () => {
     setLearnMode(nextLearn);
   };
 
+  /** Closes the Practice panel. A rewound game plays on from the frame shown, never stays held. */
+  const closePractice = () => {
+    const engine = engineRef.current;
+    if (engine) {
+      engine.resumeFromScrub();
+      engine.settings.practiceMode = false;
+    }
+    setPracticeMode(false);
+  };
+
   const handleTogglePracticeMode = () => {
     if (!engineRef.current) return;
-    const nextPractice = !practiceMode;
-    engineRef.current.settings.practiceMode = nextPractice;
-    setPracticeMode(nextPractice);
+    if (engineRef.current.settings.practiceMode) {
+      closePractice();
+      return;
+    }
+    engineRef.current.settings.practiceMode = true;
+    setPracticeMode(true);
   };
 
   const handleToggleSound = () => {
@@ -528,12 +542,7 @@ export const ArcadeCabinet: React.FC = () => {
       <PanelTransitionWrapper
         panelId="PRACTICE_PANEL"
         isOpen={practiceMode}
-        onClose={() => {
-          setPracticeMode(false);
-          if (engineRef.current) {
-            engineRef.current.settings.practiceMode = false;
-          }
-        }}
+        onClose={closePractice}
       >
         {engineRef.current && (
           <PracticePanel
@@ -547,12 +556,7 @@ export const ArcadeCabinet: React.FC = () => {
                 setUiTick((t) => t + 1);
               }
             }}
-            onClose={() => {
-              setPracticeMode(false);
-              if (engineRef.current) {
-                engineRef.current.settings.practiceMode = false;
-              }
-            }}
+            onClose={closePractice}
           />
         )}
       </PanelTransitionWrapper>

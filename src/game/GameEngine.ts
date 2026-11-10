@@ -235,10 +235,13 @@ export default class GameEngine {
     return phase === "MAZE_FLASH" && Math.floor(framesLeft / MAZE_FLASH_TOGGLE_FRAMES) % 2 === 1;
   }
 
-  // Rewind ring buffer (up to 900 frames ~ 15 seconds)
-  private rewindBuffer: GameState[] = [];
-  private readonly maxRewindFrames: number = 900;
-  public rewindIndex: number = -1; // when scrubbing (-1 means live play)
+  /**
+   * While scrubbing: how many frames after the oldest rewindable one the shown frame is
+   * (-1 = live play). The sim does not advance while scrubbing.
+   */
+  public rewindIndex: number = -1;
+  /** True while a rewind re-simulates frames (inputs are not logged, no events reach the shell). */
+  private resimulating: boolean = false;
 
   constructor(mode: GameMode = "PACMAN", highScoresRecord: number = 0) {
     this.mode = mode;
@@ -358,7 +361,6 @@ export default class GameEngine {
     this.eatenGhostsInEnergizer = 0;
     this.fruit = null;
     this.scorePopups = [];
-    this.rewindBuffer = [];
     this.rewindIndex = -1;
     this.extraLifeAwarded = false;
     this.paused = false;
@@ -386,7 +388,6 @@ export default class GameEngine {
     this.eatenGhostsInEnergizer = 0;
     this.fruit = null;
     this.scorePopups = [];
-    this.rewindBuffer = [];
     this.rewindIndex = -1;
     this.paused = false;
     this.tick = 0;
@@ -488,7 +489,7 @@ export default class GameEngine {
   }
 
   public setInputDirection(dir: Direction) {
-    this.replayLog.onInput(this, dir);
+    if (!this.resimulating) this.replayLog.onInput(this, dir);
     if (this.pacman && !this.pacman.isDying) {
       this.pacman.setRequestedDirection(dir);
     }
@@ -504,7 +505,7 @@ export default class GameEngine {
     this.currLevelFrame++;
     this.tick++;
     this.runFrame();
-    this.replayLog.afterTick(this);
+    if (!this.resimulating) this.replayLog.afterTick(this);
   }
 
   /** One sim frame: normal play, or a step of the current timed phase. */
@@ -626,9 +627,6 @@ export default class GameEngine {
 
     // Update Score Popups
     this.updateScorePopups();
-
-    // Record snapshot for Rewind Buffer
-    this.recordSnapshot();
   }
 
   private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
@@ -931,8 +929,17 @@ export default class GameEngine {
     };
   }
 
-  /** Restores a state captured by getState(). The state object is not kept or mutated. */
+  /**
+   * Restores a state captured by getState() and starts a new recording from it. The state object
+   * is not kept or mutated.
+   */
   public setState(state: GameState): void {
+    this.restoreState(state);
+    this.replayLog.reset(this); // a loaded state starts a new recording
+  }
+
+  /** Restores a state without touching the recording (rewind). */
+  private restoreState(state: GameState): void {
     if (state.mode !== this.mode || state.level !== this.level) {
       this.maze = getMazeData(state.mode, state.level);
     }
@@ -964,44 +971,64 @@ export default class GameEngine {
     this.houseController.state = { ...state.house, dotCounters: { ...state.house.dotCounters } };
     this.fruit = state.fruit ? { ...state.fruit } : null;
     this.scorePopups = state.scorePopups.map((p) => ({ ...p }));
-    this.replayLog.reset(this); // a loaded state starts a new recording
   }
 
-  private recordSnapshot() {
-    this.rewindBuffer.push(this.getState());
-    if (this.rewindBuffer.length > this.maxRewindFrames) {
-      this.rewindBuffer.shift();
-    }
-  }
+  // --- Rewind (T7): keyframes from the replay log plus re-simulation ---
 
+  /** How many frames rewind can reach: the oldest keyframe up to the newest recorded frame. */
   public getRewindBufferLength(): number {
-    return this.rewindBuffer.length;
+    return this.replayLog.headTick - this.replayLog.oldestTick + 1;
   }
 
+  /** Shows frame `frameIndex` of the rewindable range (0 = oldest) and holds there. */
   public scrubToFrame(frameIndex: number) {
-    if (frameIndex < 0 || frameIndex >= this.rewindBuffer.length) return;
-
-    this.rewindIndex = frameIndex;
-    // Scrubbing back never lowers a high score the player already reached.
-    const highScore = this.highScore;
-    this.setState(this.rewindBuffer[frameIndex]);
-    this.highScore = Math.max(highScore, this.highScore);
+    const length = this.getRewindBufferLength();
+    if (frameIndex < 0 || frameIndex >= length) return;
+    this.seekTick(this.replayLog.oldestTick + frameIndex);
   }
 
+  /** Steps back `seconds` from the frame shown now (the live frame, or the scrubbed one). */
   public rewindSeconds(seconds: number) {
-    const frames = Math.round(seconds * 60);
-    const targetIdx = Math.max(0, this.rewindBuffer.length - 1 - frames);
-    this.scrubToFrame(targetIdx);
+    const from = this.rewindIndex !== -1 ? this.tick : this.replayLog.headTick;
+    const target = Math.max(this.replayLog.oldestTick, from - Math.round(seconds * 60));
+    this.seekTick(target);
   }
 
+  /** Plays on from the scrubbed frame. Everything recorded after it is forgotten. */
   public resumeFromScrub() {
     if (this.rewindIndex !== -1) {
-      // Truncate buffer to current frame and resume live play
-      this.rewindBuffer = this.rewindBuffer.slice(0, this.rewindIndex + 1);
+      this.replayLog.truncate(this.tick);
       this.rewindIndex = -1;
       this.paused = false;
       this.emit({ type: "PLAY_STATE_CHANGED", playState: this.playState });
     }
+  }
+
+  /**
+   * Rebuilds frame `tick`: loads the newest keyframe at or before it and re-runs the recorded
+   * inputs up to it (at most a second of frames). The result is exact: the sim is deterministic.
+   */
+  private seekTick(tick: number): void {
+    const { start, inputs } = this.replayLog.pathTo(tick);
+    const outbox = this.outbox;
+
+    this.restoreState(start);
+    this.rewindIndex = -1;
+    this.paused = false;
+    this.resimulating = true;
+    let next = 0;
+    while (this.tick < tick) {
+      while (next < inputs.length && inputs[next][0] === this.tick + 1) {
+        this.setInputDirection(inputs[next++][1]);
+      }
+      this.update();
+    }
+    this.resimulating = false;
+    this.outbox = outbox; // no sounds or UI events for the re-simulated frames
+
+    // Exact, high score included: the shown high score follows the rewound game (the stored
+    // high-score table is only written at game over).
+    this.rewindIndex = tick - this.replayLog.oldestTick;
   }
 
   public resetGhostsToHouse() {

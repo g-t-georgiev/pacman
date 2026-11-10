@@ -47,9 +47,11 @@ button does not follow `pause()` yet: the two are separate pauses (see T11 in th
 
 ## Replays and bug reports
 
-The game always keeps a rolling recording: a full keyframe every 10 s (the last ~2 minutes),
+The game always keeps a rolling recording: a full keyframe every second (the last 2 minutes),
 every joystick input keyed on the sim tick it precedes, and a state hash every second. The sim
-is deterministic, so a keyframe plus the inputs after it reproduce the game exactly.
+is deterministic, so a keyframe plus the inputs after it reproduce the game exactly. The
+Practice panel's rewind uses the same log: it rebuilds any of those frames from the nearest
+keyframe.
 
 ```js
 // Something odd just happened: save the last 20 seconds
