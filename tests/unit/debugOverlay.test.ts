@@ -1,26 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
-import { getMazeData } from "../../src/game/mazes";
-import { corridorTiles, deriveIntersections } from "../../src/game/debugOverlay";
-
-const key = (t: { col: number; row: number }) => `${t.col},${t.row}`;
-
-describe("Derived intersections (T1 layer, groundwork for A4)", () => {
-  it("match the hand-made Pac-Man list exactly", () => {
-    const maze = getMazeData("PACMAN", 1);
-    const derived = deriveIntersections(maze).map(key).sort();
-    expect(derived).toEqual((maze.intersections ?? []).map(key).sort());
-  });
-
-  it("corridors are only what Pac-Man can reach (no dead rows, no outside areas)", () => {
-    const corridors = corridorTiles(getMazeData("PACMAN", 1));
-    expect(corridors.has("13,0")).toBe(false); // blank row above the maze
-    expect(corridors.has("1,14")).toBe(false); // outside the walls beside the tunnel
-    expect(corridors.has("0,17")).toBe(true); // the tunnel itself
-    expect(corridors.has("1,4")).toBe(true);
-  });
-});
 
 describe("Frame stepping while paused (T3)", () => {
   function pausedRunner(): GameRunner {

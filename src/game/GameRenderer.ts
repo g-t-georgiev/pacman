@@ -1,4 +1,4 @@
-import type { Direction, GhostType } from "../types";
+import type { Direction, GhostType, MazeData } from "../types";
 import type GameEngine from "./GameEngine";
 import {
   CANVAS_HEIGHT,
@@ -15,6 +15,8 @@ const px = (simPx: number) => simPx * RENDER_SCALE;
 
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
+  /** Cached wall layers (A6): the current maze in its normal and flash colors. */
+  private wallCache: Array<{ maze: MazeData; wallColor: string; canvas: HTMLCanvasElement }> = [];
 
   constructor(ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
@@ -85,10 +87,57 @@ export default class GameRenderer {
     ctx.restore();
   }
 
+  /**
+   * The static walls and gate, drawn once per maze and wall color into an offscreen canvas
+   * (plan A6). Walls never change within a maze; only dots do, and those are drawn per frame.
+   */
+  private wallLayer(maze: MazeData, wallColor: string): HTMLCanvasElement {
+    const cached = this.wallCache.find((c) => c.maze === maze && c.wallColor === wallColor);
+    if (cached) return cached.canvas;
+
+    // Match the main canvas's pixel ratio so the cached walls stay sharp
+    const scale = this.ctx.getTransform().a || 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = CANVAS_WIDTH * scale;
+    canvas.height = CANVAS_HEIGHT * scale;
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(scale, scale);
+
+    for (let r = 0; r < maze.height; r++) {
+      for (let c = 0; c < maze.width; c++) {
+        const tile = maze.tiles[r][c];
+        const x = c * TILE_SIZE;
+        const y = r * TILE_SIZE;
+        if (tile === "WALL") {
+          ctx.fillStyle = wallColor;
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+          // Hollow the inside of thick walls for the double-line look
+          const hasTop = r > 0 && maze.tiles[r - 1][c] === "WALL";
+          const hasBot = r < maze.height - 1 && maze.tiles[r + 1][c] === "WALL";
+          const hasLeft = c > 0 && maze.tiles[r][c - 1] === "WALL";
+          const hasRight = c < maze.width - 1 && maze.tiles[r][c + 1] === "WALL";
+          if (hasTop && hasBot && hasLeft && hasRight) {
+            ctx.fillStyle = maze.bgColor || "#000000";
+            ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+          }
+        } else if (tile === "GATE") {
+          ctx.fillStyle = maze.gateColor || "#ffb8ff";
+          ctx.fillRect(x, y + TILE_SIZE / 2 - 2, TILE_SIZE, 4);
+        }
+      }
+    }
+
+    // Keep the normal and the flash-white layer of the current maze only
+    this.wallCache = this.wallCache.filter((c) => c.maze === maze);
+    this.wallCache.push({ maze, wallColor, canvas });
+    return canvas;
+  }
+
   private renderMaze(engine: GameEngine) {
     const ctx = this.ctx;
     const maze = engine.maze;
     const wallColor = engine.isMazeFlashWhite ? "#ffffff" : maze.wallColor;
+    ctx.drawImage(this.wallLayer(maze, wallColor), 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     for (let r = 0; r < maze.height; r++) {
       for (let c = 0; c < maze.width; c++) {
@@ -96,23 +145,7 @@ export default class GameRenderer {
         const x = c * TILE_SIZE;
         const y = r * TILE_SIZE;
 
-        if (tile === "WALL") {
-          ctx.fillStyle = wallColor;
-          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          // Subtle inset to simulate classic double-bezel arcade walls
-          ctx.fillStyle = engine.maze.bgColor || "#000000";
-          // Check neighbors to create hollow arcade corridors
-          const hasTop = r > 0 && maze.tiles[r - 1][c] === "WALL";
-          const hasBot = r < maze.height - 1 && maze.tiles[r + 1][c] === "WALL";
-          const hasLeft = c > 0 && maze.tiles[r][c - 1] === "WALL";
-          const hasRight = c < maze.width - 1 && maze.tiles[r][c + 1] === "WALL";
-          if (hasTop && hasBot && hasLeft && hasRight) {
-            ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-          }
-        } else if (tile === "GATE") {
-          ctx.fillStyle = maze.gateColor || "#ffb8ff";
-          ctx.fillRect(x, y + TILE_SIZE / 2 - 2, TILE_SIZE, 4);
-        } else if (tile === "DOT") {
+        if (tile === "DOT") {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
@@ -197,14 +230,14 @@ export default class GameRenderer {
     const radius = TILE_SIZE / 2 + 1;
     const mouth = p.mouthAngle;
 
-    if (engine.mode === "PACMAN") {
+    if (engine.ruleset.playerLook === "PACMAN") {
       // Classic Pac-Man
       ctx.fillStyle = "#ffff00";
       ctx.beginPath();
       ctx.arc(0, 0, radius, mouth * Math.PI, (2 - mouth) * Math.PI);
       ctx.lineTo(0, 0);
       ctx.fill();
-    } else if (engine.mode === "MS_PACMAN") {
+    } else {
       // Ms. Pac-Man: Yellow body + Pink Bow + Eye with lashes + Red Lipstick
       ctx.fillStyle = "#ffff00";
       ctx.beginPath();
@@ -458,10 +491,7 @@ export default class GameRenderer {
 
       // 3. Overhead Ghost Status Badge (Name, Mode, Target Tile Coordinates)
       if (showCues) {
-        const ghostName =
-          engine.mode === "MS_PACMAN" && GHOST_COLORS[type].msName
-            ? GHOST_COLORS[type].msName.toUpperCase()
-            : GHOST_COLORS[type].name.toUpperCase();
+        const ghostName = engine.ruleset.ghostName(type).toUpperCase();
 
         let modeStr = g.mode as string;
         if (g.mode === "CHASE") {

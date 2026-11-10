@@ -36,7 +36,8 @@ import { GhostAiController } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { HouseController } from "../controllers/HouseController";
 import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
-import { getMazeData, seamPx } from "./mazes";
+import { seamPx } from "./mazes";
+import { RULESETS, type Ruleset } from "./rulesets";
 import type { SimEvent, SirenState } from "./simEvents";
 import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
 import { ReplayLog } from "./replay";
@@ -58,6 +59,11 @@ function copyGhostState(g: GhostState): GhostState {
  */
 export default class GameEngine {
   public mode: GameMode = "PACMAN";
+
+  /** What this mode does differently (maze, fruit, looks): plan A4. */
+  public get ruleset(): Ruleset {
+    return RULESETS[this.mode];
+  }
 
   /** The timed round phases (READY, PLAYING, the eat pause, the death and level-clear steps). */
   public sequencer: RoundSequencer = new RoundSequencer();
@@ -410,7 +416,7 @@ export default class GameEngine {
   public loadLevel(lvl: number) {
     this.level = lvl;
     this.timerController.level = lvl;
-    this.maze = getMazeData(this.mode, this.level);
+    this.maze = this.ruleset.maze(this.level);
     this.timerController.resetTimers();
     this.houseController.onLevelStart();
     this.currLevelFrame = 0;
@@ -837,7 +843,7 @@ export default class GameEngine {
       duration: FRUIT_MIN_FRAMES + this.simRandom.nextInt(FRUIT_EXTRA_FRAMES),
       color: fruitMeta.color,
       symbol: fruitMeta.symbol,
-      bouncing: this.mode === "MS_PACMAN",
+      bouncing: this.ruleset.fruitBounces,
       bounceY: 0,
       bounceDir: 1,
     };
@@ -931,7 +937,7 @@ export default class GameEngine {
   /** Restores a state without touching the recording (rewind). */
   private restoreState(state: GameState): void {
     if (state.mode !== this.mode || state.level !== this.level) {
-      this.maze = getMazeData(state.mode, state.level);
+      this.maze = RULESETS[state.mode].maze(state.level);
     }
     this.mode = state.mode;
     this.sequencer.state = { ...state.sequence };

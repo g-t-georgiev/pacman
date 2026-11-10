@@ -1,6 +1,7 @@
 import type GameEngine from "./GameEngine";
 import type { Ghost } from "../core/Ghost";
 import { getSpeedConfigForLevel } from "../utils";
+import { isTunnelSlowZone } from "./mazeAnalysis";
 
 /** Why an actor moves at the speed it does this frame. */
 export type SpeedSource =
@@ -41,7 +42,7 @@ function ghostSource(engine: GameEngine, g: Ghost): SpeedSource {
   if (g.inHouse) return "ghost-house";
   const { col, row } = g.tileCoord;
   const maze = engine.maze;
-  if (maze.tunnels.some((t) => t.y === row && (col <= 5 || col >= maze.width - 6))) {
+  if (isTunnelSlowZone(maze, col, row)) {
     return "ghost-tunnel";
   }
   if (g.frightened) return "ghost-fright";

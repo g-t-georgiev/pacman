@@ -1,4 +1,5 @@
 import type { GameMode, MazeData, TileCoord, TileType } from "../types";
+import { deriveIntersections } from "./mazeAnalysis";
 import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES, TILE_SIZE } from "./constants";
 import type { DualTileCoord, GhostType } from "../types";
 
@@ -111,86 +112,6 @@ const MS_PACMAN_MAP = [
   "                            ",
 ];
 
-export const CLASSIC_PACMAN_INTERSECTIONS: TileCoord[] = [
-  { col: 6, row: 4 },
-  { col: 21, row: 4 },
-  { col: 1, row: 8 },
-  { col: 6, row: 8 },
-  { col: 9, row: 8 },
-  { col: 12, row: 8 },
-  { col: 15, row: 8 },
-  { col: 18, row: 8 },
-  { col: 21, row: 8 },
-  { col: 26, row: 8 },
-  { col: 6, row: 11 },
-  { col: 21, row: 11 },
-  { col: 12, row: 14 },
-  { col: 15, row: 14 },
-  { col: 6, row: 17 },
-  { col: 9, row: 17 },
-  { col: 18, row: 17 },
-  { col: 21, row: 17 },
-  { col: 9, row: 20 },
-  { col: 18, row: 20 },
-  { col: 6, row: 23 },
-  { col: 9, row: 23 },
-  { col: 18, row: 23 },
-  { col: 21, row: 23 },
-  { col: 6, row: 26 },
-  { col: 9, row: 26 },
-  { col: 12, row: 26 },
-  { col: 15, row: 26 },
-  { col: 18, row: 26 },
-  { col: 21, row: 26 },
-  { col: 3, row: 29 },
-  { col: 24, row: 29 },
-  { col: 12, row: 32 },
-  { col: 15, row: 32 },
-];
-
-export const MS_PACMAN_INTERSECTIONS: TileCoord[] = [
-  { col: 6, row: 4 },
-  { col: 21, row: 4 },
-  { col: 1, row: 8 },
-  { col: 6, row: 8 },
-  { col: 9, row: 8 },
-  { col: 12, row: 8 },
-  { col: 15, row: 8 },
-  { col: 18, row: 8 },
-  { col: 21, row: 8 },
-  { col: 26, row: 8 },
-  { col: 1, row: 10 },
-  { col: 6, row: 10 },
-  { col: 21, row: 10 },
-  { col: 26, row: 10 },
-  { col: 12, row: 14 },
-  { col: 15, row: 14 },
-  { col: 6, row: 16 },
-  { col: 21, row: 16 },
-  { col: 6, row: 17 },
-  { col: 9, row: 17 },
-  { col: 18, row: 17 },
-  { col: 21, row: 17 },
-  { col: 6, row: 20 },
-  { col: 9, row: 20 },
-  { col: 18, row: 20 },
-  { col: 21, row: 20 },
-  { col: 6, row: 23 },
-  { col: 9, row: 23 },
-  { col: 18, row: 23 },
-  { col: 21, row: 23 },
-  { col: 6, row: 26 },
-  { col: 9, row: 26 },
-  { col: 12, row: 26 },
-  { col: 15, row: 26 },
-  { col: 18, row: 26 },
-  { col: 21, row: 26 },
-  { col: 3, row: 29 },
-  { col: 24, row: 29 },
-  { col: 12, row: 32 },
-  { col: 15, row: 32 },
-];
-
 function parseMapString(map: string[]): TileType[][] {
   return map.map((row) => {
     return row.split("").map((char): TileType => {
@@ -214,7 +135,14 @@ function parseMapString(map: string[]): TileType[][] {
   });
 }
 
+/** A maze's data, with its intersections derived from the tiles (plan A4). */
 export function getMazeData(mode: GameMode, level: number = 1): MazeData {
+  const maze = buildMaze(mode, level);
+  maze.intersections = deriveIntersections(maze);
+  return maze;
+}
+
+function buildMaze(mode: GameMode, level: number): MazeData {
   const scatterTargets = DEFAULT_SCATTER_TARGETS[mode];
   switch (mode) {
     case "PACMAN": {
@@ -282,7 +210,6 @@ export function getMazeData(mode: GameMode, level: number = 1): MazeData {
           { col: 12, row: 26 },
           { col: 15, row: 26 },
         ],
-        intersections: CLASSIC_PACMAN_INTERSECTIONS,
       };
     }
     case "MS_PACMAN": {
@@ -350,13 +277,8 @@ export function getMazeData(mode: GameMode, level: number = 1): MazeData {
         dotColor: "#ffffff",
         bgColor: "#000000",
         gateColor: "#ffb8ff",
-        specialNoUpTiles: [
-          { col: 12, row: 15 },
-          { col: 15, row: 15 },
-          { col: 12, row: 27 },
-          { col: 15, row: 27 },
-        ],
-        intersections: MS_PACMAN_INTERSECTIONS,
+        // No no-up tiles: the four once listed here were inside walls (no effect). Whether
+        // Ms. Pac-Man restricts upward turns anywhere needs a source.
       };
     }
   }

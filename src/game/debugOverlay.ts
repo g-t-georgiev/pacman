@@ -15,6 +15,7 @@ import {
 import { getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
 import { getScatterChaseSchedule } from "../utils";
 import { ghostSpeed, pacmanSpeed } from "./speedSource";
+import { TUNNEL_SLOW_TILES, deriveIntersections } from "./mazeAnalysis";
 import {
   GLOBAL_COUNTER_END,
   GLOBAL_RELEASE_INKY,
@@ -89,75 +90,20 @@ function drawZones(ctx: CanvasRenderingContext2D, maze: MazeData): void {
       }
     }
   }
-  // Ghost tunnel slow zones: the tunnel rows, 6 tiles in from each edge
+  // Ghost tunnel slow zones
   ctx.fillStyle = "rgba(190, 80, 255, 0.3)";
   for (const t of maze.tunnels) {
-    ctx.fillRect(0, t.y * T, 6 * T, T);
-    ctx.fillRect((maze.width - 6) * T, t.y * T, 6 * T, T);
+    ctx.fillRect(0, t.y * T, TUNNEL_SLOW_TILES * T, T);
+    ctx.fillRect((maze.width - TUNNEL_SLOW_TILES) * T, t.y * T, TUNNEL_SLOW_TILES * T, T);
   }
 }
 
-const STEPS = [
-  [0, -1],
-  [0, 1],
-  [-1, 0],
-  [1, 0],
-] as const;
-
-/**
- * The maze's corridors: every tile Pac-Man can reach from his spawn (tunnels wrap). Blank rows
- * above and below the maze and the empty areas outside its walls are not corridors.
- */
-export function corridorTiles(maze: MazeData): Set<string> {
-  const key = (c: number, r: number) => `${c},${r}`;
-  const start = maze.pacmanSpawn.candidates[0];
-  const seen = new Set<string>([key(start.col, start.row)]);
-  const queue: Array<[number, number]> = [[start.col, start.row]];
-  while (queue.length > 0) {
-    const [col, row] = queue.shift()!;
-    for (const [dc, dr] of STEPS) {
-      const c = (col + dc + maze.width) % maze.width; // tunnel wrap
-      const r = row + dr;
-      if (r < 0 || r >= maze.height || seen.has(key(c, r)) || !Pacman.isOpen(c, r, maze)) continue;
-      seen.add(key(c, r));
-      queue.push([c, r]);
-    }
-  }
-  return seen;
-}
-
-/** Intersections derived from the tiles: corridor tiles with three or more corridor exits (A4). */
-export function deriveIntersections(maze: MazeData): TileCoord[] {
-  const corridors = corridorTiles(maze);
-  const out: TileCoord[] = [];
-  for (let row = 0; row < maze.height; row++) {
-    for (let col = 0; col < maze.width; col++) {
-      if (!corridors.has(`${col},${row}`)) continue;
-      const exits = STEPS.filter(([dc, dr]) =>
-        corridors.has(`${(col + dc + maze.width) % maze.width},${row + dr}`)
-      ).length;
-      if (exits >= 3) out.push({ col, row });
-    }
-  }
-  return out;
-}
-
-/**
- * Green: derived and in the maze's list. Orange: derived but missing from the list. Red: listed
- * but not an intersection by the tiles.
- */
+/** Intersections derived from the tiles (green; yellow where ghosts may not turn up). */
 function drawIntersections(ctx: CanvasRenderingContext2D, maze: MazeData): void {
-  const key = (t: TileCoord) => `${t.col},${t.row}`;
-  const derived = deriveIntersections(maze);
-  const listed = new Set((maze.intersections ?? []).map(key));
-  const derivedKeys = new Set(derived.map(key));
-  for (const t of derived) {
-    ctx.fillStyle = listed.has(key(t)) ? "rgba(40, 255, 80, 0.35)" : "rgba(255, 150, 0, 0.5)";
-    ctx.fillRect(t.col * T, t.row * T, T, T);
-  }
-  for (const t of maze.intersections ?? []) {
-    if (derivedKeys.has(key(t))) continue;
-    ctx.fillStyle = "rgba(255, 40, 40, 0.5)";
+  for (const t of maze.intersections ?? deriveIntersections(maze)) {
+    ctx.fillStyle = isTileNoUpZone(t.col, t.row, maze)
+      ? "rgba(255, 230, 0, 0.45)"
+      : "rgba(40, 255, 80, 0.35)";
     ctx.fillRect(t.col * T, t.row * T, T, T);
   }
 }

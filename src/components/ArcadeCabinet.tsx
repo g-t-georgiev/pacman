@@ -14,6 +14,7 @@ import { LearnModeOverlay } from "./LearnModeOverlay";
 import { ModeSelector } from "./ModeSelector";
 import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
 import { PracticePanel } from "./PracticePanel";
+import { RULESETS } from "../game/rulesets";
 import { DebugOverlayPanel } from "./DebugOverlayPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
@@ -33,17 +34,13 @@ export const ArcadeCabinet: React.FC = () => {
   const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
 
   // Decoupled reactive state subscriptions via EventBus
-  const scoreData = useGameEvent<{ score: number; highScore: number }>(
-    GameEvents,
-    "SCORE_CHANGED",
-    () => {
-      const stored = getStoredHighScores();
-      const highest = stored.length > 0 ? stored[0].score : 10000;
-      return { score: 0, highScore: highest };
-    }
-  );
-  const lives = useGameEvent<number>(GameEvents, "LIVES_CHANGED", () => 3);
-  const level = useGameEvent<number>(GameEvents, "LEVEL_CHANGED", () => 1);
+  const scoreData = useGameEvent(GameEvents, "SCORE_CHANGED", () => {
+    const stored = getStoredHighScores();
+    const highest = stored.length > 0 ? stored[0].score : 10000;
+    return { score: 0, highScore: highest };
+  });
+  const lives = useGameEvent(GameEvents, "LIVES_CHANGED", () => 3);
+  const level = useGameEvent(GameEvents, "LEVEL_CHANGED", () => 1);
 
   const score = scoreData.score;
   const highScore = scoreData.highScore;
@@ -430,7 +427,7 @@ export const ArcadeCabinet: React.FC = () => {
           <span className="font-bold tracking-wider text-white text-sm">PAC-MAN ARCADE LAB</span>
           <span className="hidden sm:inline text-neutral-400">·</span>
           <span className="hidden sm:inline text-neutral-400">
-            {currentMode === "PACMAN" ? "Classic 1980" : "Ms. Pac-Man"}
+            {RULESETS[currentMode].shortTitle}
           </span>
         </div>
 

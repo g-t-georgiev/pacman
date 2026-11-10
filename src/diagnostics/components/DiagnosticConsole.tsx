@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type GameEngine from "@/src/game/GameEngine";
 import type { GhostType } from "@/src/types";
-import type { DiagnosticData } from "@/src/diagnostics/DiagnosticController";
 import GameEvents from "@/src/core/EventBus";
 import { useGameEvent } from "@/src/hooks/useGameEvent";
 import { SIM_FPS } from "@/src/game/constants";
@@ -24,7 +23,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ engine, on
   });
 
   // Subscribe to live DIAGNOSTICS_TICK game events instead of polling
-  const ghostStats = useGameEvent<DiagnosticData>(GameEvents, "DIAGNOSTICS_TICK", () =>
+  const ghostStats = useGameEvent(GameEvents, "DIAGNOSTICS_TICK", () =>
     engine.getActorsDiagnostics()
   );
 

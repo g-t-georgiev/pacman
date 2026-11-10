@@ -1,6 +1,7 @@
 import React from "react";
 import type { GameMode } from "../types";
 import { getFruitDataPerLevel } from "../utils";
+import { RULESETS } from "../game/rulesets";
 
 export interface RestartPanelProps {
   score: number;
@@ -27,7 +28,7 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
 }) => {
   const fruitMeta = getFruitDataPerLevel(level);
 
-  const modeName = mode === "PACMAN" ? "Classic Pac-Man (1980)" : "Ms. Pac-Man";
+  const modeName = RULESETS[mode].title;
 
   return (
     <div className="w-full max-w-[420px] bg-neutral-950/95 border-2 border-red-600/80 rounded-2xl p-6 text-white shadow-2xl backdrop-blur-md font-sans flex flex-col gap-5 select-none ring-1 ring-red-500/30">

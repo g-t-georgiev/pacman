@@ -14,6 +14,7 @@ import type {
 } from "../types";
 import { GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT, TILE_SIZE } from "../game/constants";
 import { getSpeedConfigForLevel } from "../utils";
+import { isTunnelSlowZone } from "../game/mazeAnalysis";
 
 /**
  * A ghost. Its state is split into independent parts (plan A1):
@@ -182,7 +183,7 @@ export class Ghost extends Actor {
       typeof levelOrConfig === "number" ? getSpeedConfigForLevel(levelOrConfig) : levelOrConfig;
     const { col, row } = this.tileCoord;
     // Speed reduction in warp tunnels
-    const inTunnel = maze.tunnels.some((t) => t.y === row && (col <= 5 || col >= maze.width - 6));
+    const inTunnel = isTunnelSlowZone(maze, col, row);
     if (inTunnel) return speedConfig.ghostTunnel;
 
     if (this.frightened) {
