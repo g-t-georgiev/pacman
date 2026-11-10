@@ -12,6 +12,7 @@
     "fmt": "vp fmt .",
     "fmt:check": "vp fmt --check .",
     "test": "vp test",
+    "golden:update": "vpx ./scripts/update-golden.ts",
     "prepare": "vp config"
   },
   "dependencies": {

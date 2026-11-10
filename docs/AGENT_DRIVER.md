@@ -27,6 +27,10 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `hash()`                 | Hash of the complete state. Equal hashes mean identical games.                    |
 | `view()`                 | Frame, play state, round phase, score, lives, wave, timers, actors, house state.  |
 | `events()`               | Sim events since the last call (dots, ghosts eaten, deaths, state changes).       |
+| `saveReplay(s?)`         | The last `s` seconds (or ~2 min) of play as a replay: keyframe + inputs + hashes. |
+| `downloadReplay(s?)`     | Browser: the same, saved as a `.json` file to attach to a bug report.             |
+| `verifyReplay(r)`        | Re-run a replay headless and report whether it matched, or where it diverged.     |
+| `loadReplay(r, stopAt?)` | Fast-forward this game through a replay (to its end or `stopAt`), left paused.    |
 | `recordSpeeds()`         | Start recording every actor's movement per play frame (live play or stepping).    |
 | `speedReport()`          | Measured vs table px/frame per actor and speed source, and real ticks per second. |
 | `stopSpeeds()`           | Stop recording and return the final report.                                       |
@@ -40,6 +44,33 @@ dots from the maze (plain dots first, then energizers) so the board matches the 
 In the browser, every call redraws the canvas and pushes score, lives, level and play state to
 the HUD and panels, so they stay correct while the loop is paused. The Practice panel's pause
 button does not follow `pause()` yet: the two are separate pauses (see T11 in the plan).
+
+## Replays and bug reports
+
+The game always keeps a rolling recording: a full keyframe every 10 s (the last ~2 minutes),
+every joystick input keyed on the sim tick it precedes, and a state hash every second. The sim
+is deterministic, so a keyframe plus the inputs after it reproduce the game exactly.
+
+```js
+// Something odd just happened: save the last 20 seconds
+pacmanAgent.downloadReplay(20);
+
+// Later (paste the file's JSON), reproduce it and stop just before the odd moment
+const replay = JSON.parse(/* file contents */);
+pacmanAgent.verifyReplay(replay); // { matched: true, ... } on the same build
+pacmanAgent.loadReplay(replay, replay.endTick - 120); // two seconds before the end, paused
+pacmanAgent.trace(120, (v) => v.ghosts.BLINKY); // then step through it
+```
+
+The recording starts over whenever the state is edited outside a tick (new game, level restart,
+rewind, `load()`, `scenario()`) or a sim setting changes (ROM quirks, invincibility, turbo).
+On a build with different mechanics, `verifyReplay` reports `divergedAt`, the first second
+that no longer matches.
+
+**Golden replays (CI).** `tests/golden/*.json` are replays of fixed scenarios
+(`tests/golden/scenarios.ts`); `goldenReplays.test.ts` replays them and fails at the first
+second that differs. After an intentional mechanics change, re-record them with
+`vp run golden:update` and commit the files with the change.
 
 ## Checking speeds
 

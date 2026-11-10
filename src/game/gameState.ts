@@ -19,7 +19,7 @@ import type { HouseState } from "../controllers/HouseController";
  * Only the tiles that change (dots and energizers) are, as one character per tile.
  */
 export interface GameState {
-  version: 2;
+  version: 3;
   mode: GameMode;
   /** Round phase and its countdown (READY, PLAYING, eat pause, death and level-clear steps). */
   sequence: SequenceState;
@@ -34,6 +34,8 @@ export interface GameState {
   dotsEatenThisRound: number;
   eatenGhostsInEnergizer: number;
   currLevelFrame: number;
+  /** Sim frames since the game started; replays key their inputs on it. */
+  tick: number;
   timers: {
     waveIndex: number;
     waveTimer: number;

@@ -45,6 +45,7 @@ import { DiagnosticController, type DiagnosticData } from "../diagnostics/Diagno
 import { getMazeData, seamPx } from "./mazes";
 import type { SimEvent, SirenState } from "./simEvents";
 import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
+import { ReplayLog } from "./replay";
 
 /** Copies a ghost state, including its nested tile objects. */
 function copyGhostState(g: GhostState): GhostState {
@@ -137,6 +138,8 @@ export default class GameEngine {
 
   /** Frames since the level (or the current life) started. Indexes the 16-frame speed masks. */
   public currLevelFrame: number = 0;
+  /** Sim frames since the game started (never reset mid-game). Replays key inputs on it. */
+  public tick: number = 0;
 
   /** Events queued during this tick, for the shell to dispatch (see GameRunner). */
   private outbox: SimEvent[] = [];
@@ -145,6 +148,8 @@ export default class GameEngine {
   public prng: PRNG = new PRNG();
   /** Randomness that isn't the ghosts' (fruit timer). Reset only when a game starts. */
   public simRandom: SimRandom = new SimRandom();
+  /** Rolling input recording (keyframes, inputs, hashes) for replays and bug reports (T4). */
+  public replayLog: ReplayLog = new ReplayLog();
 
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
@@ -357,6 +362,7 @@ export default class GameEngine {
     this.rewindIndex = -1;
     this.extraLifeAwarded = false;
     this.paused = false;
+    this.tick = 0;
     this.simRandom.reset();
 
     this.loadLevel(this.level);
@@ -365,6 +371,7 @@ export default class GameEngine {
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
     this.enterPhase("READY", READY_FRAMES_GAME_START);
+    this.replayLog.reset(this);
   }
 
   public restartLevel(level?: number) {
@@ -382,6 +389,7 @@ export default class GameEngine {
     this.rewindBuffer = [];
     this.rewindIndex = -1;
     this.paused = false;
+    this.tick = 0;
     this.simRandom.reset();
 
     this.loadLevel(this.level);
@@ -389,6 +397,7 @@ export default class GameEngine {
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
     this.enterPhase("READY", READY_FRAMES_GAME_START);
+    this.replayLog.reset(this);
   }
 
   public loadLevel(lvl: number) {
@@ -399,6 +408,7 @@ export default class GameEngine {
     this.houseController.onLevelStart();
     this.currLevelFrame = 0;
     this.prng.reset();
+    this.scorePopups = [];
     this.dotsRemaining = 0;
     this.dotsEatenThisRound = 0;
     this.fruit = null;
@@ -478,6 +488,7 @@ export default class GameEngine {
   }
 
   public setInputDirection(dir: Direction) {
+    this.replayLog.onInput(this, dir);
     if (this.pacman && !this.pacman.isDying) {
       this.pacman.setRequestedDirection(dir);
     }
@@ -485,12 +496,19 @@ export default class GameEngine {
 
   /** Advances the simulation by exactly one frame. */
   public update() {
-    this.currLevelFrame++;
-
+    // A paused or scrubbing frame changes nothing, not even the frame counter: the speed masks
+    // are indexed by it, so counting paused frames would shift every actor's speed pattern.
     if (this.paused || this.rewindIndex !== -1) {
       return;
     }
+    this.currLevelFrame++;
+    this.tick++;
+    this.runFrame();
+    this.replayLog.afterTick(this);
+  }
 
+  /** One sim frame: normal play, or a step of the current timed phase. */
+  private runFrame(): void {
     if (this.sequencer.phase === "PLAYING") {
       this.updatePlaying();
       return;
@@ -557,6 +575,7 @@ export default class GameEngine {
     this.currLevelFrame = 0;
     this.prng.reset();
     this.resetActorPositions();
+    this.scorePopups = []; // a score still floating when Pac-Man died does not carry over (F26)
     this.enterPhase("READY");
   }
 
@@ -878,7 +897,7 @@ export default class GameEngine {
     });
 
     return {
-      version: 2,
+      version: 3,
       mode: this.mode,
       sequence: { ...this.sequencer.state },
       paused: this.paused,
@@ -891,6 +910,7 @@ export default class GameEngine {
       dotsEatenThisRound: this.dotsEatenThisRound,
       eatenGhostsInEnergizer: this.eatenGhostsInEnergizer,
       currLevelFrame: this.currLevelFrame,
+      tick: this.tick,
       timers: {
         waveIndex: this.timerController.waveIndex,
         waveTimer: this.timerController.waveTimer,
@@ -929,6 +949,7 @@ export default class GameEngine {
     this.dotsEatenThisRound = state.dotsEatenThisRound;
     this.eatenGhostsInEnergizer = state.eatenGhostsInEnergizer;
     this.currLevelFrame = state.currLevelFrame;
+    this.tick = state.tick;
     this.timerController.waveIndex = state.timers.waveIndex;
     this.timerController.waveTimer = state.timers.waveTimer;
     this.timerController.frightenedGlobalTimer = state.timers.frightened;
@@ -943,6 +964,7 @@ export default class GameEngine {
     this.houseController.state = { ...state.house, dotCounters: { ...state.house.dotCounters } };
     this.fruit = state.fruit ? { ...state.fruit } : null;
     this.scorePopups = state.scorePopups.map((p) => ({ ...p }));
+    this.replayLog.reset(this); // a loaded state starts a new recording
   }
 
   private recordSnapshot() {

@@ -1,4 +1,5 @@
-import type GameEngine from "../game/GameEngine";
+import GameEngine from "../game/GameEngine";
+import { type Replay, type ReplayResult, playReplay } from "../game/replay";
 import type { GameRunner } from "../game/GameRunner";
 import type { SimEvent } from "../game/simEvents";
 import { type GameState, hashGameState } from "../game/gameState";
@@ -238,6 +239,7 @@ export class AgentDriver {
     }
     if (s.frightened) e.triggerFrightenedMode();
     if (s.playState) e.playState = s.playState;
+    e.replayLog.reset(e); // the edits above are not inputs: recordings start from here
     this.render();
     return this.view();
   }
@@ -256,6 +258,53 @@ export class AgentDriver {
   /** Hash of the complete state: equal hashes mean identical games. */
   public hash(): number {
     return hashGameState(this.engine.getState());
+  }
+
+  // --- Replays (T4) ---------------------------------------------------------------------------
+
+  /**
+   * The engine's rolling recording as a replay: (at least) the last `seconds` of play up to now,
+   * or everything kept (about two minutes) without `seconds`.
+   */
+  public saveReplay(seconds?: number): Replay {
+    return this.engine.replayLog.export(this.engine, seconds);
+  }
+
+  /** Browser: saves `saveReplay(seconds)` as a .json file (attach it to a bug report). */
+  public downloadReplay(seconds?: number): Replay {
+    const replay = this.saveReplay(seconds);
+    const blob = new Blob([JSON.stringify(replay)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `pacman-replay-L${replay.start.level}-t${replay.endTick}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    return replay;
+  }
+
+  /**
+   * Re-runs a replay headless on a separate engine (the live game is untouched) and checks every
+   * state hash. `divergedAt` is the first tick that no longer matches.
+   */
+  public verifyReplay(replay: Replay): ReplayResult {
+    return playReplay(new GameEngine(replay.start.mode, 0), replay);
+  }
+
+  /**
+   * Fast-forwards this engine (the live game, in the browser) through a replay, to its end or to
+   * tick `stopAt`, and leaves it paused there: inspect it, step it, or `resume()`.
+   */
+  public loadReplay(replay: Replay, stopAt?: number): ReplayResult & { view: AgentView } {
+    this.runner?.stop();
+    const end = stopAt === undefined ? replay.endTick : Math.min(stopAt, replay.endTick);
+    const result = playReplay(this.engine, {
+      ...replay,
+      endTick: end,
+      checkpoints: replay.checkpoints.filter(([t]) => t <= end),
+    });
+    this.engine.drainEvents(); // no burst of sounds for the frames skipped
+    this.render();
+    return { ...result, view: this.view() };
   }
 
   // --- Speed recording -------------------------------------------------------------------------
