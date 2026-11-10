@@ -116,6 +116,7 @@ const center = (tile: number) => tile * TILE_SIZE + TILE_SIZE / 2;
 export class AgentDriver {
   private recorded: SimEvent[] = [];
   private speedRecorder: SpeedRecorder | null = null;
+  private tickCounter: (() => void) | null = null;
 
   constructor(
     public readonly engine: GameEngine,
@@ -124,7 +125,10 @@ export class AgentDriver {
     if (runner) {
       runner.onEvents = (events) => this.recorded.push(...events);
       runner.onBeforeTick = () => this.speedRecorder?.before();
-      runner.onAfterTick = () => this.speedRecorder?.after();
+      runner.onAfterTick = () => {
+        this.speedRecorder?.after();
+        this.tickCounter?.();
+      };
     }
   }
 
@@ -267,6 +271,37 @@ export class AgentDriver {
   /** Measured vs table speed per actor and source, plus real ticks per second (live play). */
   public speedReport(): SpeedReport | null {
     return this.speedRecorder?.report() ?? null;
+  }
+
+  /**
+   * Counts real-time ticks over the next `seconds` (browser, loop running). Keep the tab visible
+   * while it runs. Expect 60.606 × practice speed with arcade timing (60 × without).
+   */
+  public async measureTickRate(seconds: number = 5): Promise<{
+    ticksPerSecond: number;
+    expected: number;
+    animationFramesPerSecond: number;
+  }> {
+    if (!this.runner) throw new Error("measureTickRate needs the live game (window.pacmanAgent)");
+    let ticks = 0;
+    let frames = 0;
+    this.tickCounter = () => ticks++;
+    const countFrame = () => {
+      frames++;
+      rafId = requestAnimationFrame(countFrame);
+    };
+    let rafId = requestAnimationFrame(countFrame);
+    const start = performance.now();
+    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+    const elapsed = (performance.now() - start) / 1000;
+    cancelAnimationFrame(rafId);
+    this.tickCounter = null;
+    const round = (v: number) => Math.round(v * 1000) / 1000;
+    return {
+      ticksPerSecond: round(ticks / elapsed),
+      expected: round(this.runner.ticksPerSecond),
+      animationFramesPerSecond: round(frames / elapsed),
+    };
   }
 
   /** Stops recording and returns the final report. */

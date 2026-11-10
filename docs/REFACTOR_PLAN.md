@@ -238,9 +238,13 @@ All four original questions are answered under **Decisions** above. Still open:
   The speed recorder (`pacmanAgent.recordSpeeds()` / `speedReport()`, T3) shows every actor
   within 3% of the Dossier table on levels 1, 2, 5 and 21 (`speedTables.test.ts`), and Pac-Man
   pulls away from a normal ghost on an eaten corridor. Ghosts _do_ legitimately gain on Pac-Man
-  with Elroy (L1: 80%/85% vs Pac-Man 80%) and from level 21 (95% vs 90%). Next step: record a
-  live session where it feels off and check `ticksPerSecond` (should be 60 × practice speed)
-  and the per-source rows.
+  with Elroy (L1: 80%/85% vs Pac-Man 80%) and from level 21 (95% vs 90%).
+  Checked live (2026-11-10): two recorded play sessions on level 1 match the table for every
+  source, and `measureTickRate(5)` gives 60.5-60.8 ticks/s (expected 60.606) at ~60 fps. Both
+  the per-frame speeds and the real-time rate are right. Remaining explanations: Pac-Man's
+  1-frame stall per dot (~71% effective on dotted corridors at L1, slower than the ghosts' 75%),
+  Elroy, or how arcade speed feels on a modern display. Reopen with a saved state (`save()`)
+  of a moment where a ghost gains on an empty corridor.
 - **Eyes speed.** The Dossier doesn't give one. The default is 2 px every frame (32 bits).
 - **Ms. Pac-Man mechanics** (semi-random first scatter, moving fruit paths, per-maze tunnels)
   need a source before they can be checked.

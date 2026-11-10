@@ -30,6 +30,7 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `recordSpeeds()`         | Start recording every actor's movement per play frame (live play or stepping).    |
 | `speedReport()`          | Measured vs table px/frame per actor and speed source, and real ticks per second. |
 | `stopSpeeds()`           | Stop recording and return the final report.                                       |
+| `measureTickRate(s)`     | Count real-time ticks over the next `s` seconds (browser). Returns a promise.     |
 | `diagnostics()`          | Diagnostics rules that have failed, with messages, plus the latest log entries.   |
 
 `scenario()` with a `level` loads that level first (fresh maze, timers, house); the other fields
@@ -51,6 +52,11 @@ pacmanAgent.recordSpeeds();
 console.table(pacmanAgent.speedReport().rows);
 pacmanAgent.speedReport().ticksPerSecond; // 60.606 with arcade timing (60 without), × practice speed
 ```
+
+`ticksPerSecond` in the report only counts time while ticks were running: time with the tab hidden
+or the loop stopped is left out (`realSeconds` vs `activeSeconds`). For a direct check, keep the
+game running and visible and run `await pacmanAgent.measureTickRate(5)`: it returns the tick rate,
+the expected rate, and the browser's animation frame rate over those 5 seconds.
 
 Each row is one actor and speed source (`pacman-normal`, `pacman-fright`, `pacman-stall`,
 `ghost-normal`, `ghost-tunnel`, `ghost-fright`, `ghost-elroy1/2`, `ghost-eyes`, `ghost-house`).

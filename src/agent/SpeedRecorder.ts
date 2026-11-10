@@ -43,9 +43,15 @@ export interface SpeedRow {
 export interface SpeedReport {
   /** Play frames sampled. */
   frames: number;
-  /** Real seconds recorded (live play only). */
+  /** Real seconds recorded (live play only), including time the loop was not running. */
   realSeconds: number;
-  /** Sim frames per real second (live play): 60.606 (arcade timing) or 60, × the practice speed. */
+  /** Real seconds while ticks were flowing (gaps over 250 ms, e.g. a hidden tab, are left out). */
+  activeSeconds: number;
+  /**
+   * Sim frames per real second while the loop was running (live play): 60.606 with arcade timing
+   * (60 without), × the practice speed. Several ticks run per animation frame, so this is an
+   * average over the active time, not a per-frame value.
+   */
   ticksPerSecond: number;
   rows: SpeedRow[];
 }
@@ -76,7 +82,9 @@ export class SpeedRecorder {
   private buckets = new Map<string, Bucket>();
   private playFrames = 0;
   private ticks = 0;
-  private startedAt = typeof performance !== "undefined" ? performance.now() : 0;
+  private startedAt = now();
+  private lastTickAt = this.startedAt;
+  private activeMs = 0;
 
   constructor(private readonly engine: GameEngine) {}
 
@@ -106,6 +114,10 @@ export class SpeedRecorder {
 
   public after(): void {
     this.ticks++;
+    const t = now();
+    const gap = t - this.lastTickAt;
+    if (gap < MAX_TICK_GAP_MS) this.activeMs += gap;
+    this.lastTickAt = t;
     if (this.pending.size === 0) return;
     this.playFrames++;
     const e = this.engine;
@@ -141,8 +153,8 @@ export class SpeedRecorder {
   }
 
   public report(): SpeedReport {
-    const realSeconds =
-      typeof performance !== "undefined" ? (performance.now() - this.startedAt) / 1000 : 0;
+    const realSeconds = (now() - this.startedAt) / 1000;
+    const activeSeconds = this.activeMs / 1000;
     const rows = [...this.buckets.values()]
       .filter((b) => b.frames > 0)
       .map((b): SpeedRow => {
@@ -166,7 +178,8 @@ export class SpeedRecorder {
     return {
       frames: this.playFrames,
       realSeconds: round(realSeconds),
-      ticksPerSecond: realSeconds > 0 ? round(this.ticks / realSeconds) : SIM_FPS,
+      activeSeconds: round(activeSeconds),
+      ticksPerSecond: activeSeconds > 0 ? round(this.ticks / activeSeconds) : SIM_FPS,
       rows,
     };
   }
@@ -191,6 +204,13 @@ function maskPxPerFrame(pct: number): number {
   let steps = 0;
   for (let f = 0; f < 16; f++) steps += arcadeStepsOnFrame(SPEED_MASKS[pct], f);
   return steps / 16;
+}
+
+/** Longer than any normal animation frame: a gap this long means the loop was not running. */
+const MAX_TICK_GAP_MS = 250;
+
+function now(): number {
+  return typeof performance !== "undefined" ? performance.now() : 0;
 }
 
 function round(v: number): number {
