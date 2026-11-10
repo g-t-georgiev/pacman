@@ -126,14 +126,9 @@ export class GhostAiController {
       case "CLYDE": {
         // Pokey: Chases when distance >= 8 tiles; flees to scatter corner when < 8 tiles.
         const distSq = (pacCol - ghostCol) ** 2 + (pacRow - ghostRow) ** 2;
-        const isClose = distSq < 64; // Closer than 8 tiles (8 * 8 = 64)
-
-        if (isClose) {
-          return maze.scatterTargets.CLYDE;
-        }
-
-        const wanderState = ghost.clydeWanderState || "CHASE";
-        return wanderState === "CHASE" ? { col: pacCol, row: pacRow } : maze.scatterTargets.CLYDE;
+        const flee = distSq < 64; // closer than 8 tiles (8 * 8 = 64)
+        ghost.clydeWanderState = flee ? "FLEE" : "CHASE"; // shown by the Learn overlay
+        return flee ? maze.scatterTargets.CLYDE : { col: pacCol, row: pacRow };
       }
     }
   }

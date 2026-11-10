@@ -22,7 +22,7 @@ export class Pacman extends Actor {
   public cornerTarget: number | null = null;
 
   constructor(x: number, y: number, dir: Direction = "LEFT") {
-    super(x, y, dir, 0.5, 0.5);
+    super(x, y, dir);
   }
 
   /**

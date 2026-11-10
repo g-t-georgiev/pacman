@@ -1,21 +1,20 @@
 import type { Ghost } from "../core/Ghost";
 import type { GhostType } from "../types";
 import { SIM_FPS } from "../game/constants";
+import { levelRow } from "../game/levelTable";
 
 /** Ghosts that wait in the house, in order of preference (Dossier, "Home Sweet Home"). */
 export const HOUSE_GHOSTS = ["PINKY", "INKY", "CLYDE"] as const;
 export type HouseGhost = (typeof HOUSE_GHOSTS)[number];
 
-/** Personal dot limits per level: L1 0/30/60, L2 0/0/50, L3+ 0/0/0. */
+/** Personal dot limits per level (LEVEL_TABLE): L1 0/30/60, L2 0/0/50, L3+ 0/0/0. */
 export function getHouseDotLimit(ghost: HouseGhost, level: number): number {
-  if (ghost === "INKY") return level === 1 ? 30 : 0;
-  if (ghost === "CLYDE") return level === 1 ? 60 : level === 2 ? 50 : 0;
-  return 0;
+  return levelRow(level).houseDotLimits[ghost];
 }
 
-/** Frames without eating a dot before the preferred ghost is forced out: 4 s, or 3 s from level 5. */
+/** Frames without eating a dot before the preferred ghost is forced out (4 s, 3 s from level 5). */
 export function getHouseIdleLimit(level: number): number {
-  return (level < 5 ? 4 : 3) * SIM_FPS;
+  return levelRow(level).houseIdleSeconds * SIM_FPS;
 }
 
 /** Global dot counter values (after a life is lost) that release Pinky and Inky, and that end it. */

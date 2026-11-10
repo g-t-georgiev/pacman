@@ -2,7 +2,7 @@ import type { Direction, GameMode } from "../types";
 import React, { useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { uiConfig } from "../config/ui.config";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, CLASSIC_FRUITS } from "../game/constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import { GameRunner } from "../game/GameRunner";
@@ -419,7 +419,7 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(true);
   };
 
-  const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, level);
+  const fruitMeta = getFruitDataPerLevel(level);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">

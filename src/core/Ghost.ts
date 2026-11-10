@@ -30,9 +30,6 @@ import { getSpeedConfigForLevel } from "../utils";
 export class Ghost extends Actor {
   public type: GhostType;
 
-  public anchorX: number = 0.5;
-  public anchorY: number = 0.5;
-
   public location: GhostLocation = "ACTIVE";
   public frightened: boolean = false;
   public wave: WaveMode = "SCATTER";
@@ -53,7 +50,7 @@ export class Ghost extends Actor {
   public flashState: boolean = false;
   public feetAnimation: number = 0;
 
-  // Clyde's current targeting choice, shown by the Learn overlay
+  /** Clyde's last targeting choice (set by calculateTarget), shown by the Learn overlay. */
   public clydeWanderState?: "CHASE" | "FLEE" = "CHASE";
 
   // Tile-to-tile lookahead and reversal latch
@@ -69,15 +66,11 @@ export class Ghost extends Actor {
     x: number,
     y: number,
     dir: Direction = "UP",
-    inHouse: boolean = false,
-    anchorX: number = 0.5,
-    anchorY: number = 0.5
+    inHouse: boolean = false
   ) {
-    super(x, y, dir, anchorX, anchorY);
+    super(x, y, dir);
     this.type = type;
     this.location = inHouse ? "HOUSE" : "ACTIVE";
-    this.anchorX = anchorX;
-    this.anchorY = anchorY;
     this.lastOccupiedTile = {
       col: Math.floor(x / TILE_SIZE),
       row: Math.floor(y / TILE_SIZE),
@@ -126,8 +119,6 @@ export class Ghost extends Actor {
       type: this.type,
       x: this.x,
       y: this.y,
-      anchorX: this.anchorX,
-      anchorY: this.anchorY,
       dir: this.dir,
       nextDir: this.nextDir,
       plannedDir: this.plannedDir,
@@ -156,8 +147,6 @@ export class Ghost extends Actor {
   public restoreFromState(state: GhostState): void {
     this.x = state.x;
     this.y = state.y;
-    this.anchorX = state.anchorX ?? 0.5;
-    this.anchorY = state.anchorY ?? 0.5;
     this.dir = state.dir;
     this.nextDir = state.nextDir;
     this.plannedDir = state.plannedDir;

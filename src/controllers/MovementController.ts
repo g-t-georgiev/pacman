@@ -21,6 +21,19 @@ import {
 import { getPixelStepsThisFrame } from "../utils";
 import { houseSlotX } from "../game/mazes";
 
+/** Everything a ghost's move needs besides the ghost itself. */
+export interface GhostMoveContext {
+  /** Blinky (Inky's targeting uses his position). */
+  blinky: Ghost;
+  pacman: Pacman;
+  /** Indexes the 16-frame speed masks. */
+  currLevelFrame: number;
+  speedPct: number;
+  turboMultiplier: number;
+  maze: MazeData;
+  ghostAi: GhostAiController;
+}
+
 /**
  * Controller executing authentic discrete movement physics:
  * - 16-frame cyclical bitmask step evaluation
@@ -61,19 +74,9 @@ export class MovementController {
     }
   }
 
-  /**
-   * Updates a ghost's physical movement for the current frame.
-   */
-  public updateGhostMovement(
-    ghost: Ghost,
-    blinky: Ghost,
-    pacman: Pacman,
-    currLevelFrame: number,
-    speedPct: number,
-    turboMultiplier: number,
-    maze: MazeData,
-    ghostAiController: GhostAiController
-  ): void {
+  /** Moves a ghost outside the house for one frame. */
+  public updateGhostMovement(ghost: Ghost, ctx: GhostMoveContext): void {
+    const { blinky, pacman, currLevelFrame, speedPct, turboMultiplier, maze, ghostAi } = ctx;
     if (ghost.inHouse || ghost.dir === "NONE") return;
 
     // Eaten house descent logic
@@ -102,7 +105,7 @@ export class MovementController {
     if (steps <= 0) return;
 
     const plan = (col: number, row: number, heading: Direction) =>
-      ghostAiController.planNextTile(ghost, pacman, blinky, maze, col, row, heading);
+      ghostAi.planNextTile(ghost, pacman, blinky, maze, col, row, heading);
 
     // Just spawned, placed, or out of the house: we are past this tile's center, so plan the turn
     // for the next tile from here.

@@ -46,19 +46,43 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(blinky.dir).toBe("RIGHT"); // keeps going until the next tile
 
     // Step 1: Blinky moves 1 pixel -> still within col 10
-    movement.updateGhostMovement(blinky, blinky, pacman, 0, 80, 1.0, maze, ghostAi);
+    movement.updateGhostMovement(blinky, {
+      blinky: blinky,
+      pacman,
+      currLevelFrame: 0,
+      speedPct: 80,
+      turboMultiplier: 1,
+      maze,
+      ghostAi,
+    });
     expect(blinky.x).toBe(10 * TILE_SIZE + 7);
     expect(blinky.reversalPrimed).toBe(true);
     expect(blinky.dir).toBe("RIGHT");
 
     // Step 2: Blinky crosses the boundary into col 11 and turns around right there
-    movement.updateGhostMovement(blinky, blinky, pacman, 1, 80, 1.0, maze, ghostAi);
+    movement.updateGhostMovement(blinky, {
+      blinky: blinky,
+      pacman,
+      currLevelFrame: 1,
+      speedPct: 80,
+      turboMultiplier: 1,
+      maze,
+      ghostAi,
+    });
     expect(blinky.x).toBe(11 * TILE_SIZE);
     expect(blinky.reversalPrimed).toBe(false);
     expect(blinky.dir).toBe("LEFT");
 
     // It heads back through col 10 (re-entering it plans from there, heading left)
-    movement.updateGhostMovement(blinky, blinky, pacman, 2, 80, 1.0, maze, ghostAi);
+    movement.updateGhostMovement(blinky, {
+      blinky: blinky,
+      pacman,
+      currLevelFrame: 2,
+      speedPct: 80,
+      turboMultiplier: 1,
+      maze,
+      ghostAi,
+    });
     expect(blinky.tileCoord.col).toBe(10);
     expect(blinky.dir).toBe("LEFT");
     expect(blinky.lastDecisionTile).toEqual({ col: 9, row: 11 });
@@ -77,7 +101,15 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     const pacman = new Pacman(6 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
     const blinky = new Ghost("BLINKY", 1 * TILE_SIZE + 4, 4 * TILE_SIZE + 4, "LEFT");
     const step = (f: number) =>
-      movement.updateGhostMovement(inky, blinky, pacman, f, 80, 1.0, maze, ghostAi);
+      movement.updateGhostMovement(inky, {
+        blinky: blinky,
+        pacman,
+        currLevelFrame: f,
+        speedPct: 80,
+        turboMultiplier: 1,
+        maze,
+        ghostAi,
+      });
 
     // From (4, 8) the first plan is for (5, 8): straight on
     step(0);
@@ -194,10 +226,8 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     expect(["UP", "DOWN", "RIGHT"]).toContain(planned);
   });
 
-  it("should correctly compute tile coordinates with default anchor point (0.5, 0.5)", () => {
+  it("an actor's tile is the one its center pixel is in", () => {
     const ghost = new Ghost("PINKY", 10 * TILE_SIZE + 4, 15 * TILE_SIZE + 4, "UP", false);
-    expect(ghost.anchorX).toBe(0.5);
-    expect(ghost.anchorY).toBe(0.5);
     expect(ghost.tileCoord).toEqual({ col: 10, row: 15 });
   });
 });

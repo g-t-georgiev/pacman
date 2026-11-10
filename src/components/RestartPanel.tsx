@@ -1,5 +1,4 @@
 import React from "react";
-import { CLASSIC_FRUITS } from "../game/constants";
 import type { GameMode } from "../types";
 import { getFruitDataPerLevel } from "../utils";
 
@@ -26,7 +25,7 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
   onChangeMode,
   onClose,
 }) => {
-  const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, level);
+  const fruitMeta = getFruitDataPerLevel(level);
 
   const modeName = mode === "PACMAN" ? "Classic Pac-Man (1980)" : "Ms. Pac-Man";
 

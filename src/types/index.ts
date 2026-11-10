@@ -112,8 +112,6 @@ export interface GhostState {
   type: GhostType;
   x: number;
   y: number;
-  anchorX?: number;
-  anchorY?: number;
   dir: Direction;
   /** The turn to take at the next tile center the ghost reaches. */
   nextDir: Direction;

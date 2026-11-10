@@ -1,14 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { getPixelStepsThisFrame } from "../../src/utils";
 import { SPEED_MASKS, arcadeStepsOnFrame } from "../../src/game/speedMasks";
-import {
-  GHOST_EATEN_SPEED_PCT,
-  GHOST_HOUSE_SPEED_PCT,
-  SPEED_PCT_PER_LEVEL_1,
-  SPEED_PCT_PER_LEVELS_2_TO_4,
-  SPEED_PCT_PER_LEVELS_5_TO_20,
-  SPEED_PCT_PER_LEVELS_21_PLUS,
-} from "../../src/game/constants";
+import { GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT } from "../../src/game/constants";
+import { LEVEL_TABLE, levelRow } from "../../src/game/levelTable";
 
 const popcount16 = (v: number) => {
   let n = 0;
@@ -42,12 +36,7 @@ describe("Speed masks (data validation)", () => {
   });
 
   it("every speed used by the level tables and the ghost house has a mask", () => {
-    const tables = [
-      SPEED_PCT_PER_LEVEL_1,
-      SPEED_PCT_PER_LEVELS_2_TO_4,
-      SPEED_PCT_PER_LEVELS_5_TO_20,
-      SPEED_PCT_PER_LEVELS_21_PLUS,
-    ];
+    const tables = LEVEL_TABLE.map((row) => row.speeds);
     const used = new Set<number>([GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT]);
     for (const t of tables) {
       for (const pct of Object.values(t) as number[]) used.add(pct);
@@ -86,11 +75,11 @@ describe("Speed mask stepping", () => {
   });
 
   it("Elroy 2 is faster than Elroy 1, and L1 Pac-Man is faster than L1 ghosts", () => {
-    expect(arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.elroy2)).toBeGreaterThan(
-      arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.elroy1)
+    expect(arcadePxPerCycle(levelRow(1).speeds.elroy2)).toBeGreaterThan(
+      arcadePxPerCycle(levelRow(1).speeds.elroy1)
     );
-    expect(arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.pacmanNormal)).toBeGreaterThan(
-      arcadePxPerCycle(SPEED_PCT_PER_LEVEL_1.ghostNormal)
+    expect(arcadePxPerCycle(levelRow(1).speeds.pacmanNormal)).toBeGreaterThan(
+      arcadePxPerCycle(levelRow(1).speeds.ghostNormal)
     );
   });
 

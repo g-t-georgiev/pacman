@@ -1,11 +1,4 @@
-import type {
-  DualTileCoord,
-  GameMode,
-  GhostType,
-  LevelSpeedConfig,
-  ScatterChaseSchedule,
-  TileCoord,
-} from "../types";
+import type { DualTileCoord, GameMode, GhostType, ScatterChaseSchedule, TileCoord } from "../types";
 
 /**
  * Frames per second used to turn the Dossier's seconds into frame counts. Every timer in the sim
@@ -35,21 +28,6 @@ export const CANVAS_WIDTH = MAZE_COLS * RENDER_TILE_SIZE; // 448px
 export const CANVAS_HEIGHT = MAZE_ROWS * RENDER_TILE_SIZE; // 576px
 
 /**
- * Dots remaining at which Blinky becomes Elroy 1, from a level on (Dossier, Table A.1).
- * Elroy 2 starts at half that count. Use getElroyDotThresholds() / getElroyStage().
- */
-export const ELROY_1_DOTS_BY_LEVEL: ReadonlyArray<{ fromLevel: number; dots: number }> = [
-  { fromLevel: 1, dots: 20 },
-  { fromLevel: 2, dots: 30 },
-  { fromLevel: 3, dots: 40 },
-  { fromLevel: 6, dots: 50 },
-  { fromLevel: 9, dots: 60 },
-  { fromLevel: 12, dots: 80 },
-  { fromLevel: 15, dots: 100 },
-  { fromLevel: 19, dots: 120 },
-];
-
-/**
  * Pac-Man's turn window around a turn's center pixel (Dossier, "Cornering"). Pac-Man may start a
  * turn while he is within CORNER_WINDOW_LOW pixels on the low-coordinate side of the center
  * (left / above) or CORNER_WINDOW_HIGH pixels on the high side (right / below). So entering from
@@ -60,50 +38,12 @@ export const CORNER_WINDOW_LOW = 3;
 /** Follows from the 8-px window: TILE_SIZE - 1 - CORNER_WINDOW_LOW. */
 export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
 
-/**
- * Speed percentages: 100% = 75.7576 arcade px/s = 1.25 arcade px/frame at 60.606 Hz (Dossier, Table A.1).
- * Pac-Man's slower "eating" speeds are not separate entries: they come from the 1-frame (dot) and
- * 3-frame (energizer) stalls.
+/*
+ * Per-level values (speeds, Elroy, frightened time, flashes, fruit, house limits) live in
+ * LEVEL_TABLE (levelTable.ts). Speeds are percentages: 100% = 75.7576 arcade px/s = 1.25 px per
+ * frame at 60.606 Hz (Dossier, Table A.1); Pac-Man's slower "eating" speeds come from the 1- and
+ * 3-frame stalls, not from separate entries.
  */
-export const SPEED_PCT_PER_LEVEL_1: LevelSpeedConfig = {
-  pacmanNormal: 80, // 1 px/frame
-  pacmanFright: 90, // 1.125 px/frame
-  ghostNormal: 75, // 0.9375 px/frame
-  ghostTunnel: 40, // 0.5 px/frame
-  ghostFrightened: 50, // 0.625 px/frame
-  elroy1: 80, // 1 px/frame
-  elroy2: 85, // 1.0625 px/frame
-};
-
-export const SPEED_PCT_PER_LEVELS_2_TO_4: LevelSpeedConfig = {
-  pacmanNormal: 90, // 1.125 px/frame
-  pacmanFright: 95, // 1.1875 px/frame
-  ghostNormal: 85, // 1.0625 px/frame
-  ghostTunnel: 45, // 0.5625 px/frame
-  ghostFrightened: 55, // 0.6875 px/frame
-  elroy1: 90, // 1.125 px/frame
-  elroy2: 95, // 1.1875 px/frame
-};
-
-export const SPEED_PCT_PER_LEVELS_5_TO_20: LevelSpeedConfig = {
-  pacmanNormal: 100, // 1.25 px/frame
-  pacmanFright: 100, // 1.25 px/frame
-  ghostNormal: 95, // 1.1875 px/frame
-  ghostTunnel: 50, // 0.625 px/frame
-  ghostFrightened: 60, // 0.75 px/frame
-  elroy1: 100, // 1.25 px/frame
-  elroy2: 105, // 1.3125 px/frame
-};
-
-export const SPEED_PCT_PER_LEVELS_21_PLUS: LevelSpeedConfig = {
-  pacmanNormal: 90, // 1.125 px/frame
-  pacmanFright: 100, // 1.25 px/frame
-  ghostNormal: 95, // 1.1875 px/frame
-  ghostTunnel: 50, // 0.625 px/frame
-  ghostFrightened: 60, // 0.75 px/frame
-  elroy1: 100, // 1.25 px/frame
-  elroy2: 105, // 1.3125 px/frame
-};
 
 /** Speed value for ghosts' eyes when eaten and return to the ghost house. */
 export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning eyes (see speedMasks.ts)
@@ -175,80 +115,38 @@ export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
   { mode: "CHASE", frames: Infinity },
 ] as const;
 
-/** Frightened duration per level, in seconds (Dossier, Table A.1). Use getFrightenedDuration() for frames. */
-export const FRIGHTENED_DURATIONS: Record<number, number> = {
-  1: 6,
-  2: 5,
-  3: 4,
-  4: 3,
-  5: 2,
-  6: 5,
-  7: 2,
-  8: 2,
-  9: 1,
-  10: 5,
-  11: 2,
-  12: 1,
-  13: 1,
-  14: 3,
-  15: 1,
-  16: 1,
-  17: 0,
-  18: 1,
-  19: 0,
-} as const;
-
-export const FRIGHTENED_FLASH_COUNTS: Record<number, number> = {
-  1: 5,
-  2: 5,
-  3: 5,
-  4: 5,
-  5: 5,
-  6: 5,
-  7: 5,
-  8: 5,
-  9: 3,
-  10: 5,
-  11: 5,
-  12: 3,
-  13: 3,
-  14: 5,
-  15: 3,
-  16: 3,
-  17: 0,
-  18: 3,
-  19: 0,
-} as const;
-
-/**
- * Duration of each color phase (white or blue) during ghosts' warning flashes
- * (14 frames at 60 FPS = ~0.2333s) during last momemnts of frightened state.
- */
 /** Frames per white/blue half-cycle of the frightened warning flash. */
 export const FRIGHTENED_FLASH_TOGGLE_FRAMES = 14;
 
-export const CLASSIC_FRUITS: Array<{
-  name: string;
+/** Bonus fruit names; which one a level shows is in LEVEL_TABLE (levelTable.ts). */
+export type FruitName =
+  | "Cherry"
+  | "Strawberry"
+  | "Peach"
+  | "Apple"
+  | "Melon"
+  | "Galaxian"
+  | "Bell"
+  | "Key";
+
+export interface FruitInfo {
+  name: FruitName;
   points: number;
   symbol: string;
   color: string;
-}> = [
-  { name: "Cherry", points: 100, symbol: "🍒", color: "#ff2244" }, // Lvl 1
-  { name: "Strawberry", points: 300, symbol: "🍓", color: "#ff3366" }, // Lvl 2
-  { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" }, // Lvl 3
-  { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" }, // Lvl 4
-  { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" }, // Lvl 5
-  { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" }, // Lvl 6
-  { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" }, // Lvl 7
-  { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" }, // Lvl 8
-  { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" }, // Lvl 9
-  { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" }, // Lvl 10
-  { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" }, // Lvl 11
-  { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" }, // Lvl 12
-  { name: "Key", points: 5000, symbol: "🗝️", color: "#00ddff" }, // Lvl 13+
-] as const;
+}
 
-export type FruitDataType = typeof CLASSIC_FRUITS;
+/** Points per fruit (Dossier, Table A.1) and how the UI shows it. */
+export const FRUIT_CATALOG: Record<FruitName, FruitInfo> = {
+  Cherry: { name: "Cherry", points: 100, symbol: "🍒", color: "#ff2244" },
+  Strawberry: { name: "Strawberry", points: 300, symbol: "🍓", color: "#ff3366" },
+  Peach: { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" },
+  Apple: { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" },
+  Melon: { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" },
+  Galaxian: { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" },
+  Bell: { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" },
+  Key: { name: "Key", points: 5000, symbol: "🗝️", color: "#00ddff" },
+};
 
 export const DEFAULT_SCATTER_TARGETS: Record<GameMode, Record<GhostType, TileCoord>> = {
   PACMAN: {

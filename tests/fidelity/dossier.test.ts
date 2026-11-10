@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { AgentDriver } from "../../src/agent/AgentDriver";
-import { CLASSIC_FRUITS, SIM_FPS } from "../../src/game/constants";
+import { SIM_FPS } from "../../src/game/constants";
 import {
   getFrightenedDuration,
   getFrightenedFlashCount,
@@ -78,14 +78,11 @@ describe("Dossier · The Basics", () => {
   });
 
   it("fruit points per level: 100, 300, 500 x2, 700 x2, 1000 x2, 2000 x2, 3000 x2, then 5000", () => {
-    const points = Array.from(
-      { length: 14 },
-      (_, i) => getFruitDataPerLevel(CLASSIC_FRUITS, i + 1).points
-    );
+    const points = Array.from({ length: 14 }, (_, i) => getFruitDataPerLevel(i + 1).points);
     expect(points).toEqual([
       100, 300, 500, 500, 700, 700, 1000, 1000, 2000, 2000, 3000, 3000, 5000, 5000,
     ]);
-    expect(getFruitDataPerLevel(CLASSIC_FRUITS, 100).points).toBe(5000);
+    expect(getFruitDataPerLevel(100).points).toBe(5000);
   });
 });
 

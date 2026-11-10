@@ -17,13 +17,7 @@ import {
   getFruitDataPerLevel,
   getSpeedConfigForLevel,
 } from "../utils";
-import {
-  CLASSIC_FRUITS,
-  EXTRA_LIFE_SCORE,
-  FRUIT_EXTRA_FRAMES,
-  FRUIT_MIN_FRAMES,
-  TILE_SIZE,
-} from "./constants";
+import { EXTRA_LIFE_SCORE, FRUIT_EXTRA_FRAMES, FRUIT_MIN_FRAMES, TILE_SIZE } from "./constants";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
@@ -683,21 +677,6 @@ export default class GameEngine {
     const blinky = this.ghosts.BLINKY;
     const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
 
-    // Clyde's Proximity Targeting Update (Arcade-Accurate 8-Tile Circle Rule)
-    if (g.type === "CLYDE") {
-      const pacTile = this.pacman.tileCoord;
-      const clydeTile = g.tileCoord;
-
-      // Calculate true Euclidean squared tile distance
-      const dx = clydeTile.col - pacTile.col;
-      const dy = clydeTile.row - pacTile.row;
-      const distanceSquared = dx * dx + dy * dy;
-
-      // If closer than 8 tiles (64 squared), Clyde panics and flees to his home corner.
-      // Otherwise, he targets Pac-Man directly using normal Chase target parameters.
-      g.clydeWanderState = distanceSquared < 64 ? "FLEE" : "CHASE";
-    }
-
     // Target tile (with the optional 1980 ROM quirks)
     this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
     g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
@@ -705,16 +684,15 @@ export default class GameEngine {
     // Discrete 16-frame bitmask speed & tile-to-tile movement
     const speedPct = g.getSpeedPercentage(this.maze, speedConfig);
 
-    this.movementController.updateGhostMovement(
-      g,
+    this.movementController.updateGhostMovement(g, {
       blinky,
-      this.pacman,
-      this.currLevelFrame,
+      pacman: this.pacman,
+      currLevelFrame: this.currLevelFrame,
       speedPct,
-      turboMult,
-      this.maze,
-      this.ghostAiController
-    );
+      turboMultiplier: turboMult,
+      maze: this.maze,
+      ghostAi: this.ghostAiController,
+    });
   }
 
   private checkCollisions() {
@@ -848,7 +826,7 @@ export default class GameEngine {
   }
 
   public spawnFruit() {
-    const fruitMeta = getFruitDataPerLevel(CLASSIC_FRUITS, this.level);
+    const fruitMeta = getFruitDataPerLevel(this.level);
 
     this.fruit = {
       name: fruitMeta.name,

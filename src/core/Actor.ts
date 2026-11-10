@@ -4,55 +4,28 @@ import { getDirectionVector } from "../game/ghostAiUtils";
 
 /**
  * Base Actor class for all moving entities in the game (Pac-Man & Ghosts).
- * Encapsulates spatial coordinates, anchor points, tile coordinates, and tunnel wrap mechanics.
+ * Positions are sim pixels of the actor's center; its tile is the one that pixel is in.
  */
 export class Actor {
   public x: number = 0;
   public y: number = 0;
   public dir: Direction = "NONE";
   public nextDir: Direction = "NONE";
+  /** Pixels moved this frame (set by the movement code). */
   public speed: number = 0;
 
-  /**
-   * Spatial anchor point inside the actor's footprint [0, 1].
-   * Defaults to 0.5 on both axes (center of tile).
-   */
-  public anchorX: number = 0.5;
-  public anchorY: number = 0.5;
-
-  constructor(
-    x: number,
-    y: number,
-    dir: Direction = "NONE",
-    anchorX: number = 0.5,
-    anchorY: number = 0.5
-  ) {
+  constructor(x: number, y: number, dir: Direction = "NONE") {
     this.x = x;
     this.y = y;
     this.dir = dir;
     this.nextDir = dir;
-    this.anchorX = anchorX;
-    this.anchorY = anchorY;
   }
 
-  /**
-   * Returns current anchor point in absolute world pixel coordinates.
-   */
-  public get anchorPixel(): Point {
-    return {
-      x: this.x + (this.anchorX - 0.5) * TILE_SIZE,
-      y: this.y + (this.anchorY - 0.5) * TILE_SIZE,
-    };
-  }
-
-  /**
-   * Returns current tile coordinate calculated from the anchor point.
-   */
+  /** The tile the actor is in: the one its center pixel is in. */
   public get tileCoord(): TileCoord {
-    const { x, y } = this.anchorPixel;
     return {
-      col: Math.floor(x / TILE_SIZE),
-      row: Math.floor(y / TILE_SIZE),
+      col: Math.floor(this.x / TILE_SIZE),
+      row: Math.floor(this.y / TILE_SIZE),
     };
   }
 
@@ -64,15 +37,6 @@ export class Actor {
       x: col * TILE_SIZE + TILE_SIZE / 2,
       y: row * TILE_SIZE + TILE_SIZE / 2,
     };
-  }
-
-  /**
-   * Checks whether the actor's anchor point is aligned with the center of its current tile.
-   */
-  public isAtTileCenter(tolerance: number = 0.5): boolean {
-    const { col, row } = this.tileCoord;
-    const center = Actor.getTileCenter(col, row);
-    return Math.abs(this.x - center.x) <= tolerance && Math.abs(this.y - center.y) <= tolerance;
   }
 
   /**

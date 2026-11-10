@@ -56,7 +56,9 @@ describe("Ghost movement soak", () => {
         // So it turns around at a tile boundary: at most 2 px past it (the most a ghost moves
         // in one frame, e.g. entering, reversing and stepping back on a 2-px frame).
         const before = prev.get(g.type);
-        if (before && g.dir === getOppositeDirection(before.dir)) {
+        // (Off-grid tunnel tiles excepted: the wrap places a ghost a few pixels into them.)
+        const offGrid = col < 0 || col >= engine.maze.width;
+        if (before && !offGrid && g.dir === getOppositeDirection(before.dir)) {
           reversals++;
           const along = g.dir === "LEFT" || g.dir === "RIGHT" ? g.x : g.y;
           const offset = ((along % TILE_SIZE) + TILE_SIZE) % TILE_SIZE;
