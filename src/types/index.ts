@@ -64,7 +64,8 @@ export interface MazeData {
     x: number;
     y: number;
     dir: Direction;
-    candidates?: DualTileCoord;
+    /** The two tiles Pac-Man starts between (he stands on their seam). */
+    candidates: DualTileCoord;
   };
   ghostSpawns: Record<
     GhostType,
@@ -73,8 +74,9 @@ export interface MazeData {
       y: number;
       inHouse: boolean;
       initialDir: Direction;
-      candidates?: DualTileCoord;
-      respawnSlot?: DualTileCoord;
+      /** The two tiles the ghost starts between (it stands on their seam). */
+      candidates: DualTileCoord;
+      respawnSlot: DualTileCoord;
     }
   >;
   fruitSpawn?: {
@@ -181,6 +183,8 @@ export interface GameSettings {
   showTargetLines: boolean;
   invincible: boolean;
   gameSpeed: number; // 0.1 to 2.0
+  /** Run the real-time loop at the arcade's 60.606 Hz instead of 60 (F5). */
+  arcadeRefreshRate: boolean;
   soundEnabled: boolean;
   soundVolume: number; // 0 to 1
   crtFilter: boolean;

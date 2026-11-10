@@ -42,7 +42,7 @@ import { GhostAiController } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { HouseController } from "../controllers/HouseController";
 import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
-import { getMazeData } from "./mazes";
+import { getMazeData, seamPx } from "./mazes";
 import type { SimEvent, SirenState } from "./simEvents";
 import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
 
@@ -110,6 +110,7 @@ export default class GameEngine {
     showTargetLines: false,
     invincible: false,
     gameSpeed: 1.0,
+    arcadeRefreshRate: true,
     soundEnabled: true,
     soundVolume: 0.5,
     crtFilter: false,
@@ -427,30 +428,15 @@ export default class GameEngine {
 
     const speedConfig = getSpeedConfigForLevel(this.level);
 
-    // Pac-Man actor: spawn on candidate integer tile center
-    const pacCol = this.maze.pacmanSpawn.candidates
-      ? this.maze.pacmanSpawn.candidates[0].col
-      : this.maze.pacmanSpawn.x;
-    const pacRow = this.maze.pacmanSpawn.candidates
-      ? this.maze.pacmanSpawn.candidates[0].row
-      : this.maze.pacmanSpawn.y;
-
-    this.pacman = new Pacman(
-      pacCol * TILE_SIZE + TILE_SIZE / 2,
-      pacRow * TILE_SIZE + TILE_SIZE / 2,
-      this.maze.pacmanSpawn.dir
-    );
+    // Every actor starts on the seam between its two spawn tiles (F9)
+    const pacPos = seamPx(this.maze.pacmanSpawn.candidates);
+    this.pacman = new Pacman(pacPos.x, pacPos.y, this.maze.pacmanSpawn.dir);
     this.pacman.speed = speedConfig.pacmanNormal;
     this.pacman.invincible = this.settings.invincible;
 
     // Ghosts initial spawn on designated candidate integer tiles
     const gSpawns = this.maze.ghostSpawns;
-    const getSpawnPos = (type: GhostType) => {
-      const sp = gSpawns[type];
-      const c = sp.candidates ? sp.candidates[0].col : sp.x;
-      const r = sp.candidates ? sp.candidates[0].row : sp.y;
-      return { x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2 };
-    };
+    const getSpawnPos = (type: GhostType) => seamPx(gSpawns[type].candidates);
 
     const blinkyPos = getSpawnPos("BLINKY");
     const pinkyPos = getSpawnPos("PINKY");
@@ -1000,8 +986,9 @@ export default class GameEngine {
     const gSpawns = this.maze.ghostSpawns;
     (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
       const g = this.ghosts[type];
-      g.x = gSpawns[type].x * TILE_SIZE + TILE_SIZE / 2;
-      g.y = gSpawns[type].y * TILE_SIZE + TILE_SIZE / 2;
+      const pos = seamPx(gSpawns[type].candidates);
+      g.x = pos.x;
+      g.y = pos.y;
       g.dir = gSpawns[type].initialDir;
       g.nextDir = gSpawns[type].initialDir;
       g.location = gSpawns[type].inHouse ? "HOUSE" : "ACTIVE";

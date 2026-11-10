@@ -34,7 +34,8 @@ describe("Round sequencer (A2)", () => {
     const agent = playing();
     const e = agent.engine;
     const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col, row: b.row } });
+    // One tile left of Blinky, facing him: they meet in the same tile on the next frame
+    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
     e.drainEvents();
     e.update();
 

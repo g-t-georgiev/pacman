@@ -7,8 +7,18 @@ import type {
   TileCoord,
 } from "../types";
 
-/** Simulation ticks per second. Every timer in the sim counts these frames. */
+/**
+ * Frames per second used to turn the Dossier's seconds into frame counts. Every timer in the sim
+ * counts frames; one tick is one arcade frame.
+ */
 export const SIM_FPS = 60;
+
+/**
+ * The arcade's real refresh rate (Dossier, App. C: 60.606 Hz). With `settings.arcadeRefreshRate`
+ * on (the default) the real-time loop runs this many ticks per second, so 100% speed is the
+ * Dossier's 75.76 px/s. Off, it runs at a plain 60 (about 1% slower). Ticks never change.
+ */
+export const ARCADE_REFRESH_HZ = 60.606_06;
 
 /**
  * Tile size in sim pixels. The sim runs in the arcade's own coordinates: 8-px tiles, integer

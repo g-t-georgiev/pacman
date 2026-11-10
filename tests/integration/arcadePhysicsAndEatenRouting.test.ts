@@ -178,7 +178,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     expect(inky.inHouse).toBe(true);
     expect(inky.location).toBe("HOUSE"); // revived: waits in the house, back on the global wave
     expect(inky.mode).toBe(inky.wave);
-    expect(inky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2); // Inky's designated slot on left
+    expect(inky.x).toBe(12 * TILE_SIZE); // Inky's seat: the 11/12 seam, where he starts
     expect(inky.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
 
@@ -203,7 +203,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     expect(clyde.inHouse).toBe(true);
     expect(clyde.location).toBe("HOUSE"); // revived: waits in the house, back on the global wave
     expect(clyde.mode).toBe(clyde.wave);
-    expect(clyde.x).toBe(15 * TILE_SIZE + TILE_SIZE / 2); // Clyde's designated slot on right
+    expect(clyde.x).toBe(16 * TILE_SIZE); // Clyde's seat: the 15/16 seam, where he starts
     expect(clyde.y).toBe(17 * TILE_SIZE + TILE_SIZE / 2);
   });
 
@@ -251,10 +251,11 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.playState = "PLAYING";
 
     const diagData = engine.getActorsDiagnostics();
-    expect(diagData.pacman.tileCol).toBe(13);
+    // Pac-Man and Blinky start on the 13/14 seam (x = 112), which is in col 14
+    expect(diagData.pacman.tileCol).toBe(14);
     expect(diagData.pacman.tileRow).toBe(26);
     expect(diagData.pacman.eatingFreezeFrames).toBe(0);
-    expect(diagData.blinky.tileCol).toBe(13);
+    expect(diagData.blinky.tileCol).toBe(14);
     expect(diagData.blinky.tileRow).toBe(14);
     expect(diagData.blinky.enteringHousePhase).toBe("NONE");
 
@@ -315,7 +316,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     const clydeRes = doorstepRule!.evaluate(engine);
     expect(clydeRes.pass).toBe(true);
 
-    // 3. Inky executes full descent to slot at x = 184 (col 11.5)
+    // 3. Inky executes full descent to his seat on the 11/12 seam
     let finishedDescent = false;
     for (let frame = 0; frame < 200; frame++) {
       finishedDescent = engine.movementController.handleEatenDescent(inky, 2);
@@ -323,6 +324,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
     expect(finishedDescent).toBe(true);
     expect(inky.inHouse).toBe(true);
-    expect(inky.x).toBe(11 * TILE_SIZE + TILE_SIZE / 2); // Left slot inside house
+    expect(inky.x).toBe(12 * TILE_SIZE); // Left seat inside house
   });
 });

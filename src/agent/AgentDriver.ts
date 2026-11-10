@@ -5,6 +5,7 @@ import { type GameState, hashGameState } from "../game/gameState";
 import type { HouseState } from "../controllers/HouseController";
 import { TILE_SIZE } from "../game/constants";
 import type { RoundPhase } from "../game/RoundSequencer";
+import { SpeedRecorder, type SpeedReport } from "./SpeedRecorder";
 import type {
   Direction,
   ElroyStage,
@@ -114,12 +115,17 @@ const center = (tile: number) => tile * TILE_SIZE + TILE_SIZE / 2;
  */
 export class AgentDriver {
   private recorded: SimEvent[] = [];
+  private speedRecorder: SpeedRecorder | null = null;
 
   constructor(
     public readonly engine: GameEngine,
     private readonly runner?: GameRunner
   ) {
-    if (runner) runner.onEvents = (events) => this.recorded.push(...events);
+    if (runner) {
+      runner.onEvents = (events) => this.recorded.push(...events);
+      runner.onBeforeTick = () => this.speedRecorder?.before();
+      runner.onAfterTick = () => this.speedRecorder?.after();
+    }
   }
 
   // --- Real-time loop ---------------------------------------------------------------------------
@@ -248,6 +254,28 @@ export class AgentDriver {
     return hashGameState(this.engine.getState());
   }
 
+  // --- Speed recording -------------------------------------------------------------------------
+
+  /**
+   * Starts (or restarts) recording how far every actor moves per play frame, by speed source.
+   * Works in live play too: call it, play normally, then read `speedReport()`.
+   */
+  public recordSpeeds(): void {
+    this.speedRecorder = new SpeedRecorder(this.engine);
+  }
+
+  /** Measured vs table speed per actor and source, plus real ticks per second (live play). */
+  public speedReport(): SpeedReport | null {
+    return this.speedRecorder?.report() ?? null;
+  }
+
+  /** Stops recording and returns the final report. */
+  public stopSpeeds(): SpeedReport | null {
+    const report = this.speedReport();
+    this.speedRecorder = null;
+    return report;
+  }
+
   // --- Observation --------------------------------------------------------------------------------
 
   public view(): AgentView {
@@ -327,7 +355,9 @@ export class AgentDriver {
     if (this.runner) {
       this.runner.tick();
     } else {
+      this.speedRecorder?.before();
       this.engine.update();
+      this.speedRecorder?.after();
       this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
       this.collectHeadless();
     }

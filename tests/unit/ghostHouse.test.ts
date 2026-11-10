@@ -231,6 +231,7 @@ describe("Ghost state machine in the engine", () => {
     const blinky = engine.ghosts.BLINKY;
     // 3 px right of a tile center, moving left: no center is crossed this frame
     blinky.x = 13 * 8 + 4 + 3;
+    blinky.lastOccupiedTile = { col: 13, row: 14 }; // already in this tile: no entry this frame
     blinky.dir = "LEFT";
     blinky.nextDir = "LEFT";
     engine.timerController.waveTimer = engine.timerController.currentWave!.frames - 1;

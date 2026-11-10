@@ -19,6 +19,7 @@ import {
   isTileWalkableForGhost,
 } from "../game/ghostAiUtils";
 import { getPixelStepsThisFrame } from "../utils";
+import { houseSlotX } from "../game/mazes";
 
 /**
  * Controller executing authentic discrete movement physics:
@@ -224,20 +225,16 @@ export class MovementController {
    * Dedicated arcade routing for disembodied ghost eyes descending into the ghost house:
    * 1. APPROACH_SEAM: Aligns on doorstep row 14 and glides horizontally to the seam between cols 13 and 14.
    * 2. DESCENDING_DOOR: Descents vertically DOWN through the door tiles (GATE row 15) down to row 17.
-   * 3. MOVING_TO_SLOT: Navigates horizontally to the ghost's designated spawn slot inside the house.
-   *    (Blinky routes to Pinky's slot on the seam; Inky to col 11's center; Clyde to col 15's center).
+   * 3. MOVING_TO_SLOT: Navigates horizontally to the ghost's seat inside the house, the same seam
+   *    point it starts on (Blinky takes Pinky's on the 13/14 seam; Inky 11/12; Clyde 15/16).
    */
   public handleEatenDescent(ghost: Ghost, steps: number): boolean {
     const seamX = 14 * TILE_SIZE; // Seam between columns 13 and 14
     const doorstepY = 14 * TILE_SIZE + TILE_SIZE / 2; // Centerline of doorstep row 14
     const houseLevelY = 17 * TILE_SIZE + TILE_SIZE / 2; // Centerline of house row 17
 
-    let slotX = seamX; // Pinky & Blinky respawn slot
-    if (ghost.type === "INKY") {
-      slotX = 11 * TILE_SIZE + TILE_SIZE / 2; // Left slot
-    } else if (ghost.type === "CLYDE") {
-      slotX = 15 * TILE_SIZE + TILE_SIZE / 2; // Right slot
-    }
+    // The ghost's seat in the house: the same seam point it starts on (Blinky takes Pinky's)
+    const slotX = houseSlotX(ghost.type);
 
     for (let step = 0; step < steps; step++) {
       if (!ghost.enteringHousePhase || ghost.enteringHousePhase === "NONE") {

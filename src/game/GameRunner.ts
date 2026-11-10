@@ -4,6 +4,7 @@ import { GameLoopController } from "../controllers/GameLoopController";
 import type GameEngine from "./GameEngine";
 import type GameRenderer from "./GameRenderer";
 import type { SimEvent } from "./simEvents";
+import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
 /**
  * The shell around the pure simulation. It owns everything with side effects: the real-time
@@ -15,6 +16,9 @@ export class GameRunner {
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
+  /** Observers around every tick, in live play too (the agent driver's speed recorder). */
+  public onBeforeTick?: () => void;
+  public onAfterTick?: () => void;
   /** Receives every batch of sim events after it is dispatched (used by the agent driver). */
   public onEvents?: (events: SimEvent[]) => void;
   /** Whether the real-time loop is running (false while an agent drives frames by hand). */
@@ -22,12 +26,19 @@ export class GameRunner {
     return this.loop.isRunning;
   }
 
+  /** Ticks the real-time loop runs per real second: 60.606 (arcade) or 60, × practice speed. */
+  public get ticksPerSecond(): number {
+    const { gameSpeed, arcadeRefreshRate } = this.engine.settings;
+    return (arcadeRefreshRate ? ARCADE_REFRESH_HZ : SIM_FPS) * gameSpeed;
+  }
+
   constructor(public readonly engine: GameEngine) {
     this.loop = new GameLoopController(
       () => this.tick(),
       () => this.renderer?.render(this.engine),
-      // Practice speed changes how many ticks run per second, never what a tick does.
-      () => this.engine.settings.gameSpeed
+      // Practice speed and the arcade refresh rate change how many ticks run per real second,
+      // never what a tick does.
+      () => this.ticksPerSecond / GameLoopController.LOGIC_FPS
     );
   }
 
@@ -45,7 +56,9 @@ export class GameRunner {
   /** Runs one simulation tick and everything that follows it. */
   public tick(): void {
     this.onPreUpdate?.();
+    this.onBeforeTick?.();
     this.engine.update();
+    this.onAfterTick?.();
     this.flush();
 
     if (this.engine.phase === "PLAYING") {

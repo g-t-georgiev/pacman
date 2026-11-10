@@ -108,7 +108,10 @@ describe("Sim events", () => {
   it("the sim queues events instead of calling audio or the UI bus", () => {
     const engine = newPlayingEngine();
     engine.drainEvents();
-    engine.maze.tiles[engine.pacman.tileCoord.row][engine.pacman.tileCoord.col] = "DOT";
+    // Pac-Man starts on the 13/14 seam and steps into col 13 on the first frame
+    const { row } = engine.pacman.tileCoord;
+    engine.maze.tiles[row][13] = "DOT";
+    engine.maze.tiles[row][14] = "DOT";
 
     engine.update();
     const types = engine.drainEvents().map((e) => e.type);

@@ -1,5 +1,20 @@
 import type { GameMode, MazeData, TileCoord, TileType } from "../types";
-import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES } from "./constants";
+import { DEFAULT_SCATTER_TARGETS, DEFAULT_SPAWN_CANDIDATES, TILE_SIZE } from "./constants";
+import type { DualTileCoord, GhostType } from "../types";
+
+/**
+ * Where an actor stands for a pair of tiles: on the seam between them, on the row centerline
+ * (F9). The arcade starts Pac-Man, Blinky and Pinky on the 13/14 seam, and seats Inky and Clyde
+ * two tiles to either side, so spawning and reviving share these points.
+ */
+export function seamPx(pair: DualTileCoord): { x: number; y: number } {
+  return { x: pair[1].col * TILE_SIZE, y: pair[0].row * TILE_SIZE + TILE_SIZE / 2 };
+}
+
+/** The x of a ghost's seat in the house when its eyes come home (Blinky uses Pinky's). */
+export function houseSlotX(type: GhostType): number {
+  return seamPx(DEFAULT_SPAWN_CANDIDATES[type === "BLINKY" ? "PINKY" : type]).x;
+}
 
 /**
  * Classic Arcade Pac-Man Maze (28 cols x 36 rows):
