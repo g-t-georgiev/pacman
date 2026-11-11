@@ -18,7 +18,9 @@ export type SimEvent =
   | { type: "FRUIT_EATEN"; points: number }
   | { type: "EXTRA_LIFE"; lives: number }
   /** The death animation starts (after the freeze), with its sound. */
-  | { type: "PACMAN_DIED" };
+  | { type: "PACMAN_DIED" }
+  /** A rewind showed an earlier frame (the round may be back from a death or a game over). */
+  | { type: "REWOUND"; playState: PlayState };
 
 /** Background siren the sim wants this frame. Derived from state, never queued. */
 export type SirenState =

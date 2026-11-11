@@ -293,3 +293,19 @@ describe("Dossier · Home Sweet Home", () => {
     expect(e.ghosts.CLYDE.location).not.toBe("HOUSE");
   });
 });
+
+describe("Dossier · Home Sweet Home (after a death)", () => {
+  it("a life lost disables the personal counters but does not reset them; the global one starts at 0", () => {
+    const agent = playing();
+    const e = agent.engine;
+    const house = e.houseController;
+    house.state.dotCounters = { PINKY: 0, INKY: 12, CLYDE: 5 };
+    house.onLifeLost();
+    expect(house.state.dotCounters).toEqual({ PINKY: 0, INKY: 12, CLYDE: 5 });
+    expect(house.state).toMatchObject({ globalCounterActive: true, globalCounter: 0 });
+    // Dots now count on the global counter only
+    house.onDotEaten(e.ghosts);
+    expect(house.state.globalCounter).toBe(1);
+    expect(house.state.dotCounters).toEqual({ PINKY: 0, INKY: 12, CLYDE: 5 });
+  });
+});

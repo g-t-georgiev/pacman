@@ -1033,6 +1033,7 @@ export default class GameEngine {
     // Exact, high score included: the shown high score follows the rewound game (the stored
     // high-score table is only written at game over).
     this.rewindIndex = tick - this.replayLog.oldestTick;
+    this.emit({ type: "REWOUND", playState: PHASE_PLAY_STATE[this.sequencer.phase] });
   }
 
   public resetGhostsToHouse() {

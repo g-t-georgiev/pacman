@@ -197,6 +197,9 @@ export function dispatchSimEvent(event: SimEvent): void {
       soundEngine.playEatFruit();
       GameEvents.emit("FRUIT_EATEN", event.points);
       break;
+    case "REWOUND":
+      GameEvents.emit("REWOUND", event.playState);
+      break;
     case "EXTRA_LIFE":
       soundEngine.playExtraLife();
       break;

@@ -27,6 +27,8 @@ export interface GameEventMap {
   DIAGNOSTICS_TICK: DiagnosticData;
   /** State was changed between ticks (agent driver): panels reading the engine re-render. */
   UI_SYNC: undefined;
+  /** A rewind showed an earlier frame; the payload is that frame's round state (T7). */
+  REWOUND: PlayState;
 }
 
 export type GameEventName = keyof GameEventMap;

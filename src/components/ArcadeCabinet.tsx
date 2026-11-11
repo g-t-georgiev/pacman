@@ -197,11 +197,28 @@ export const ArcadeCabinet: React.FC = () => {
     // The agent driver edits state between ticks; re-render panels that read the engine directly
     const handleUiSync = () => setUiTick((t) => t + 1);
 
+    // A rewind out of a game over brings the round back: drop the game-over UI (and a delayed
+    // Restart panel that has not opened yet), so nothing covers the board while you play on.
+    const handleRewound = (e: CustomEvent<PlayState>) => {
+      if (e.detail !== "GAME_OVER") {
+        if (gameOverTimerRef.current !== null) {
+          window.clearTimeout(gameOverTimerRef.current);
+          gameOverTimerRef.current = null;
+        }
+        setShowRestartPanel(false);
+        setIsGameOverState(false);
+        setPendingScore(null);
+      }
+      runnerRef.current?.syncUi(); // score, lives, level and play state of the rewound frame
+    };
+
     GameEvents.on("GAME_OVER", handleGameOver);
     GameEvents.on("UI_SYNC", handleUiSync);
+    GameEvents.on("REWOUND", handleRewound);
     return () => {
       GameEvents.off("GAME_OVER", handleGameOver);
       GameEvents.off("UI_SYNC", handleUiSync);
+      GameEvents.off("REWOUND", handleRewound);
     };
   }, []);
 
@@ -380,8 +397,16 @@ export const ArcadeCabinet: React.FC = () => {
         case "r":
         case "R":
           if (labRef.current !== null) {
+            // In the Lab: scrub back 2 s; "Resume from Here" (or closing the Lab) plays on
             engine.rewindSeconds(2);
-            setUiTick((t) => t + 1); // show the panel's "Resume from Here"
+            setUiTick((t) => t + 1);
+          } else if (anyPanelOpenRef.current) {
+            // E.g. the Restart panel after a game over: back 2 s, then hold there (your pause)
+            // with the board in view, so you can get ready and press Space
+            engine.rewindSeconds(2);
+            engine.resumeFromScrub();
+            runnerRef.current?.setPaused("user", true);
+            setUiTick((t) => t + 1);
           }
           break;
       }

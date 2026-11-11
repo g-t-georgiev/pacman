@@ -86,7 +86,30 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     playRecording(agent, 600);
     agent.events();
     e.rewindSeconds(5);
-    expect(e.drainEvents()).toEqual([]);
+    // Only the rewind itself is announced, so the UI can follow (e.g. leave a game over)
+    expect(e.drainEvents()).toEqual([{ type: "REWOUND", playState: "PLAYING" }]);
+  });
+
+  it("rewinding out of a game over brings the round back", () => {
+    const agent = new AgentDriver(new GameEngine("PACMAN", 0));
+    agent.scenario({ level: 1, playState: "PLAYING" });
+    const e = agent.engine;
+    e.lives = 1;
+    agent.scenario({}); // record from here
+    agent.advance(200);
+    const b = agent.view().ghosts.BLINKY;
+    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    agent.runUntil((v) => v.playState === "GAME_OVER", 600);
+    expect(e.playState).toBe("GAME_OVER");
+
+    agent.events();
+    e.rewindSeconds(6);
+    const rewound = e.drainEvents().find((ev) => ev.type === "REWOUND");
+    expect(rewound).toEqual({ type: "REWOUND", playState: "PLAYING" });
+    e.resumeFromScrub();
+    agent.advance(1);
+    expect(e.lives).toBe(1);
+    expect(e.phase).toBe("PLAYING");
   });
 
   it("reaches back about two minutes", () => {
