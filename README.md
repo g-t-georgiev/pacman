@@ -26,6 +26,9 @@ pixel font (exact columns in
 `HUD_LAYOUT`, `src/game/arcadeHud.ts`). The bar above the canvas holds the buttons: Restart,
 Turbo, Lab, diagnostics, CRT, a pause button in dev builds, and sound.
 
+Actors are drawn at the arcade's sprite size, two tiles across, so they overlap the walls beside a
+corridor; which tile an actor is in (and so every collision) depends only on its center point.
+
 ## Controls
 
 | Action                            | Keys                         |

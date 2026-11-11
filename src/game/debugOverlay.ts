@@ -263,12 +263,12 @@ function drawReadout(ctx: CanvasRenderingContext2D, engine: GameEngine): void {
   ctx.fillText(
     label(pac.pct, pac.source, engine.pacman.speed),
     px(engine.pacman.x),
-    px(engine.pacman.y) - T * 0.7
+    px(engine.pacman.y) - T * 1.2
   );
   for (const g of Object.values(engine.ghosts)) {
     const s = ghostSpeed(engine, g);
     ctx.fillStyle = ghostColor(g.type);
-    ctx.fillText(label(s.pct, s.source, g.speed), px(g.x), px(g.y) - T * 0.7);
+    ctx.fillText(label(s.pct, s.source, g.speed), px(g.x), px(g.y) - T * 1.2);
   }
 }
 

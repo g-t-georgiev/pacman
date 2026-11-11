@@ -212,3 +212,18 @@ export const FRUIT_EXTRA_FRAMES = SIM_FPS;
  * 8-px grid, so 16 px (one canvas tile) and 8 px stay crisp. Falls back while it loads.
  */
 export const arcadeFont = (px: number): string => `${px}px "Emulogic", "Courier New", monospace`;
+
+/**
+ * Actor sprites are 16x16 arcade pixels (2x2 tiles) centered on the actor, so they overlap the
+ * walls beside a corridor, as in the arcade (F27). Purely visual: an actor occupies only the tile
+ * of its center point (Dossier, "What Tile Am I In?"). The shapes are drawn on a one-tile box and
+ * scaled up around the center.
+ */
+/** Half the sprite box, in canvas pixels (one tile). */
+export const SPRITE_HALF = RENDER_TILE_SIZE;
+/** Pac-Man's body: ~13 of 16 arcade px across. Drawn with radius 9, so scaled 13 / 9. */
+export const PACMAN_DRAW_SCALE = (13 * RENDER_SCALE) / 2 / 9;
+/** A ghost: ~14 of 16 arcade px wide. Drawn one tile (16 canvas px) wide, so scaled 28 / 16. */
+export const GHOST_DRAW_SCALE = (14 * RENDER_SCALE) / RENDER_TILE_SIZE;
+/** The bonus fruit, drawn as an emoji about two tiles tall. */
+export const FRUIT_FONT_PX = Math.round(RENDER_TILE_SIZE * 1.75);

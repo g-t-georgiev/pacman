@@ -3,7 +3,11 @@ import type GameEngine from "./GameEngine";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
+  FRUIT_FONT_PX,
   GHOST_COLORS,
+  GHOST_DRAW_SCALE,
+  PACMAN_DRAW_SCALE,
+  SPRITE_HALF,
   arcadeFont,
   RENDER_SCALE,
   RENDER_TILE_SIZE as TILE_SIZE,
@@ -192,6 +196,7 @@ export default class GameRenderer {
 
     ctx.save();
     ctx.translate(px(p.x), px(p.y));
+    ctx.scale(PACMAN_DRAW_SCALE, PACMAN_DRAW_SCALE); // arcade-size sprite (F27)
 
     // Death animation
     if (p.isDying) {
@@ -303,6 +308,7 @@ export default class GameRenderer {
 
       ctx.save();
       ctx.translate(px(g.x), px(g.y));
+      ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE); // arcade-size sprite (F27)
 
       const radius = TILE_SIZE / 2;
 
@@ -386,11 +392,12 @@ export default class GameRenderer {
     const f = engine.fruit;
     if (!f || !f.active) return;
 
-    const x = f.col * TILE_SIZE + TILE_SIZE / 2;
+    // Centered on the seam between its two tiles (13/14), like the spawn points, at sprite size
+    const x = (f.col + 1) * TILE_SIZE;
     const y = f.row * TILE_SIZE + TILE_SIZE / 2 + px(f.bounceY || 0);
 
     ctx.save();
-    ctx.font = "16px monospace";
+    ctx.font = `${FRUIT_FONT_PX}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(f.symbol, x, y);
@@ -524,7 +531,7 @@ export default class GameRenderer {
         const badgeH = 13;
 
         // Position badge above ghost dome, flip below skirt if too close to top of canvas
-        let badgeY = px(g.y) - 18;
+        let badgeY = px(g.y) - SPRITE_HALF - 4;
         if (badgeY < 6) {
           badgeY = px(g.y) + 12;
         }
@@ -762,7 +769,7 @@ export default class GameRenderer {
         ctx.font = "bold 9px monospace";
         const alertWidth = ctx.measureText(alertLabel).width;
         const abx = px(g.x) - alertWidth / 2 - 3;
-        const aby = px(g.y) - 20;
+        const aby = px(g.y) - SPRITE_HALF - 6;
         const abw = alertWidth + 6;
         const abh = 13;
 
