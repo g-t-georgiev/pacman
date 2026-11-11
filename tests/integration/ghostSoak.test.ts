@@ -36,7 +36,7 @@ describe("Ghost movement soak", () => {
         engine.pacman.invincible = true;
         prev.clear();
       }
-      agent.step(1);
+      agent.advance(1);
       if (engine.phase !== "PLAYING") continue;
       f++;
 

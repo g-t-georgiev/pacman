@@ -5,16 +5,23 @@ import { SimRandom } from "../../src/core/SimRandom";
 import { KEYFRAME_TICKS, MAX_KEYFRAMES } from "../../src/game/replay";
 import type { Direction } from "../../src/types";
 
-/** Plays `frames` frames with random input; returns each frame's tick and state hash. */
-function playRecording(agent: AgentDriver, frames: number): Map<number, number> {
+/**
+ * Plays `frames` frames with random input. With `withHashes`, returns each frame's tick and
+ * state hash (hashing every frame is the slow part, so only the test that compares asks for it).
+ */
+function playRecording(
+  agent: AgentDriver,
+  frames: number,
+  withHashes = false
+): Map<number, number> {
   const rng = new SimRandom();
   rng.reset(11);
   const dirs: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
   const hashes = new Map<number, number>();
   for (let f = 0; f < frames; f++) {
     if (f % 17 === 0) agent.input(dirs[rng.nextInt(4)]);
-    agent.step(1);
-    hashes.set(agent.engine.tick, agent.hash());
+    agent.advance(1);
+    if (withHashes) hashes.set(agent.engine.tick, agent.hash());
   }
   return hashes;
 }
@@ -32,7 +39,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   it("every scrubbed frame is exactly the frame that was played", () => {
     const agent = playing();
     const e = agent.engine;
-    const hashes = playRecording(agent, 900);
+    const hashes = playRecording(agent, 900, true);
     const oldest = e.tick - e.getRewindBufferLength() + 1;
 
     for (const back of [1, 59, 60, 61, 333, 899]) {

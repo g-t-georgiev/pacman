@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vite-plus/test";
+import { describe, it, expect, onTestFinished } from "vite-plus/test";
 import GameEvents from "../../src/core/EventBus";
 import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
@@ -30,9 +30,11 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     engine.playState = "PLAYING";
 
     let diagReceived!: DiagnosticData;
-    GameEvents.on("DIAGNOSTICS_TICK", (e: CustomEvent<DiagnosticData>) => {
+    const listener = (e: CustomEvent<DiagnosticData>) => {
       diagReceived = e.detail;
-    });
+    };
+    GameEvents.on("DIAGNOSTICS_TICK", listener);
+    onTestFinished(() => GameEvents.off("DIAGNOSTICS_TICK", listener)); // the bus is shared
 
     // Run 4 frames to trigger DIAGNOSTICS_TICK (the runner owns diagnostics, not the sim). The
     // console's telemetry only flows while the console is open (T8).

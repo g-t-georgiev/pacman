@@ -27,7 +27,7 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
-        const blinky = engine.ghostStates.BLINKY;
+        const blinky = engine.ghosts.BLINKY;
         if (blinky.elroyStage > 0 && blinky.location === "ACTIVE" && blinky.mode === "SCATTER") {
           const pac = engine.pacman.tileCoord;
           const t = blinky.target;
@@ -50,10 +50,8 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
-        for (const type of Object.keys(engine.ghostStates) as Array<
-          keyof typeof engine.ghostStates
-        >) {
-          const g = engine.ghostStates[type];
+        for (const type of Object.keys(engine.ghosts) as Array<keyof typeof engine.ghosts>) {
+          const g = engine.ghosts[type];
           const t = g.target;
           if (g.mode === "EATEN" && !g.inHouse && t) {
             const gRow = Math.floor(g.y / TILE_SIZE);
@@ -116,15 +114,13 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
-        if (engine.pacmanState.isDying) return { pass: true };
+        if (engine.pacman.isDying) return { pass: true };
         const pacTile = {
-          col: Math.floor(engine.pacmanState.x / TILE_SIZE),
-          row: Math.floor(engine.pacmanState.y / TILE_SIZE),
+          col: Math.floor(engine.pacman.x / TILE_SIZE),
+          row: Math.floor(engine.pacman.y / TILE_SIZE),
         };
-        for (const type of Object.keys(engine.ghostStates) as Array<
-          keyof typeof engine.ghostStates
-        >) {
-          const g = engine.ghostStates[type];
+        for (const type of Object.keys(engine.ghosts) as Array<keyof typeof engine.ghosts>) {
+          const g = engine.ghosts[type];
           if (g.inHouse || g.mode === "EATEN") continue;
           const gTile = {
             col: Math.floor(g.x / TILE_SIZE),
@@ -133,10 +129,10 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
           if (
             (g.mode === "CHASE" || g.mode === "SCATTER") &&
             !engine.settings.invincible &&
-            !engine.pacmanState.invincible
+            !engine.pacman.invincible
           ) {
             if (pacTile.col === gTile.col && pacTile.row === gTile.row) {
-              if (!engine.pacmanState.isDying && engine.playState === "PLAYING") {
+              if (!engine.pacman.isDying && engine.playState === "PLAYING") {
                 return {
                   pass: false,
                   message: `Pac-Man and ${type} share integer tile (${pacTile.col}, ${pacTile.row}) without collision triggered!`,
@@ -157,10 +153,8 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
-        for (const type of Object.keys(engine.ghostStates) as Array<
-          keyof typeof engine.ghostStates
-        >) {
-          const g = engine.ghostStates[type];
+        for (const type of Object.keys(engine.ghosts) as Array<keyof typeof engine.ghosts>) {
+          const g = engine.ghosts[type];
           if (g.mode === "EATEN" && g.enteringHousePhase === "DESCENDING_DOOR") {
             const seamX = 14 * TILE_SIZE;
             if (Math.abs(g.x - seamX) > 1) {
@@ -202,7 +196,7 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
       passes: 0,
       failures: 0,
       evaluate: (engine: GameEngine) => {
-        const p = engine.pacmanState;
+        const p = engine.pacman;
         const curRow = Math.floor(p.y / TILE_SIZE);
         const inTunnel = engine.maze.tunnels.some((t) => t.y === curRow);
         if (!inTunnel) {

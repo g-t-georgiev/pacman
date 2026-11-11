@@ -56,7 +56,7 @@ describe("Dossier · The Basics", () => {
     const x = e.pacman.x;
     agent.step(3);
     expect(e.pacman.x).toBe(x); // held for exactly 3 frames...
-    agent.step(1);
+    agent.advance(1);
     expect(e.pacman.x).not.toBe(x); // ...then moves on
   });
 
@@ -106,7 +106,7 @@ describe("Dossier · Scatter, Chase, Repeat", () => {
     agent.step(200);
     const before = new Map(Object.values(e.ghosts).map((g) => [g.type, g.dir]));
     e.timerController.waveTimer = e.timerController.currentWave!.frames - 1;
-    agent.step(1);
+    agent.advance(1);
     for (const g of Object.values(e.ghosts)) {
       if (g.location !== "ACTIVE" && g.location !== "HOUSE") continue;
       // Latched, or already turned around (it entered a new tile on this very frame)
@@ -123,7 +123,7 @@ describe("Dossier · Scatter, Chase, Repeat", () => {
     expect(e.ghosts.BLINKY.reversalPrimed).toBe(true);
     agent.runUntil(() => e.frightenedGlobalTimer === 0, 10 * SIM_FPS);
     for (const g of Object.values(e.ghosts)) g.reversalPrimed = false;
-    agent.step(1);
+    agent.advance(1);
     for (const g of Object.values(e.ghosts)) expect(g.reversalPrimed).toBe(false);
   });
 });
@@ -159,7 +159,7 @@ describe("Dossier · Frightening Behavior", () => {
       agent.scenario({ ghosts: { [type]: { col: 6, row: 8 } }, pacman: { col: 6, row: 8 } });
       e.maze.tiles[8][6] = "EMPTY";
       const before = e.score;
-      agent.step(1);
+      agent.advance(1);
       const points = e.score - before;
       agent.runUntil((v) => v.phase === "PLAYING", 120); // the eat pause
       return points;
@@ -203,7 +203,7 @@ describe("Dossier · Maze Logic 101", () => {
     for (let f = 0; f < 1500; f++) {
       e.timerController.waveIndex = 0; // hold the first scatter
       e.timerController.waveTimer = 0;
-      agent.step(1);
+      agent.advance(1);
       if (f >= 900)
         visited.add(`${e.ghosts.BLINKY.tileCoord.col},${e.ghosts.BLINKY.tileCoord.row}`);
     }
@@ -249,7 +249,7 @@ describe("Dossier · Meet the Ghosts", () => {
     for (let f = 0; f < 3000; f++) {
       e.timerController.waveIndex = 1; // hold chase
       e.timerController.waveTimer = 0;
-      agent.step(1);
+      agent.advance(1);
       const c = e.ghosts.CLYDE.tileCoord;
       const d = (c.col - 1) ** 2 + (c.row - 4) ** 2;
       if (f >= 1000) {

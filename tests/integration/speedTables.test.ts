@@ -20,7 +20,7 @@ function play(level: number, frames: number): AgentDriver {
   const dirs: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
   for (let f = 0; f < frames; f++) {
     if (f % 40 === 0) agent.input(dirs[rng.nextInt(4)]);
-    agent.step(1);
+    agent.advance(1);
     if (engine.phase === "MAZE_FLASH" || engine.phase === "GAME_OVER") {
       agent.scenario({ level, playState: "PLAYING" });
       engine.pacman.invincible = true;

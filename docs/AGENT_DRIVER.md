@@ -21,6 +21,7 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `pause()` / `resume()`   | Hold / release the game for the agent (browser). Other holds stay in place.              |
 | `setSpeed(x)`            | Practice time scale for the real-time loop (0.25 = slow motion).                         |
 | `input(dir)`             | Buffer a direction, like a key press.                                                    |
+| `advance(n)`             | Advance `n` frames without building a result: for hot loops that check state themselves. |
 | `step(n)`                | Advance exactly `n` frames. Returns `{ frames, events, view }`.                          |
 | `runUntil(pred, max)`    | Step until `pred(view)` is true. Returns `{ reached, frames, events, view }`.            |
 | `trace(n, pick)`         | Step `n` frames, sampling `pick(view)` after each one.                                   |

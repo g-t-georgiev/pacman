@@ -23,7 +23,7 @@ function playRandomly(agent: AgentDriver, frames: number, seed = 7): void {
   const dirs: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
   for (let f = 0; f < frames; f++) {
     if (f % 20 === 0) agent.input(dirs[rng.nextInt(4)]);
-    agent.step(1);
+    agent.advance(1);
   }
 }
 
@@ -120,7 +120,7 @@ describe("Replay log (T4)", () => {
     const agent = playing();
     playRandomly(agent, 700);
     agent.engine.settings.emulateRomQuirks = false;
-    agent.step(1);
+    agent.advance(1);
     const changedAt = agent.engine.tick;
     playRandomly(agent, 300);
     const replay = agent.saveReplay();

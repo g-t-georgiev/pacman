@@ -172,6 +172,14 @@ export class AgentDriver {
     return this.view();
   }
 
+  /**
+   * Advances `frames` frames without building a result (no view, no redraw): for hot loops in
+   * tests and scripts that check state themselves. Events still collect for `events()`.
+   */
+  public advance(frames: number = 1): void {
+    for (let i = 0; i < frames; i++) this.tick();
+  }
+
   /** Advances exactly `frames` frames. */
   public step(frames: number = 1): StepResult {
     for (let i = 0; i < frames; i++) this.tick();
