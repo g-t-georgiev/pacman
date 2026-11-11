@@ -58,6 +58,10 @@ export function renderDebugOverlay(ctx: CanvasRenderingContext2D, engine: GameEn
   if (layers.cornerWindow) drawCornerWindow(ctx, engine);
   if (layers.readout) drawReadout(ctx, engine);
   if (layers.timeline) {
+    // These rows hold the arcade HUD (T13): cover it while this layer is on
+    ctx.fillStyle = engine.maze.bgColor || "#000000";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, 3 * T);
+    ctx.fillRect(0, 34 * T, CANVAS_WIDTH, 2 * T);
     drawTimeline(ctx, engine);
     drawHousePanel(ctx, engine);
   }

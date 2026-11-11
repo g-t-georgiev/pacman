@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* The game's pixel font for canvas texts (Emulogic, (c) 2004 ck! / freakyfonts.de) */
+@font-face {
+  font-family: "Emulogic";
+  src: url("/fonts/Emulogic.ttf") format("truetype");
+  font-display: block;
+}

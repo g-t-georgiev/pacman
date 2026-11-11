@@ -206,3 +206,9 @@ export const EXTRA_LIFE_SCORE = 10_000;
  */
 export const FRUIT_MIN_FRAMES = 9 * SIM_FPS;
 export const FRUIT_EXTRA_FRAMES = SIM_FPS;
+
+/**
+ * The canvas font for game texts (score rows, banners, pop-ups): Emulogic, a pixel font on an
+ * 8-px grid, so 16 px (one canvas tile) and 8 px stay crisp. Falls back while it loads.
+ */
+export const arcadeFont = (px: number): string => `${px}px "Emulogic", "Courier New", monospace`;

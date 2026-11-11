@@ -18,6 +18,14 @@ vp test              # unit, integration, fidelity and golden replay tests
 vp run golden:update # re-record golden replays after an intended mechanics change
 ```
 
+## Screen
+
+Like the arcade, the score texts live in the maze's blank rows: `1UP` and `HIGH SCORE` with
+their scores above the maze, spare lives and the recent levels' fruit below it, in the Emulogic
+pixel font (exact columns in
+`HUD_LAYOUT`, `src/game/arcadeHud.ts`). The bar above the canvas holds the buttons: Restart,
+Turbo, Lab, diagnostics, CRT, a pause button in dev builds, and sound.
+
 ## Controls
 
 | Action                            | Keys                         |
@@ -95,7 +103,8 @@ questions.
 src/
 ├── agent/          AgentDriver (runtime test driver), SpeedRecorder
 ├── audio/          SoundEngine (procedural Web Audio)
-├── components/     React UI: cabinet, HUD, Learn/Practice/Restart panels, debug overlay panel
+├── components/     React UI: cabinet, button bar, Lab panel (Learn / Practice / Debug tabs),
+│                   replay bar, Restart / Game Modes / Scores panels
 ├── config/         ui.config.ts (UI timings and panel transitions)
 ├── controllers/    Game loop, timers, ghost AI, movement, ghost house, animation
 ├── core/           Actor, Pacman, Ghost, PRNG, SimRandom, EventBus
@@ -107,6 +116,10 @@ src/
 │   ├── levelTable.ts      Per-level values (Table A.1)
 │   ├── speedMasks.ts      16-frame speed step masks
 │   ├── replay.ts          Recording, replay, rewind keyframes
+│   ├── ReplayViewer.ts    Watching a replay in the game; replayShare.ts: share links
+│   ├── arcadeHud.ts       Score, high score, lives and fruit in the maze's blank rows
+│   ├── mazeAnalysis.ts    Corridors, intersections, tunnel zones, maze validator
+│   ├── rulesets.ts        What differs per mode (maze, fruit, looks)
 │   ├── gameState.ts       Serializable state and its hash
 │   ├── debugOverlay.ts    Debug overlay layers
 │   ├── mazes.ts           Maze data and spawn points
@@ -118,3 +131,8 @@ tests/              unit, integration, fidelity and golden replay tests
 scripts/            update-golden.ts
 docs/               REFACTOR_PLAN.md, AGENT_DRIVER.md
 ```
+
+## Credits
+
+- **Emulogic** font (canvas texts), © 2004 ck! / [freakyfonts.de](http://www.freakyfonts.de),
+  in `public/fonts/`. Check the author's terms before publishing the game.

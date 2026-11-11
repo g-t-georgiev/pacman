@@ -4,11 +4,13 @@ import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   GHOST_COLORS,
+  arcadeFont,
   RENDER_SCALE,
   RENDER_TILE_SIZE as TILE_SIZE,
 } from "./constants";
 import { chooseNextGhostDirection, getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
 import { renderDebugOverlay } from "./debugOverlay";
+import { renderArcadeHud } from "./arcadeHud";
 
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
@@ -69,6 +71,9 @@ export default class GameRenderer {
 
     // Render Pac-Man / Hero
     this.renderPlayer(engine);
+
+    // Arcade score and status texts in the maze's blank rows (T13)
+    renderArcadeHud(ctx, engine);
 
     // Debug overlay layers (F1, dev builds; plan T1-T3)
     if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine);
@@ -287,7 +292,7 @@ export default class GameRenderer {
       // While the action is paused after eating a ghost, its score shows in its place.
       if (type === eatenGhost) {
         ctx.save();
-        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.font = arcadeFont(12);
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#00ffff";
@@ -782,7 +787,7 @@ export default class GameRenderer {
   private renderScorePopups(engine: GameEngine) {
     const ctx = this.ctx;
     ctx.save();
-    ctx.font = 'bold 12px "Courier New", monospace';
+    ctx.font = arcadeFont(12);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -803,29 +808,27 @@ export default class GameRenderer {
     const centerX = CANVAS_WIDTH / 2;
     const centerY = 20 * TILE_SIZE;
 
-    // Watching a replay (T12): a marker in the blank bottom row
+    // Watching a replay (T12): a marker between the lives and the fruit in the bottom rows
     if (engine.watchingReplay) {
-      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.font = arcadeFont(12);
       ctx.fillStyle = "#ff3b3b";
-      ctx.textAlign = "left";
-      ctx.fillText("● REPLAY", 8, 35 * TILE_SIZE + TILE_SIZE / 2);
-      ctx.textAlign = "center";
+      ctx.fillText("● REPLAY", CANVAS_WIDTH / 2, 35 * TILE_SIZE);
     }
 
     if (engine.playState === "READY") {
-      ctx.font = 'bold 18px "Courier New", monospace';
+      ctx.font = arcadeFont(16);
       ctx.fillStyle = "#ffff00";
       ctx.fillText("READY!", centerX, centerY);
     } else if (engine.playState === "GAME_OVER") {
-      ctx.font = 'bold 20px "Courier New", monospace';
+      ctx.font = arcadeFont(16);
       ctx.fillStyle = "#ff0000";
       ctx.fillText("GAME OVER", centerX, centerY);
     } else if (engine.playState === "PAUSED") {
-      ctx.font = 'bold 20px "Courier New", monospace';
+      ctx.font = arcadeFont(16);
       ctx.fillStyle = "#00ffff";
       ctx.fillText("PAUSED", centerX, centerY);
     } else if (engine.playState === "LEVEL_CLEAR") {
-      ctx.font = 'bold 18px "Courier New", monospace';
+      ctx.font = arcadeFont(16);
       ctx.fillStyle = "#00ff88";
       ctx.fillText("LEVEL CLEARED!", centerX, centerY);
     }

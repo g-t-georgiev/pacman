@@ -2,7 +2,7 @@ import type { Direction, GameMode, PlayState } from "../types";
 import React, { useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { uiConfig } from "../config/ui.config";
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../game/constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, arcadeFont } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import { GameRunner } from "../game/GameRunner";
@@ -19,7 +19,6 @@ import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShar
 import { RULESETS } from "../game/rulesets";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
-import { getFruitDataPerLevel } from "../utils";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { useGameEvent } from "../hooks/useGameEvent";
 
@@ -38,7 +37,6 @@ export const ArcadeCabinet: React.FC = () => {
     const highest = stored.length > 0 ? stored[0].score : 10000;
     return { score: 0, highScore: highest };
   });
-  const lives = useGameEvent(GameEvents, "LIVES_CHANGED", () => 3);
   const level = useGameEvent(GameEvents, "LEVEL_CHANGED", () => 1);
 
   const score = scoreData.score;
@@ -259,6 +257,9 @@ export const ArcadeCabinet: React.FC = () => {
     runner.onPreUpdate = () => {
       pollGamepads(engine);
     };
+
+    // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading)
+    void document.fonts?.load(arcadeFont(16));
 
     // Play intro sound
     void soundEngine.playIntro();
@@ -547,8 +548,6 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(true);
   };
 
-  const fruitMeta = getFruitDataPerLevel(level);
-
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">
       {/* Top Navbar */}
@@ -582,9 +581,6 @@ export const ArcadeCabinet: React.FC = () => {
       <main className="w-full flex-1 flex flex-col items-center justify-center my-2 max-w-2xl">
         {/* HUD Scoreboard */}
         <HUD
-          score={score}
-          highScore={highScore}
-          level={level}
           turbo={turbo}
           onToggleTurbo={handleToggleTurbo}
           labOpen={lab !== null}
@@ -622,24 +618,9 @@ export const ArcadeCabinet: React.FC = () => {
           <ReplayBar runner={runnerRef.current} onExit={exitReplay} />
         )}
 
-        {/* Bottom Arcade Rack: Lives & Level Fruit */}
-        <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-b-xl px-4 py-2 flex items-center justify-between text-xs text-neutral-400 select-none">
-          {/* Lives Display */}
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-[10px] text-neutral-400 mr-1">LIVES:</span>
-            {Array.from({ length: Math.max(0, lives - 1) }).map((_, idx) => (
-              <span key={idx} className="text-yellow-400 text-sm">
-                🟡
-              </span>
-            ))}
-            {lives <= 1 && <span className="text-[10px] text-red-400 font-bold">LAST LIFE!</span>}
-          </div>
-
-          {/* Fruit Indicator */}
+        {/* Below the screen: lives and fruit are drawn in the maze's bottom rows now (T13) */}
+        <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-b-xl px-4 py-2 flex items-center justify-end text-xs text-neutral-400 select-none">
           <div className="flex items-center gap-2">
-            <span className="text-base" title={`${fruitMeta.name} (${fruitMeta.points} pts)`}>
-              {fruitMeta.symbol}
-            </span>
             <button
               onClick={() => setShowDpad(!showDpad)}
               className={`text-[11px] px-2 py-0.5 rounded font-mono transition-colors cursor-pointer ${

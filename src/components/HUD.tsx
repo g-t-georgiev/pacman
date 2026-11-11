@@ -1,9 +1,6 @@
 import React from "react";
 
 interface HUDProps {
-  score: number;
-  highScore: number;
-  level: number;
   turbo: boolean;
   onToggleTurbo: () => void;
   /** The Lab panel (Learn / Practice / Debug) is open. */
@@ -26,9 +23,6 @@ interface HUDProps {
 }
 
 export const HUD: React.FC<HUDProps> = ({
-  score,
-  highScore,
-  level,
   turbo,
   onToggleTurbo,
   labOpen,
@@ -49,28 +43,8 @@ export const HUD: React.FC<HUDProps> = ({
 }) => {
   return (
     <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-t-xl px-3 sm:px-4 py-2.5 flex flex-col gap-2 select-none text-white">
-      {/* Top Arcade Scoreboard */}
-      <div className="grid grid-cols-3 text-center tracking-widest font-mono text-xs sm:text-sm">
-        <div className="flex flex-col items-start">
-          <span className="text-red-500 font-bold">1UP</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {score.toString().padStart(2, "0")}
-          </span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="text-yellow-400 font-bold">HIGH SCORE</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {highScore.toString().padStart(2, "0")}
-          </span>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-cyan-400 font-bold">LEVEL</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">{level}</span>
-        </div>
-      </div>
-
       {/* Control Quick Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-neutral-800/80 text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
         {/* Restart Panel Button */}
         <button
           onClick={onOpenRestart}
