@@ -62,6 +62,20 @@ describe("Round sequencer (A2)", () => {
     expect(e.phaseFramesLeft).toBe(PHASE_FRAMES.READY);
   });
 
+  it("after the last death the ghosts stay gone through game over", () => {
+    const agent = playing();
+    const e = agent.engine;
+    e.lives = 1;
+    const b = agent.view().ghosts.BLINKY;
+    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    agent.runUntil((v) => v.phase === "GAME_OVER", 600);
+    expect(e.phase).toBe("GAME_OVER");
+    expect(e.ghostsVisible).toBe(false);
+    expect(e.pacmanVisible).toBe(false);
+    agent.advance(120);
+    expect(e.ghostsVisible).toBe(false);
+  });
+
   it("eating a ghost pauses the action; eyes already going home keep moving", () => {
     const agent = playing();
     const e = agent.engine;

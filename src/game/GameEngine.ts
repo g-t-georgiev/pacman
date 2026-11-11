@@ -229,16 +229,21 @@ export default class GameEngine {
     return this.sequencer.state.framesLeft;
   }
 
-  /** Ghosts vanish once the death animation starts and while the maze flashes. */
+  /** Ghosts vanish once the death animation starts (through game over) and while the maze flashes. */
   public get ghostsVisible(): boolean {
     const phase = this.sequencer.phase;
-    return phase !== "DEATH_ANIM" && phase !== "DEATH_WAIT" && phase !== "MAZE_FLASH";
+    return (
+      phase !== "DEATH_ANIM" &&
+      phase !== "DEATH_WAIT" &&
+      phase !== "MAZE_FLASH" &&
+      phase !== "GAME_OVER" // after the last death they stay gone
+    );
   }
 
   /** Pac-Man is hidden while a ghost's score is shown, and after the death animation. */
   public get pacmanVisible(): boolean {
     const phase = this.sequencer.phase;
-    return phase !== "GHOST_EATEN_PAUSE" && phase !== "DEATH_WAIT";
+    return phase !== "GHOST_EATEN_PAUSE" && phase !== "DEATH_WAIT" && phase !== "GAME_OVER";
   }
 
   /** While the maze flashes after a level clear: whether the walls are white this frame. */
