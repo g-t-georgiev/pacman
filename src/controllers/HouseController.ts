@@ -1,6 +1,7 @@
 import type { Ghost } from "../core/Ghost";
 import type { GhostType } from "../types";
-import { SIM_FPS } from "../game/constants";
+import { SIM_FPS, TILE_SIZE } from "../game/constants";
+import { HOUSE_DOOR_ROW } from "./MovementController";
 import { levelRow } from "../game/levelTable";
 
 /** Ghosts that wait in the house, in order of preference (Dossier, "Home Sweet Home"). */
@@ -91,13 +92,18 @@ export class HouseController {
       this.updateGlobalCounter(ghosts);
     } else {
       const preferred = this.preferredWaiting(ghosts);
-      if (preferred && this.state.dotCounters[preferred] >= getHouseDotLimit(preferred, level)) {
+      if (
+        preferred &&
+        !this.doorBusy(ghosts) &&
+        this.state.dotCounters[preferred] >= getHouseDotLimit(preferred, level)
+      ) {
         this.release(ghosts[preferred]);
       }
     }
 
     this.state.idleFrames++;
-    if (this.state.idleFrames >= getHouseIdleLimit(level)) {
+    // The idle timer releases too, once the door is free (it keeps its count until then)
+    if (this.state.idleFrames >= getHouseIdleLimit(level) && !this.doorBusy(ghosts)) {
       this.state.idleFrames = 0;
       const preferred = this.preferredWaiting(ghosts);
       if (preferred) this.release(ghosts[preferred]);
@@ -116,9 +122,23 @@ export class HouseController {
     }
   }
 
-  /** The most-preferred ghost still waiting inside, if any. */
+  /** The most-preferred ghost still waiting inside, if any (Pinky, Inky, then Clyde). */
   public preferredWaiting(ghosts: Record<GhostType, Ghost>): HouseGhost | undefined {
     return HOUSE_GHOSTS.find((type) => ghosts[type].location === "HOUSE");
+  }
+
+  /**
+   * A ghost is on its way out and still inside the house. The next one waits until it is out,
+   * so ghosts come out one after another and never overlap (e.g. at a level start from level 2,
+   * when several limits are 0, or after Restart level). "Out" includes the door: once the
+   * leaving ghost reaches the gate row, the next one may go (an assumption: the exact moment
+   * in the arcade is not documented).
+   */
+  private doorBusy(ghosts: Record<GhostType, Ghost>): boolean {
+    return HOUSE_GHOSTS.some((type) => {
+      const g = ghosts[type];
+      return g.location === "LEAVING" && Math.floor(g.y / TILE_SIZE) > HOUSE_DOOR_ROW;
+    });
   }
 
   private release(ghost: Ghost): void {

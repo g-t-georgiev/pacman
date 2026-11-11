@@ -21,7 +21,8 @@ import { isTunnelSlowZone } from "../game/mazeAnalysis";
  *
  * - `location`: the life-cycle state machine (HOUSE -> LEAVING -> ACTIVE -> EYES -> ENTERING -> HOUSE).
  * - `frightened`: set for every non-eyes ghost when an energizer is eaten, cleared when the
- *   frightened timer ends or the ghost is eaten. Ghosts inside the house turn blue too.
+ *   frightened timer ends or the ghost is eaten. Ghosts inside the house turn blue too (seen in
+ *   the arcade; F8).
  * - `wave`: the global scatter/chase wave, which is also the mode to return to after frightened.
  * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on entering their next
  *   tile; a ghost that was inside during a mode change keeps it and turns around once outside.

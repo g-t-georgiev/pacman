@@ -6,21 +6,37 @@ import {
   getHouseDotLimit,
   getHouseIdleLimit,
 } from "../../src/controllers/HouseController";
-import { HOUSE_EXIT_Y } from "../../src/controllers/MovementController";
+import {
+  HOUSE_CENTER_Y,
+  HOUSE_DOOR_ROW,
+  HOUSE_EXIT_Y,
+} from "../../src/controllers/MovementController";
 import type { GhostType } from "../../src/types";
 
-/** Blinky outside, the other three waiting inside. */
+/** Blinky outside, the other three waiting inside (on the house's center row). */
 function houseGhosts(): Record<GhostType, Ghost> {
   return {
     BLINKY: new Ghost("BLINKY", 0, 0, "LEFT", false),
-    PINKY: new Ghost("PINKY", 0, 0, "UP", true),
-    INKY: new Ghost("INKY", 0, 0, "UP", true),
-    CLYDE: new Ghost("CLYDE", 0, 0, "UP", true),
+    PINKY: new Ghost("PINKY", 112, HOUSE_CENTER_Y, "UP", true),
+    INKY: new Ghost("INKY", 96, HOUSE_CENTER_Y, "UP", true),
+    CLYDE: new Ghost("CLYDE", 128, HOUSE_CENTER_Y, "UP", true),
   };
+}
+
+/** A ghost released on one frame has walked out of the house by the next (no movement here). */
+function walkOut(ghosts: Record<GhostType, Ghost>) {
+  for (const g of Object.values(ghosts)) if (g.location === "LEAVING") g.location = "ACTIVE";
+}
+
+/** One frame without a dot. */
+function frame(house: HouseController, ghosts: Record<GhostType, Ghost>, level: number) {
+  walkOut(ghosts);
+  house.update(ghosts, level);
 }
 
 /** Eats one dot and runs one frame. */
 function eatDot(house: HouseController, ghosts: Record<GhostType, Ghost>, level: number) {
+  walkOut(ghosts);
   house.onDotEaten(ghosts);
   house.update(ghosts, level);
 }
@@ -61,11 +77,38 @@ describe("House release: personal dot counters (Dossier, Home Sweet Home)", () =
   it("level 2: Pinky and Inky leave at once, Clyde after 50 dots", () => {
     const house = new HouseController();
     const ghosts = houseGhosts();
-    house.update(ghosts, 2);
-    house.update(ghosts, 2);
+    frame(house, ghosts, 2); // Pinky
+    frame(house, ghosts, 2); // Inky, once Pinky is out
     expect(waiting(ghosts)).toEqual(["CLYDE"]);
     for (let i = 0; i < 50; i++) eatDot(house, ghosts, 2);
     expect(waiting(ghosts)).toEqual([]);
+  });
+
+  it("ghosts leave one after another: the next waits while one is on its way out", () => {
+    const house = new HouseController();
+    const ghosts = houseGhosts();
+    house.update(ghosts, 3); // level 3: every limit is 0
+    expect(ghosts.PINKY.location).toBe("LEAVING");
+    for (let i = 0; i < 30; i++) house.update(ghosts, 3); // Pinky still at the door
+    expect(waiting(ghosts)).toEqual(["INKY", "CLYDE"]);
+    frame(house, ghosts, 3); // Pinky out: Inky's turn
+    expect(ghosts.INKY.location).toBe("LEAVING");
+    expect(waiting(ghosts)).toEqual(["CLYDE"]);
+    frame(house, ghosts, 3);
+    expect(waiting(ghosts)).toEqual([]);
+  });
+
+  it("the next ghost goes once the leaving one reaches the door (the door counts as out)", () => {
+    const house = new HouseController();
+    const ghosts = houseGhosts();
+    house.update(ghosts, 3);
+    expect(ghosts.PINKY.location).toBe("LEAVING");
+    ghosts.PINKY.y = (HOUSE_DOOR_ROW + 1) * 8 + 4; // still inside, just below the door
+    house.update(ghosts, 3);
+    expect(ghosts.INKY.location).toBe("HOUSE");
+    ghosts.PINKY.y = HOUSE_DOOR_ROW * 8 + 7; // in the door's row: out, for this rule
+    house.update(ghosts, 3);
+    expect(ghosts.INKY.location).toBe("LEAVING");
   });
 
   it("Blinky never waits: revived in the house, he leaves at once", () => {

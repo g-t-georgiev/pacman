@@ -134,7 +134,7 @@ there are `Math.random`/`Date.now` calls inside the sim.
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | F6  | ✅ Done. **House release is timer-based** (`houseTimer` 60/180/300 frames, `GameEngine.ts:406-410`). The arcade uses: (a) per-ghost dot counters, only one active at a time (Pinky → Inky → Clyde), with limits L1 0/30/60, L2 0/0/50, L3+ 0/0/0; (b) after a life is lost, a **global** dot counter that releases at 7 (Pinky) and 17 (Inky), and deactivates at 32 only if Clyde is still inside; (c) a **no-dot idle timer**, 4 s (L1-4) / 3 s (L5+), that forces the preferred ghost out and resets on each dot. | Dossier, Home Sweet Home         | New `HouseController` holding exactly this state. Also reproduces the Dossier's "ghosts stuck in house" trick for free, which is a good acceptance test. | **Very high** / M |
 | F7  | ✅ Done. **Exit direction always LEFT** (`GhostAiController.ts:253`), and in-house ghosts are excluded from reversal priming (`GameEngine.ts:496`, `Ghost.primeReversal`). In the arcade, a ghost that was inside during one or more mode changes leaves going **right**.                                                                                                                                                                                                                                            | Dossier and Birch                | Let the reversal flag latch for in-house ghosts. On exit, start LEFT and apply the pending reversal at the first tile entry.                             | Medium / S        |
-| F8  | ✅ Done, unverified: no source says house ghosts turn blue; check footage. **Frightened doesn't affect in-house ghosts** (`GameEngine.ts:801`). In the arcade, ghosts in the pen also turn blue and can be eaten after they leave while still blue.                                                                                                                                                                                                                                                                  | Arcade behavior (verify in MAME) | Make frightened a per-ghost flag set on all non-eyes ghosts, cleared when that ghost is eaten or the timer ends.                                         | Medium / S        |
+| F8  | ✅ Done, verified: ghosts inside the house turn blue too (seen in gameplay video and on the original game, 2026-11-11). **Frightened doesn't affect in-house ghosts** (`GameEngine.ts:801`). In the arcade, ghosts in the pen also turn blue and can be eaten after they leave while still blue.                                                                                                                                                                                                                     | Arcade behavior (verify in MAME) | Make frightened a per-ghost flag set on all non-eyes ghosts, cleared when that ghost is eaten or the timer ends.                                         | Medium / S        |
 | F9  | ✅ Done (`seamPx()` in `mazes.ts`: every actor starts on the seam between its two spawn tiles, and eyes revive on the same point; Inky 96, Pinky/Blinky/Pac-Man 112, Clyde 128). Spawn positions are inconsistent: Pac-Man, Blinky and Pinky spawn on col 13's center, but the eyes' revive seam is x = 224 (13.5 tiles, `MovementController.ts:243`). In the arcade, Blinky/Pinky and Pac-Man's start sit on the 13/14 seam.                                                                                        | Dossier, maze figures            | Define spawn points in arcade pixels (D6) and share them between spawn and revive.                                                                       | Low-Med / S       |
 
 ### Modes, reversals, Elroy
@@ -242,12 +242,15 @@ there are `Math.random`/`Date.now` calls inside the sim.
 - **HUD placement and font (T13).** Compare the `HUD_LAYOUT` columns with footage. The text uses
   bold Courier New, one character per tile; an original pixel font with an open license could
   replace it (one constant), without copying the arcade's own character set.
-- **Reported 2026-11-11, not reproduced: "all ghosts emerged together after a death"** (with
-  rewinds and deaths in the mix). Probes on levels 1-5 show one-at-a-time releases after a death
-  (global 7/17/32 or the idle timer), personal counters kept across deaths as the Dossier says
-  ("disables (but does not reset)"), and clean state after rewinding across a death. The only
-  all-at-once release is a level start from level 3 (all limits 0), which is arcade behavior.
-  If it happens again: `pacmanAgent.downloadReplay(20)` (or Lab → Practice → Download) right away.
+- **Fixed 2026-11-11: ghosts left the house together** (seen after Restart level from a game over,
+  i.e. any level start where several dot limits are 0, from level 2). A released ghost was no
+  longer "waiting", so the next one was released on the very next frame and they overlapped at the
+  door. Now a release (dot limit or idle timer) waits while another ghost is on its way out, so
+  they come out one after another, as in the arcade; dot counting is unchanged. **Decision
+  (2026-11-11):** "out" includes the door. The next ghost may go once the leaving one reaches the
+  gate row (`HOUSE_DOOR_ROW`, row 15); the exact arcade moment (door tile vs. the tile in front)
+  is not documented and too fine to matter. Deaths and rewinds were fine: after
+  a death the personal counters are kept as the Dossier says ("disables (but does not reset)").
 - **Fixed 2026-11-11: the Restart panel stayed open after rewinding out of a game over.** A rewind
   now emits `REWOUND`; the UI closes the panel, cancels its delayed opening and clears the game
   over. R with only a panel open rewinds 2 s and holds there (your pause) so you can get ready.
@@ -259,7 +262,6 @@ there are `Math.random`/`Date.now` calls inside the sim.
 All four original questions are answered under **Decisions** above. Still open (each needs a
 source or footage; the code marks these values as estimates):
 
-- **House ghosts turning blue (F8).** Implemented as "yes"; neither the Dossier nor RGME says so.
 - **Phase lengths (A2/F21).** Sourced: the 1 s ghost-eaten pause. Estimates: the death freeze
   ("~1 s"), death animation (1.5 s), the wait after it, READY lengths, level-clear freeze and
   maze flash.
