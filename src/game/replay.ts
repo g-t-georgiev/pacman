@@ -231,7 +231,7 @@ export function playReplay(engine: GameEngine, replay: Replay, onTick?: () => vo
   let ticks = 0;
   let lastMatchedAt: number | null = null;
   while (engine.tick < replay.endTick) {
-    for (const dir of inputsByTick.get(engine.tick + 1) ?? []) engine.setInputDirection(dir);
+    for (const dir of inputsByTick.get(engine.tick + 1) ?? []) engine.setInputDirection(dir, true);
     stepOrThrow(engine);
     ticks++;
     onTick?.();

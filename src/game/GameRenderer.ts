@@ -803,6 +803,15 @@ export default class GameRenderer {
     const centerX = CANVAS_WIDTH / 2;
     const centerY = 20 * TILE_SIZE;
 
+    // Watching a replay (T12): a marker in the blank bottom row
+    if (engine.watchingReplay) {
+      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.fillStyle = "#ff3b3b";
+      ctx.textAlign = "left";
+      ctx.fillText("● REPLAY", 8, 35 * TILE_SIZE + TILE_SIZE / 2);
+      ctx.textAlign = "center";
+    }
+
     if (engine.playState === "READY") {
       ctx.font = 'bold 18px "Courier New", monospace';
       ctx.fillStyle = "#ffff00";

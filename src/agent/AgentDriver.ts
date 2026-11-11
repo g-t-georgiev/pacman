@@ -1,5 +1,7 @@
 import GameEngine from "../game/GameEngine";
 import { type Replay, type ReplayResult, playReplay } from "../game/replay";
+import type { ReplayViewState } from "../game/ReplayViewer";
+import { replayLink } from "../game/replayShare";
 import type { GameRunner, PauseReason } from "../game/GameRunner";
 import type { SimEvent } from "../game/simEvents";
 import { type GameState, hashGameState } from "../game/gameState";
@@ -324,6 +326,32 @@ export class AgentDriver {
    * Fast-forwards this engine (the live game, in the browser) through a replay, to its end or to
    * tick `stopAt`, and leaves it paused there: inspect it, step it, or `resume()`.
    */
+  /**
+   * Browser: watch a replay inside the game, like a video (T12). The live game is put back exactly
+   * on `stopWatching()`. Pac-Man follows only the recorded inputs while it plays.
+   */
+  public watchReplay(replay: Replay): ReplayViewState {
+    if (!this.runner) throw new Error("watchReplay needs the live game (window.pacmanAgent)");
+    this.runner.viewer.start(replay);
+    return this.runner.viewer.state;
+  }
+
+  /** Browser: stop watching and return to the live game. */
+  public stopWatching(): void {
+    this.runner?.viewer.stop();
+  }
+
+  /** Browser: what the replay viewer shows (active, playing, tick, divergence). */
+  public watching(): ReplayViewState | null {
+    return this.runner?.viewer.state ?? null;
+  }
+
+  /** A link that opens `saveReplay(seconds)` in the viewer (`#replay=...`). */
+  public async replayLink(seconds?: number): Promise<string> {
+    const base = typeof location !== "undefined" ? location.href : "http://localhost/";
+    return replayLink(this.saveReplay(seconds), base);
+  }
+
   public loadReplay(replay: Replay, stopAt?: number): ReplayResult & { view: AgentView } {
     this.runner?.setPaused("agent", true);
     const end = stopAt === undefined ? replay.endTick : Math.min(stopAt, replay.endTick);

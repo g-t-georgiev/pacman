@@ -4,10 +4,11 @@ import { GameLoopController } from "../controllers/GameLoopController";
 import type GameEngine from "./GameEngine";
 import type GameRenderer from "./GameRenderer";
 import type { SimEvent } from "./simEvents";
+import { ReplayViewer } from "./ReplayViewer";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
-export type PauseReason = "user" | "panel" | "agent";
+export type PauseReason = "user" | "panel" | "agent" | "replay";
 
 /**
  * The shell around the pure simulation. It owns everything with side effects: the real-time
@@ -16,6 +17,8 @@ export type PauseReason = "user" | "panel" | "agent";
  */
 export class GameRunner {
   public readonly loop: GameLoopController;
+  /** Watches replays inside the game (T12). */
+  public readonly viewer: ReplayViewer = new ReplayViewer(this);
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
@@ -104,9 +107,11 @@ export class GameRunner {
   /** Runs one simulation tick and everything that follows it. */
   public tick(): void {
     this.onPreUpdate?.();
+    this.viewer.beforeTick();
     this.onBeforeTick?.();
     this.engine.update();
     this.onAfterTick?.();
+    this.viewer.afterTick();
     this.flush();
 
     // Runtime invariants cost time every frame: dev builds, or with the console open (T8).

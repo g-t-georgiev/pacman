@@ -13,6 +13,9 @@ import { HUD } from "./HUD";
 import { ModeSelector } from "./ModeSelector";
 import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
 import { LabPanel, type LabTab } from "./LabPanel";
+import { ReplayBar } from "./ReplayBar";
+import type { Replay } from "../game/replay";
+import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShare";
 import { RULESETS } from "../game/rulesets";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
@@ -86,6 +89,50 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(false);
     setShowMenu(false);
     setShowHighScores(false);
+  };
+
+  // --- Replays (T12) ---
+
+  /** Watches a replay in the game; the live game comes back on exit. */
+  const watchReplay = (replay: Replay) => {
+    const runner = runnerRef.current;
+    if (!runner) return;
+    closeLab();
+    runner.setPaused("user", false);
+    runner.viewer.start(replay);
+    setUiTick((t) => t + 1);
+  };
+
+  /** Back to the live game, held by the player's pause. */
+  const exitReplay = () => {
+    runnerRef.current?.viewer.stop();
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    setUiTick((t) => t + 1);
+  };
+
+  const clipOf = (seconds: number) => {
+    const engine = engineRef.current!;
+    return engine.replayLog.export(engine, seconds);
+  };
+
+  const clips = {
+    watch: (seconds: number) => watchReplay(clipOf(seconds)),
+    copyLink: async (seconds: number) => {
+      const link = await replayLink(clipOf(seconds), location.href);
+      await navigator.clipboard.writeText(link);
+      return `link copied (${(link.length / 1024).toFixed(1)} KB)`;
+    },
+    download: (seconds: number) => {
+      const replay = clipOf(seconds);
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(replay)], { type: "application/json" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pacman-replay-L${replay.start.level}-t${replay.endTick}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
   };
 
   /** Opens the Lab on a tab, or closes it when it is already open on that tab. */
@@ -208,6 +255,17 @@ export const ArcadeCabinet: React.FC = () => {
     setShowMenu(false);
     setShowHighScores(false);
 
+    // A replay link (#replay=...) opens the viewer (T12)
+    const code = replayCodeFromHash(location.hash);
+    if (code) {
+      decodeReplay(code)
+        .then((replay) => {
+          runner.viewer.start(replay);
+          setUiTick((t) => t + 1);
+        })
+        .catch((error: unknown) => console.warn("Could not open the replay link:", error));
+    }
+
     // Dev builds: expose the agent driver for automated play-testing from the console or tools
     if (import.meta.env.DEV) window.pacmanAgent = new AgentDriver(engine, runner);
 
@@ -230,6 +288,23 @@ export const ArcadeCabinet: React.FC = () => {
       // Prevent scrolling on arrow keys or space
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
         e.preventDefault();
+      }
+
+      // Watching a replay: Space plays/pauses it, Escape leaves (or closes an open panel first)
+      const viewer = runnerRef.current?.viewer;
+      if (
+        viewer?.state.active &&
+        !anyPanelOpenRef.current &&
+        (e.key === " " || e.key === "Escape")
+      ) {
+        if (e.key === " ") {
+          if (viewer.state.playing) viewer.pause();
+          else viewer.play();
+        } else {
+          exitReplay();
+        }
+        setUiTick((t) => t + 1);
+        return;
       }
 
       // Dev builds: debug overlay (F1) and frame stepping while paused (plan T1, T3)
@@ -518,6 +593,10 @@ export const ArcadeCabinet: React.FC = () => {
           />
         </div>
 
+        {runnerRef.current?.viewer.state.active && (
+          <ReplayBar runner={runnerRef.current} onExit={exitReplay} />
+        )}
+
         {/* Bottom Arcade Rack: Lives & Level Fruit */}
         <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-b-xl px-4 py-2 flex items-center justify-between text-xs text-neutral-400 select-none">
           {/* Lives Display */}
@@ -605,6 +684,7 @@ export const ArcadeCabinet: React.FC = () => {
                 setLearnVisualsActive(engineRef.current.settings.learnVisualsEnabled);
               }
             }}
+            clips={clips}
           />
         )}
       </PanelTransitionWrapper>

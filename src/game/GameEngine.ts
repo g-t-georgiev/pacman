@@ -252,6 +252,11 @@ export default class GameEngine {
    * (-1 = live play). The sim does not advance while scrubbing.
    */
   public rewindIndex: number = -1;
+  /**
+   * A replay is being watched (T12): player input is ignored and the renderer shows REPLAY.
+   * Set by the shell's ReplayViewer; not part of GameState.
+   */
+  public watchingReplay: boolean = false;
   /** True while a rewind re-simulates frames (inputs are not logged, no events reach the shell). */
   private resimulating: boolean = false;
 
@@ -500,7 +505,12 @@ export default class GameEngine {
     });
   }
 
-  public setInputDirection(dir: Direction) {
+  /**
+   * A joystick direction. While a replay is being watched (T12) only the replay's own inputs
+   * (`fromReplay`) get through: the player, the gamepad and the agent are locked out.
+   */
+  public setInputDirection(dir: Direction, fromReplay: boolean = false) {
+    if (this.watchingReplay && !fromReplay) return;
     if (!this.resimulating) this.replayLog.onInput(this, dir);
     if (this.pacman && !this.pacman.isDying) {
       this.pacman.setRequestedDirection(dir);
@@ -891,10 +901,9 @@ export default class GameEngine {
     });
 
     return {
-      version: 3,
+      version: 4,
       mode: this.mode,
       sequence: { ...this.sequencer.state },
-      paused: this.paused,
       level: this.level,
       score: this.score,
       highScore: this.highScore,
@@ -941,7 +950,6 @@ export default class GameEngine {
     }
     this.mode = state.mode;
     this.sequencer.state = { ...state.sequence };
-    this.paused = state.paused;
     this.level = state.level;
     this.timerController.level = state.level;
     this.score = state.score;
@@ -1015,7 +1023,7 @@ export default class GameEngine {
     let next = 0;
     while (this.tick < tick) {
       while (next < inputs.length && inputs[next][0] === this.tick + 1) {
-        this.setInputDirection(inputs[next++][1]);
+        this.setInputDirection(inputs[next++][1], true);
       }
       this.update();
     }

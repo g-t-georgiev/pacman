@@ -79,6 +79,8 @@ questions.
 - **Replays.** The game keeps a rolling recording (a keyframe every second, inputs, state
   hashes). The last 2 minutes can be rewound exactly from the Lab's Practice tab, saved as a file,
   and verified on another build.
+- **Replay viewer.** Watch a clip of the last 20 s inside the game (Lab, Practice tab), with
+  play/pause, speed and scrub, or share it as a link (`#replay=...` opens the viewer).
 - **Golden replays.** `tests/golden/*.json` must replay hash for hash; a mechanics change fails
   at the first second that differs.
 - **Debug overlay (F1).** Layers for the grid, occupied tiles, ghost targets and decisions,

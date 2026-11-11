@@ -7,6 +7,12 @@ interface PracticePanelProps {
   onClose: () => void;
   /** Inside the Lab panel: no frame or header of its own. */
   embedded?: boolean;
+  /** Clips of the last seconds (T12): watch in the game, copy a link, download a file. */
+  clips?: {
+    watch: (seconds: number) => void;
+    copyLink: (seconds: number) => Promise<string>;
+    download: (seconds: number) => void;
+  };
 }
 
 export const PracticePanel: React.FC<PracticePanelProps> = ({
@@ -14,7 +20,9 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   onUpdate,
   onClose,
   embedded = false,
+  clips,
 }) => {
+  const [clipStatus, setClipStatus] = useState<string>("");
   const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
   const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
@@ -234,6 +242,44 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Clips of the last 20 seconds (T12) */}
+      {clips && (
+        <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-300 font-semibold">CLIP: LAST 20 S</span>
+            {clipStatus && <span className="text-[10px] text-emerald-400">{clipStatus}</span>}
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <button
+              onClick={() => clips.watch(20)}
+              className="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white font-bold"
+            >
+              🎬 Watch
+            </button>
+            <button
+              onClick={() => {
+                clips
+                  .copyLink(20)
+                  .then((status) => setClipStatus(status))
+                  .catch(() => setClipStatus("could not copy"));
+              }}
+              className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700"
+            >
+              🔗 Copy link
+            </button>
+            <button
+              onClick={() => {
+                clips.download(20);
+                setClipStatus("saved as a .json file");
+              }}
+              className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700"
+            >
+              💾 Download
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Visualizers & Cheats Toggles */}
       <div className="grid grid-cols-2 gap-2 text-[11px]">

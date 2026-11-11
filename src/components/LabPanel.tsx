@@ -14,6 +14,8 @@ interface LabPanelProps {
   /** Settings or state changed: refresh the HUD and redraw. */
   onUpdate: () => void;
   onVisualSettingsChange: () => void;
+  /** Clip actions for the Practice tab (T12). */
+  clips?: React.ComponentProps<typeof PracticePanel>["clips"];
 }
 
 const TABS: Array<{ id: LabTab; label: string; devOnly?: boolean }> = [
@@ -33,6 +35,7 @@ export const LabPanel: React.FC<LabPanelProps> = ({
   onClose,
   onUpdate,
   onVisualSettingsChange,
+  clips,
 }) => {
   const tabs = TABS.filter((t) => !t.devOnly || import.meta.env.DEV);
   return (
@@ -80,7 +83,13 @@ export const LabPanel: React.FC<LabPanelProps> = ({
         />
       )}
       {tab === "PRACTICE" && (
-        <PracticePanel engine={engine} onUpdate={onUpdate} onClose={onClose} embedded />
+        <PracticePanel
+          engine={engine}
+          onUpdate={onUpdate}
+          onClose={onClose}
+          embedded
+          clips={clips}
+        />
       )}
       {tab === "DEBUG" && import.meta.env.DEV && (
         <DebugOverlayPanel engine={engine} onChange={onUpdate} />
