@@ -232,8 +232,15 @@ fruit are fine for now.
   logged as a NONE input so replays stay exact. Both remembered in the browser. Not done: an
   "assist" for Modern (no concrete design yet; suggest one if wanted). Input buffering stays on in
   both (Decision 5).
-- **Accessibility:** remappable keys, colorblind-safe frightened/flash palette, reduced-flash
-  mode for the level-clear and energizer flashes.
+- ✅ **Accessibility** (done 2026-11-12). An Options panel (header button; holds the game like
+  every panel), saved in the browser: movement keys remappable, two per direction (defaults
+  arrows and WASD; reserved: Space, Escape, F1, `.`, `>`, Tab, Enter; a key moved to a new
+  slot leaves its old one; movement keys win over the letter shortcuts) in
+  `src/utils/keyBindings.ts`; **Reduce flashing**: a steady pale maze through the level-clear
+  flash, steady energizers, and a steady white outline instead of the frightened warning blink;
+  **Colorblind-safe colors**: Okabe-Ito ghost colors and a darker frightened blue
+  (`src/game/accessibility.ts`). Display options are not sim settings: replays and hashes don't
+  depend on them.
 - **Practice:** pattern recorder (save a replay as a "pattern", overlay it as a ghost trail),
   a per-level "first death" heatmap.
 - **Input latency:** sample input at the start of each sim tick and render immediately after.

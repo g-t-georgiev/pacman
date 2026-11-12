@@ -1,4 +1,4 @@
-export type PanelId = "RESTART_PANEL" | "LAB_PANEL" | "MODE_SELECTOR" | "HIGH_SCORES";
+export type PanelId = "RESTART_PANEL" | "LAB_PANEL" | "MODE_SELECTOR" | "HIGH_SCORES" | "OPTIONS";
 
 export type TransitionEffect =
   | "fade-slide-up"
@@ -56,6 +56,15 @@ export const uiConfig: UIConfig = {
     MODE_SELECTOR: {
       effect: "scale-fade",
       durationMs: 280,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      backdropBlur: true,
+      backdropColor: "rgba(0, 0, 0, 0.8)",
+      position: "center-viewport",
+      closeOnBackdropClick: true,
+    },
+    OPTIONS: {
+      effect: "fade-drop",
+      durationMs: 260,
       easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
       backdropColor: "rgba(0, 0, 0, 0.8)",

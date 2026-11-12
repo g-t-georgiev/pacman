@@ -5,6 +5,8 @@
  */
 export const PREF_PRESET = "pacman.rulesPreset";
 export const PREF_RELEASE = "pacman.releaseClearsBuffer";
+export const PREF_REDUCED_FLASH = "pacman.reducedFlash";
+export const PREF_COLORBLIND = "pacman.colorblindPalette";
 
 export function loadPreference<T>(key: string): T | null {
   try {

@@ -31,23 +31,24 @@ corridor; which tile an actor is in (and so every collision) depends only on its
 
 ## Controls
 
-| Action                            | Keys                         |
-| :-------------------------------- | :--------------------------- |
-| Move                              | Arrow keys or W A S D        |
-| Pause / resume (closes panels)    | Space, or ⏸ in the HUD (dev) |
-| Close panel, else pause           | Escape                       |
-| Turbo (1.6×)                      | T                            |
-| Lab: Learn tab (ghost AI lab)     | L                            |
-| Lab: Practice tab (rewind, speed) | P                            |
-| Rewind 2 s (Lab open)             | R                            |
-| Debug overlay (dev builds)        | F1                           |
-| Step 1 frame / to next mode (dev) | `.` / `>` while paused       |
+| Action                            | Keys                                          |
+| :-------------------------------- | :-------------------------------------------- |
+| Move                              | Arrow keys or W A S D (remappable in Options) |
+| Pause / resume (closes panels)    | Space, or ⏸ in the HUD (dev)                  |
+| Close panel, else pause           | Escape                                        |
+| Turbo (1.6×)                      | T                                             |
+| Lab: Learn tab (ghost AI lab)     | L                                             |
+| Lab: Practice tab (rewind, speed) | P                                             |
+| Rewind 2 s (Lab open)             | R                                             |
+| Debug overlay (dev builds)        | F1                                            |
+| Step 1 frame / to next mode (dev) | `.` / `>` while paused                        |
 
 Touch swipes, an on-screen D-pad and gamepads work too.
 
 The Game Modes menu picks the rules: **Arcade** (the original's targeting overflow, 60.606 Hz)
 or **Modern** (no overflow, 60 Hz), and an optional **joystick feel** where letting go of a
-direction cancels a turn you queued but haven't reached yet.
+direction cancels a turn you queued but haven't reached yet. **Options** (header) remaps the
+movement keys and has **Reduce flashing** and **Colorblind-safe colors**.
 
 ## Mechanics
 

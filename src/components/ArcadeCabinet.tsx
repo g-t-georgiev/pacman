@@ -18,27 +18,25 @@ import type { Replay } from "../game/replay";
 import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShare";
 import { RULESETS } from "../game/rulesets";
 import { type RulesPreset, applyRulesPreset, rulesPresetOf } from "../game/presets";
-import { PREF_PRESET, PREF_RELEASE, loadPreference, savePreference } from "../utils/preferences";
+import {
+  PREF_COLORBLIND,
+  PREF_PRESET,
+  PREF_REDUCED_FLASH,
+  PREF_RELEASE,
+  loadPreference,
+  savePreference,
+} from "../utils/preferences";
+import {
+  type KeyBindings,
+  directionForKey,
+  loadBindings,
+  saveBindings,
+} from "../utils/keyBindings";
+import { OptionsPanel } from "./OptionsPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { useGameEvent } from "../hooks/useGameEvent";
-
-/** Movement keys (keyboard): arrows and WASD. */
-const KEY_DIRECTIONS: Record<string, Direction> = {
-  ArrowUp: "UP",
-  w: "UP",
-  W: "UP",
-  ArrowDown: "DOWN",
-  s: "DOWN",
-  S: "DOWN",
-  ArrowLeft: "LEFT",
-  a: "LEFT",
-  A: "LEFT",
-  ArrowRight: "RIGHT",
-  d: "RIGHT",
-  D: "RIGHT",
-};
 
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -77,6 +75,16 @@ export const ArcadeCabinet: React.FC = () => {
   const [showDpad, setShowDpad] = useState<boolean>(false);
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [showHighScores, setShowHighScores] = useState<boolean>(false);
+  const [showOptions, setShowOptions] = useState<boolean>(false);
+  const [bindings, setBindings] = useState<KeyBindings>(() => loadBindings());
+  const bindingsRef = useRef(bindings);
+  bindingsRef.current = bindings;
+  const [reducedFlash, setReducedFlash] = useState<boolean>(
+    () => loadPreference<boolean>(PREF_REDUCED_FLASH) === true
+  );
+  const [colorblindPalette, setColorblindPalette] = useState<boolean>(
+    () => loadPreference<boolean>(PREF_COLORBLIND) === true
+  );
   const [showRestartPanel, setShowRestartPanel] = useState<boolean>(false);
   const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
   const [isGameOverState, setIsGameOverState] = useState<boolean>(false);
@@ -89,7 +97,8 @@ export const ArcadeCabinet: React.FC = () => {
   const playState = useGameEvent(GameEvents, "PLAY_STATE_CHANGED", () => "READY");
 
   // Panels hold the game while open (T11). The keyboard handler reads these through refs.
-  const anyPanelOpen = lab !== null || showRestartPanel || showMenu || showHighScores;
+  const anyPanelOpen =
+    lab !== null || showRestartPanel || showMenu || showHighScores || showOptions;
   const anyPanelOpenRef = useRef(anyPanelOpen);
   anyPanelOpenRef.current = anyPanelOpen;
   const labRef = useRef(lab);
@@ -111,6 +120,7 @@ export const ArcadeCabinet: React.FC = () => {
     setShowRestartPanel(false);
     setShowMenu(false);
     setShowHighScores(false);
+    setShowOptions(false);
   };
 
   // --- Replays (T12) ---
@@ -255,6 +265,8 @@ export const ArcadeCabinet: React.FC = () => {
     const preset = loadPreference<RulesPreset>(PREF_PRESET);
     if (preset === "ARCADE" || preset === "MODERN") applyRulesPreset(engine, preset);
     engine.settings.releaseClearsBuffer = loadPreference<boolean>(PREF_RELEASE) === true;
+    engine.settings.reducedFlash = loadPreference<boolean>(PREF_REDUCED_FLASH) === true;
+    engine.settings.colorblindPalette = loadPreference<boolean>(PREF_COLORBLIND) === true;
     engine.replayLog.reset(engine); // the recording starts with these settings
     const runner = new GameRunner(engine);
     runnerRef.current = runner;
@@ -380,27 +392,15 @@ export const ArcadeCabinet: React.FC = () => {
         }
       }
 
+      // Movement keys (remappable, Options panel) come before the letter shortcuts
+      const moveDir = directionForKey(bindingsRef.current, e.key);
+      if (moveDir) {
+        e.preventDefault();
+        engine.setInputDirection(moveDir);
+        return;
+      }
+
       switch (e.key) {
-        case "ArrowUp":
-        case "w":
-        case "W":
-          engine.setInputDirection("UP");
-          break;
-        case "ArrowDown":
-        case "s":
-        case "S":
-          engine.setInputDirection("DOWN");
-          break;
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          engine.setInputDirection("LEFT");
-          break;
-        case "ArrowRight":
-        case "d":
-        case "D":
-          engine.setInputDirection("RIGHT");
-          break;
         case " ":
           togglePause();
           break;
@@ -446,7 +446,7 @@ export const ArcadeCabinet: React.FC = () => {
 
     // Letting go of a direction (only matters with "release clears the turn")
     const handleKeyUp = (e: KeyboardEvent) => {
-      const dir = KEY_DIRECTIONS[e.key];
+      const dir = directionForKey(bindingsRef.current, e.key);
       if (dir) engineRef.current?.releaseInputDirection(dir);
     };
 
@@ -525,6 +525,12 @@ export const ArcadeCabinet: React.FC = () => {
       setShowRestartPanel(false);
       setIsGameOverState(false);
     }
+  };
+
+  /** Redraws the (held) game so a display option shows at once behind the panel. */
+  const redraw = () => {
+    const runner = runnerRef.current;
+    if (runner && engineRef.current) runner.renderer?.render(engineRef.current);
   };
 
   // Rules preset and joystick feel (Phase 5), remembered in this browser
@@ -625,6 +631,12 @@ export const ArcadeCabinet: React.FC = () => {
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>🎮 Game Modes</span>
+          </button>
+          <button
+            onClick={() => setShowOptions(true)}
+            className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>⚙️ Options</span>
           </button>
           <button
             onClick={() => setShowHighScores(true)}
@@ -784,6 +796,38 @@ export const ArcadeCabinet: React.FC = () => {
             ✕
           </button>
         </div>
+      </PanelTransitionWrapper>
+
+      {/* Options (Phase 5: keys, reduced flashing, colorblind-safe colors) */}
+      <PanelTransitionWrapper
+        panelId="OPTIONS"
+        isOpen={showOptions}
+        onClose={() => setShowOptions(false)}
+      >
+        <OptionsPanel
+          bindings={bindings}
+          onChangeBindings={(next) => {
+            setBindings(next);
+            saveBindings(next);
+          }}
+          reducedFlash={reducedFlash}
+          onToggleReducedFlash={() => {
+            const next = !reducedFlash;
+            setReducedFlash(next);
+            savePreference(PREF_REDUCED_FLASH, next);
+            if (engineRef.current) engineRef.current.settings.reducedFlash = next;
+            redraw();
+          }}
+          colorblindPalette={colorblindPalette}
+          onToggleColorblindPalette={() => {
+            const next = !colorblindPalette;
+            setColorblindPalette(next);
+            savePreference(PREF_COLORBLIND, next);
+            if (engineRef.current) engineRef.current.settings.colorblindPalette = next;
+            redraw();
+          }}
+          onClose={() => setShowOptions(false)}
+        />
       </PanelTransitionWrapper>
 
       {/* High Scores Modal */}

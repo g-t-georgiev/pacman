@@ -114,6 +114,8 @@ export default class GameEngine {
     gameSpeed: 1.0,
     arcadeRefreshRate: true,
     releaseClearsBuffer: false,
+    reducedFlash: false,
+    colorblindPalette: false,
     soundEnabled: true,
     soundVolume: 0.5,
     crtFilter: false,

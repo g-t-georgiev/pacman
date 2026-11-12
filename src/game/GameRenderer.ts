@@ -1,3 +1,9 @@
+import {
+  frightenedColors,
+  frightenedEnding,
+  ghostBodyColor,
+  mazeFlashWallColor,
+} from "./accessibility";
 import type { Direction, GhostType, MazeData } from "../types";
 import type GameEngine from "./GameEngine";
 import {
@@ -145,7 +151,7 @@ export default class GameRenderer {
   private renderMaze(engine: GameEngine) {
     const ctx = this.ctx;
     const maze = engine.maze;
-    const wallColor = engine.isMazeFlashWhite ? "#ffffff" : maze.wallColor;
+    const wallColor = mazeFlashWallColor(engine) ?? maze.wallColor;
     ctx.drawImage(this.wallLayer(maze, wallColor), 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     for (let r = 0; r < maze.height; r++) {
@@ -158,8 +164,8 @@ export default class GameRenderer {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
-          // Flashing energizer
-          const pulse = (Math.sin(Date.now() / 120) + 1) * 0.5; // 0 to 1
+          // Pulsing energizer (steady with reduced flashing)
+          const pulse = engine.settings.reducedFlash ? 0.5 : (Math.sin(Date.now() / 120) + 1) * 0.5;
           const radius = 5 + pulse * 2.5;
 
           ctx.fillStyle = maze.dotColor;
@@ -321,10 +327,12 @@ export default class GameRenderer {
       }
 
       // 2. Body Color
-      let bodyColor = GHOST_COLORS[type].body;
-      if (g.mode === "FRIGHTENED") {
-        bodyColor = g.flashState ? "#ffffff" : "#2121ff";
-      }
+      // Frightened: blue, flashing white near the end; with reduced flashing it stays blue and
+      // gets a steady white outline for the last stretch instead
+      const fright = frightenedColors(engine.settings);
+      const flashWhite = g.flashState && !engine.settings.reducedFlash;
+      let bodyColor = ghostBodyColor(type, engine.settings);
+      if (g.mode === "FRIGHTENED") bodyColor = flashWhite ? fright.flashBody : fright.body;
 
       ctx.fillStyle = bodyColor;
       ctx.beginPath();
@@ -341,11 +349,16 @@ export default class GameRenderer {
       ctx.lineTo(-radius, radius);
       ctx.closePath();
       ctx.fill();
+      if (g.mode === "FRIGHTENED" && engine.settings.reducedFlash && frightenedEnding(engine)) {
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
 
       // 3. Frightened Face vs Regular Eyes
       if (g.mode === "FRIGHTENED") {
         // Frightened squiggly mouth & eyes
-        const mouthColor = g.flashState ? "#ff0000" : "#ffb8ff";
+        const mouthColor = flashWhite ? fright.flashFace : fright.face;
         ctx.fillStyle = mouthColor;
         ctx.fillRect(-3, -3, 2, 2);
         ctx.fillRect(1, -3, 2, 2);
@@ -423,7 +436,7 @@ export default class GameRenderer {
       const target = g.target;
       if (g.inHouse || !target) return; // frightened ghosts have no target
 
-      const ghostColor = GHOST_COLORS[type].body;
+      const ghostColor = ghostBodyColor(type, engine.settings);
       const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
       const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
 
@@ -621,7 +634,7 @@ export default class GameRenderer {
       const target = g.target;
       if (g.inHouse || !target) return; // a frightened ghost's path is random
 
-      const ghostColor = GHOST_COLORS[type].body;
+      const ghostColor = ghostBodyColor(type, engine.settings);
       const startCol = Math.floor(px(g.x) / TILE_SIZE);
       const startRow = Math.floor(px(g.y) / TILE_SIZE);
 
@@ -706,7 +719,7 @@ export default class GameRenderer {
       const target = g.target;
       if (g.inHouse || !target) return;
 
-      const ghostColor = GHOST_COLORS[type].body;
+      const ghostColor = ghostBodyColor(type, engine.settings);
       const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
       const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
 
