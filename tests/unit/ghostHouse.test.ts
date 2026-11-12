@@ -2,16 +2,15 @@ import { describe, expect, it } from "vite-plus/test";
 import { Ghost } from "../../src/core/Ghost";
 import GameEngine from "../../src/game/GameEngine";
 import {
+  HOUSE_GHOSTS,
   HouseController,
   getHouseDotLimit,
   getHouseIdleLimit,
 } from "../../src/controllers/HouseController";
-import {
-  HOUSE_CENTER_Y,
-  HOUSE_DOOR_ROW,
-  HOUSE_EXIT_Y,
-} from "../../src/controllers/MovementController";
+import { HOUSE_CENTER_Y, HOUSE_EXIT_Y } from "../../src/controllers/MovementController";
 import type { GhostType } from "../../src/types";
+import { AgentDriver } from "../../src/agent/AgentDriver";
+import { hashGameState } from "../../src/game/gameState";
 
 /** Blinky outside, the other three waiting inside (on the house's center row). */
 function houseGhosts(): Record<GhostType, Ghost> {
@@ -26,12 +25,6 @@ function houseGhosts(): Record<GhostType, Ghost> {
 /** A ghost released on one frame has walked out of the house by the next (no movement here). */
 function walkOut(ghosts: Record<GhostType, Ghost>) {
   for (const g of Object.values(ghosts)) if (g.location === "LEAVING") g.location = "ACTIVE";
-}
-
-/** One frame without a dot. */
-function frame(house: HouseController, ghosts: Record<GhostType, Ghost>, level: number) {
-  walkOut(ghosts);
-  house.update(ghosts, level);
 }
 
 /** Eats one dot and runs one frame. */
@@ -77,38 +70,43 @@ describe("House release: personal dot counters (Dossier, Home Sweet Home)", () =
   it("level 2: Pinky and Inky leave at once, Clyde after 50 dots", () => {
     const house = new HouseController();
     const ghosts = houseGhosts();
-    frame(house, ghosts, 2); // Pinky
-    frame(house, ghosts, 2); // Inky, once Pinky is out
+    house.update(ghosts, 2); // Pinky
+    house.update(ghosts, 2); // Inky: his limit is 0, he does not wait for Pinky to get out
     expect(waiting(ghosts)).toEqual(["CLYDE"]);
-    for (let i = 0; i < 50; i++) eatDot(house, ghosts, 2);
+    for (let i = 0; i < 49; i++) eatDot(house, ghosts, 2);
+    expect(waiting(ghosts)).toEqual(["CLYDE"]);
+    eatDot(house, ghosts, 2);
     expect(waiting(ghosts)).toEqual([]);
   });
 
-  it("ghosts leave one after another: the next waits while one is on its way out", () => {
+  it("a ghost whose limit is met leaves at once, even while another is still leaving", () => {
     const house = new HouseController();
     const ghosts = houseGhosts();
     house.update(ghosts, 3); // level 3: every limit is 0
-    expect(ghosts.PINKY.location).toBe("LEAVING");
-    for (let i = 0; i < 30; i++) house.update(ghosts, 3); // Pinky still at the door
-    expect(waiting(ghosts)).toEqual(["INKY", "CLYDE"]);
-    frame(house, ghosts, 3); // Pinky out: Inky's turn
-    expect(ghosts.INKY.location).toBe("LEAVING");
+    expect(waiting(ghosts)).toEqual(["INKY", "CLYDE"]); // one release per frame, in order
+    house.update(ghosts, 3);
     expect(waiting(ghosts)).toEqual(["CLYDE"]);
-    frame(house, ghosts, 3);
+    house.update(ghosts, 3);
     expect(waiting(ghosts)).toEqual([]);
+    expect(HOUSE_GHOSTS.map((t) => ghosts[t].location)).toEqual(["LEAVING", "LEAVING", "LEAVING"]);
   });
 
-  it("the next ghost goes once the leaving one reaches the door (the door counts as out)", () => {
+  it("the idle timer releases even while another ghost is leaving, and restarts", () => {
     const house = new HouseController();
     const ghosts = houseGhosts();
-    house.update(ghosts, 3);
-    expect(ghosts.PINKY.location).toBe("LEAVING");
-    ghosts.PINKY.y = (HOUSE_DOOR_ROW + 1) * 8 + 4; // still inside, just below the door
-    house.update(ghosts, 3);
-    expect(ghosts.INKY.location).toBe("HOUSE");
-    ghosts.PINKY.y = HOUSE_DOOR_ROW * 8 + 7; // in the door's row: out, for this rule
-    house.update(ghosts, 3);
+    house.update(ghosts, 1); // Pinky leaving (limit 0); Inky needs 30 dots
+    for (let i = 1; i < getHouseIdleLimit(1); i++) house.update(ghosts, 1);
     expect(ghosts.INKY.location).toBe("LEAVING");
+    expect(ghosts.PINKY.location).toBe("LEAVING"); // never walked out in this test
+    expect(house.state.idleFrames).toBe(0);
+  });
+
+  it("a life lost restarts the idle timer (no time left over from before the death)", () => {
+    const house = new HouseController();
+    const ghosts = houseGhosts();
+    for (let i = 0; i < 200; i++) house.update(ghosts, 1);
+    house.onLifeLost();
+    expect(house.state.idleFrames).toBe(0);
   });
 
   it("Blinky never waits: revived in the house, he leaves at once", () => {
@@ -302,5 +300,35 @@ describe("Ghost state machine in the engine", () => {
     for (let f = 0; f < 400 && engine.playState === "DYING"; f++) engine.update();
     expect(engine.houseController.state.globalCounterActive).toBe(true);
     expect(engine.houseController.state.globalCounter).toBe(0);
+  });
+});
+
+describe("Restart level (fresh start at the current level)", () => {
+  it("equals a new game at that level except the score: no global counter or Elroy suspension left", () => {
+    const restarted = new AgentDriver(new GameEngine("PACMAN", 0));
+    restarted.scenario({ level: 3, playState: "PLAYING" });
+    const e = restarted.engine;
+    restarted.advance(400); // some dots, ghosts out
+    const b = restarted.view().ghosts.BLINKY;
+    restarted.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    restarted.runUntil((v) => v.phase === "READY", 600); // lost a life mid-level
+    expect(e.houseController.state.globalCounterActive).toBe(true);
+    expect(e.houseController.state.elroySuspended).toBe(true);
+    e.score = 1230;
+    e.restartLevel();
+
+    const fresh = new GameEngine("PACMAN", 0);
+    fresh.initGame("PACMAN", 3);
+    fresh.score = 1230;
+    fresh.highScore = e.highScore; // kept too
+    expect(e.houseController.state).toEqual(HouseController.initialState());
+    expect(e.lives).toBe(3);
+    expect(e.level).toBe(3);
+    expect(hashGameState(e.getState())).toBe(hashGameState(fresh.getState()));
+    for (let i = 0; i < 600; i++) {
+      e.update();
+      fresh.update();
+    }
+    expect(hashGameState(e.getState())).toBe(hashGameState(fresh.getState()));
   });
 });
