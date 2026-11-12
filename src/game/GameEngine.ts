@@ -371,51 +371,35 @@ export default class GameEngine {
     };
   }
 
+  /** A new game: score 0 and the bonus life available again, then a fresh start at `level`. */
   public initGame(mode: GameMode, level: number = 1) {
     this.mode = mode;
-    this.level = level;
     this.score = 0;
-    this.lives = 3;
-    this.dotsEatenThisRound = 0;
-    this.waveIndex = 0;
-    this.waveTimer = 0;
-    this.frightenedGlobalTimer = 0;
-    this.eatenGhostsInEnergizer = 0;
-    this.fruit = null;
-    this.scorePopups = [];
-    this.rewindIndex = -1;
     this.extraLifeAwarded = false;
-    this.paused = false;
-    this.tick = 0;
-    this.simRandom.reset();
-
-    this.loadLevel(this.level);
-
     this.emitScore();
-    this.emit({ type: "LIVES_CHANGED", lives: this.lives });
-    this.emit({ type: "LEVEL_CHANGED", level: this.level });
-    this.enterPhase("READY", READY_FRAMES_GAME_START);
-    this.replayLog.reset(this);
+    this.startFresh(level);
   }
 
-  public restartLevel(level?: number) {
-    if (level !== undefined) {
-      this.level = level;
-    }
+  /**
+   * Restart a level: the same fresh start as a new game, at the given (or current) level, but
+   * the score is kept. Everything a life loss or other event turned on (global house counter,
+   * Elroy suspension, frightened time, fruit) is reset by `startFresh`. The bonus life stays
+   * given if it was, since the kept score has already passed it.
+   */
+  public restartLevel(level: number = this.level) {
+    this.startFresh(level);
+  }
+
+  /** Everything except the score: 3 lives, the level's first frame, a new recording. */
+  private startFresh(level: number) {
     this.lives = 3;
-    this.dotsEatenThisRound = 0;
-    this.waveIndex = 0;
-    this.waveTimer = 0;
-    this.frightenedGlobalTimer = 0;
     this.eatenGhostsInEnergizer = 0;
-    this.fruit = null;
-    this.scorePopups = [];
     this.rewindIndex = -1;
     this.paused = false;
     this.tick = 0;
     this.simRandom.reset();
 
-    this.loadLevel(this.level);
+    this.loadLevel(level); // maze, timers, house counters, PRNG, actors
 
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
