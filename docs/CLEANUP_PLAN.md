@@ -1,156 +1,127 @@
-# Clean-up and Refactor Plan (Z1)'
+# Clean-up and Refactor Plan (Z1)
 
-'
+> Draft for review (2026-11-12). Nothing here is done yet. Each item has an ID so you can strike,
+> reorder or comment ("drop D4", "do T1 before M1"). Found by an audit of `refactor-pass-1` at
+> `8094d4d`: file sizes, unused code and settings, duplicated sources of truth, presentation data
+> inside the simulation, naming, tests and tooling.
 
-> Draft for review (2026-11-12). Nothing here is done yet. Each item has an ID so you can strike,'
-> reorder or comment ("drop C3", "do R2 before R1"). Found by an audit of `refactor-pass-1` at'
-> `8094d4d`: file sizes, unused code and settings, duplicated sources of truth, presentation data'
-> inside the simulation, naming, tests and tooling.'
-> '
+## Goal
 
-## Goal'
+Make the code smaller, clearer and harder to break, **without changing how the game plays**. The
+fidelity work is settled enough that a clean-up now won't be undone, and the manual (Phase 6)
+should describe the cleaned-up code.
 
-'
-Make the code smaller, clearer and harder to break, **without changing how the game plays**. The'
-fidelity work is settled enough that a clean-up now won't be undone, and the manual (Phase 6)'
-should describe the cleaned-up code.'
-'
+## How we keep the game the same
 
-## How we keep the game the same'
+The golden replays play recorded games tick by tick and compare a hash of the full game state
+every second. Every step below is in one of four classes, and the class says what may change:
 
-'
-The golden replays play recorded games tick by tick and compare a hash of the full game state'
-every second. Every step below is in one of four classes, and the class says what may change:'
-'
-| Class | What changes | Proof |'
-| ---------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |'
-| **Same play** | Nothing a player can see or measure | Golden replays and all tests pass unchanged; no version bump |'
-| **Same play, new save shape** | Fields move in or out of the saved state; the game plays identically | Goldens re-recorded with the **same inputs and the same checkpoint ticks**; `golden:update` bumps `GAME_STATE_VERSION`; older replay files and links say so when opened |'
-| **Visual only** | How something looks, not what happens | Goldens unchanged; checked in the browser (screenshots) |'
-| **Feel decision** | Something a player would notice | Only with your explicit OK, listed under Decisions below |'
-'
-No item in this plan is meant to change the rules. If a golden replay diverges during a "same'
-play" step, that step has a bug: it is fixed or reverted, never re-recorded.'
-'
+| Class                         | What changes                                                         | Proof                                                                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Same play**                 | Nothing a player can see or measure                                  | Golden replays and all tests pass unchanged; no version bump                                                                                                            |
+| **Same play, new save shape** | Fields move in or out of the saved state; the game plays identically | Goldens re-recorded with the **same inputs and the same checkpoint ticks**; `golden:update` bumps `GAME_STATE_VERSION`; older replay files and links say so when opened |
+| **Visual only**               | How something looks, not what happens                                | Goldens unchanged; checked in the browser (screenshots)                                                                                                                 |
+| **Feel decision**             | Something a player would notice                                      | Only with your explicit OK, listed under Decisions below                                                                                                                |
 
-## Findings and fixes'
+No item in this plan is meant to change the rules. If a golden replay diverges during a "same
+play" step, that step has a bug: it is fixed or reverted, never re-recorded.
 
-'
+## Findings and fixes
 
-### 1. Dead and stale code'
+### 1. Dead and stale code
 
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |'
-| D1 | Settings nobody uses: `practiceMode`, `touchControls`, `soundVolume` (never read), `learnMode` (read, never set: always false). | Remove them (the renderer keeps `learnVisualsEnabled`). | Same play | S |'
-| D2 | Unused type `RomQuirkSettings`; ~35 exports used only inside their own file (e.g. `HOUSE_DOOR_X`, `MAZE_COLS`, `UNTIMED`, `SimSettings`, several prop and config types). | Delete the dead type; un-export the internals, keep exports that are API (agent driver result types) and say so. | Same play | S |'
-| D3 | Legacy adapters on the engine: `pacmanState` / `ghostStates` getters and setters copy every actor on every read (the renderer and agent call them each frame), plus engine methods only one panel uses (`toggleInvincible`, `resetGhostsToHouse`). | Read the actors directly (`engine.pacman`, `engine.ghosts`); move the panel-only helpers to the agent driver or the panel. | Same play | M |'
-| D4 | Unused dependencies: `tsx` (AGENTS.md says not to use it; scripts run with `vpx`) and `esbuild`; the package is still named `react-example`. | Remove both; rename the package. | Same play | S |'
-| D5 | Stale texts: the Game Modes title reads "ARCADE ARCIVE"; its descriptions promise "authentic siren tones"; the plan\'s code refs point to `fa1bc42` line numbers. | Fix the typo and wording; mark the plan\'s old refs as historical. | Visual only | S |'
-'
+| ID  | Issue                                                                                                                                                                                                                                              | Fix                                                                                                                        | Effect on the game | Effort |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |
+| D1  | Settings nobody uses: `practiceMode`, `touchControls`, `soundVolume` (never read), `learnMode` (read, never set: always false).                                                                                                                    | Remove them (the renderer keeps `learnVisualsEnabled`).                                                                    | Same play          | S      |
+| D2  | Unused type `RomQuirkSettings`; ~35 exports used only inside their own file (e.g. `HOUSE_DOOR_X`, `MAZE_COLS`, `UNTIMED`, `SimSettings`, several prop and config types).                                                                           | Delete the dead type; un-export the internals, keep exports that are API (agent driver result types) and say so.           | Same play          | S      |
+| D3  | Legacy adapters on the engine: `pacmanState` / `ghostStates` getters and setters copy every actor on every read (the renderer and agent call them each frame), plus engine methods only one panel uses (`toggleInvincible`, `resetGhostsToHouse`). | Read the actors directly (`engine.pacman`, `engine.ghosts`); move the panel-only helpers to the agent driver or the panel. | Same play          | M      |
+| D4  | Unused dependencies: `tsx` (AGENTS.md says not to use it; scripts run with `vpx`) and `esbuild`; the package is still named `react-example`.                                                                                                       | Remove both; rename the package.                                                                                           | Same play          | S      |
+| D5  | Stale texts: the Game Modes title reads "ARCADE ARCIVE"; its descriptions promise "authentic siren tones"; the plan's code refs point to `fa1bc42` line numbers.                                                                                   | Fix the typo and wording; mark the plan's old refs as historical.                                                          | Visual only        | S      |
 
-### 2. One source of truth'
+### 2. One source of truth
 
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |'
-| O1 | The targeting-quirk flag lives twice: `settings.emulateRomQuirks` and `ghostAiController.emulateRomQuirks`. The engine copies it every frame (`GameEngine.ts:706`), yet the presets and both Lab tabs also write the copy. | The ghost AI reads the engine\'s settings; remove the copy and the extra writes. | Same play | S |'
-| O2 | The Lab tabs (`PracticePanel`, `LearnModeOverlay`) keep 11 `useState` mirrors of engine settings, and `ArcadeCabinet` 20 state values (several mirror settings or the engine). Mirrors can drift (the CUSTOM preset label had to read the engine to stay right). | One small hook (`useEngineSetting`) that reads and writes `engine.settings` and re-renders on change; the panels drop their mirrors. | Same play | M |'
-| O3 | Ghost overlays exist twice: the Learn/Practice drawing in `GameRenderer` (`renderLearnMode`, `renderGrid`, `renderIntersectionTiles`, practice ghost paths and target lines) and the debug overlay\'s grid, intersections and target layers in `debugOverlay.ts`. Same geometry, two implementations. | One overlay module with shared drawing functions; Learn, Practice and Debug choose which layers to show and in which style. | Visual only | M |'
-| O4 | Per-level helpers in `src/utils/index.ts` are thin wrappers over `levelRow()`, and game rules live in "utils" (`getElroyStage`, `getPixelStepsThisFrame`). | Fold the wrappers into `levelTable.ts`; move Elroy to the ghost AI and step masks to `speedMasks.ts`; `utils/` keeps only generic helpers. | Same play | S |'
-| O5 | Tests repeat their own setup: `playing()` is written five times, `live()` twice, plus ad-hoc "walk into Blinky" and "eat the last dot" snippets. | `tests/helpers.ts` with `playing(level)`, `live()`, `dieOnce()`, `clearLevel()`, `eatGhost()`. | Same play | S |'
-'
+| ID  | Issue                                                                                                                                                                                                                                                                                                | Fix                                                                                                                                        | Effect on the game | Effort |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ | ------ |
+| O1  | The targeting-quirk flag lives twice: `settings.emulateRomQuirks` and `ghostAiController.emulateRomQuirks`. The engine copies it every frame (`GameEngine.ts:706`), yet the presets and both Lab tabs also write the copy.                                                                           | The ghost AI reads the engine's settings; remove the copy and the extra writes.                                                            | Same play          | S      |
+| O2  | The Lab tabs (`PracticePanel`, `LearnModeOverlay`) keep 11 `useState` mirrors of engine settings, and `ArcadeCabinet` 20 state values (several mirror settings or the engine). Mirrors can drift (the CUSTOM preset label had to read the engine to stay right).                                     | One small hook (`useEngineSetting`) that reads and writes `engine.settings` and re-renders on change; the panels drop their mirrors.       | Same play          | M      |
+| O3  | Ghost overlays exist twice: the Learn/Practice drawing in `GameRenderer` (`renderLearnMode`, `renderGrid`, `renderIntersectionTiles`, practice ghost paths and target lines) and the debug overlay's grid, intersections and target layers in `debugOverlay.ts`. Same geometry, two implementations. | One overlay module with shared drawing functions; Learn, Practice and Debug choose which layers to show and in which style.                | Visual only        | M      |
+| O4  | Per-level helpers in `src/utils/index.ts` are thin wrappers over `levelRow()`, and game rules live in "utils" (`getElroyStage`, `getPixelStepsThisFrame`).                                                                                                                                           | Fold the wrappers into `levelTable.ts`; move Elroy to the ghost AI and step masks to `speedMasks.ts`; `utils/` keeps only generic helpers. | Same play          | S      |
+| O5  | Tests repeat their own setup: `playing()` is written five times, `live()` twice, plus ad-hoc "walk into Blinky" and "eat the last dot" snippets.                                                                                                                                                     | `tests/helpers.ts` with `playing(level)`, `live()`, `dieOnce()`, `clearLevel()`, `eatGhost()`.                                             | Same play          | S      |
 
-### 3. Simulation vs. presentation'
+### 3. Simulation vs. presentation
 
-'
-The engine is meant to hold only what decides the game. Some presentation data lives in the saved'
-state, and some settings mix the two.'
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------ |'
-| P1 | `engine.settings` mixes rules (quirks, invincible, turbo) with display and UI (sound, CRT, debug layers, Learn visuals, colors). The replay picks the four rule settings by hand (`simSettingsOf`); a new rule setting could be forgotten there. | Split into `rules` (recorded in replays, part of the preset) and `view` (never recorded). A test fails if a setting is in neither. | Same play | M |'
-| P2 | Presentation data in the saved state: ghost `flashState` and `feetAnimation` (a float stepped by 0.15), Clyde\'s `clydeWanderState`, `intermediateTarget`, score popups. | Derive them when drawing (flash from the frightened timer, feet from the tick; Learn labels from the targeting code); popups move to the shell as a view of the score events. | Same play, new save shape | M |'
-| P3 | Two visuals use the wall clock (`Date.now()`): the energizer pulse and the invincibility shield. Replays, frame stepping and slow motion don\'t reproduce them, and the energizers don\'t slow down at practice speed. | Tie them to the game\'s frame counter. | Visual only (see Decision 1 for the energizer\'s look) | S |'
-| P4 | Rewind, scrubbing and the replay timeline sit inside `GameEngine` (`rewindSeconds`, `rewindBeforeDeath`, `scrubToFrame`, `seekTick`, `resumeFromScrub`, `getRewindBufferLength`). | A `Timeline` class next to `ReplayLog` that drives the engine from outside. | Same play | M |'
-'
+The engine is meant to hold only what decides the game. Some presentation data lives in the saved
+state, and some settings mix the two.
 
-### 4. Module size and structure'
+| ID  | Issue                                                                                                                                                                                                                                            | Fix                                                                                                                                                                           | Effect on the game                                    | Effort |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------ |
+| P1  | `engine.settings` mixes rules (quirks, invincible, turbo) with display and UI (sound, CRT, debug layers, Learn visuals, colors). The replay picks the four rule settings by hand (`simSettingsOf`); a new rule setting could be forgotten there. | Split into `rules` (recorded in replays, part of the preset) and `view` (never recorded). A test fails if a setting is in neither.                                            | Same play                                             | M      |
+| P2  | Presentation data in the saved state: ghost `flashState` and `feetAnimation` (a float stepped by 0.15), Clyde's `clydeWanderState`, `intermediateTarget`, score popups.                                                                          | Derive them when drawing (flash from the frightened timer, feet from the tick; Learn labels from the targeting code); popups move to the shell as a view of the score events. | Same play, new save shape                             | M      |
+| P3  | Two visuals use the wall clock (`Date.now()`): the energizer pulse and the invincibility shield. Replays, frame stepping and slow motion don't reproduce them, and the energizers don't slow down at practice speed.                             | Tie them to the game's frame counter.                                                                                                                                         | Visual only (see Decision 1 for the energizer's look) | S      |
+| P4  | Rewind, scrubbing and the replay timeline sit inside `GameEngine` (`rewindSeconds`, `rewindBeforeDeath`, `scrubToFrame`, `seekTick`, `resumeFromScrub`, `getRewindBufferLength`).                                                                | A `Timeline` class next to `ReplayLog` that drives the engine from outside.                                                                                                   | Same play                                             | M      |
 
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |'
-| M1 | `GameEngine.ts` (1,092 lines): the tick, collisions and scoring, fruit, popups, level loading, state save/load, diagnostics data builders, rewind (P4) and legacy adapters (D3). | Keep the engine as the tick and the round flow; move out collisions and scoring, fruit, state save/load (to `gameState.ts`), diagnostics builders (to `diagnostics/`), rewind (P4). Target: under ~500 lines. | Same play | L |'
-| M2 | `GameRenderer.ts` (888 lines): maze, actors, fruit, HUD calls, Learn and Practice overlays (O3), banners, CRT. | Actors in `renderActors.ts`, overlays per O3, the renderer as the frame\'s composition. | Visual only | M |'
-| M3 | `ArcadeCabinet.tsx` (878 lines): keyboard, gamepad and touch input, panels, replays and clips, game over flow, preferences, high scores. | Hooks: `useGameInput` (keys, bindings, gamepad, touch, latency), `usePanels` (one reducer for which panel is open and the hold), `useReplays`, `useGameOver`; the component wires them. | Same play | L |'
-| M4 | `PracticePanel.tsx` (552) and `LearnModeOverlay.tsx` (409) carry long copy-pasted toggle buttons. | A `ToggleCard` component and O2\'s hook; sections as small components. | Visual only | M |'
-| M5 | Global singletons: `soundEngine` and the `GameEvents` bus are module-level instances shared across tests (`isolate: false` relies on every test cleaning up). | The runner owns its sound engine and event bus (the UI receives them); tests get fresh ones. | Same play | M |'
-'
+### 4. Module size and structure
 
-### 5. Naming and consistency'
+| ID  | Issue                                                                                                                                                                            | Fix                                                                                                                                                                                                           | Effect on the game | Effort |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |
+| M1  | `GameEngine.ts` (1,092 lines): the tick, collisions and scoring, fruit, popups, level loading, state save/load, diagnostics data builders, rewind (P4) and legacy adapters (D3). | Keep the engine as the tick and the round flow; move out collisions and scoring, fruit, state save/load (to `gameState.ts`), diagnostics builders (to `diagnostics/`), rewind (P4). Target: under ~500 lines. | Same play          | L      |
+| M2  | `GameRenderer.ts` (888 lines): maze, actors, fruit, HUD calls, Learn and Practice overlays (O3), banners, CRT.                                                                   | Actors in `renderActors.ts`, overlays per O3, the renderer as the frame's composition.                                                                                                                        | Visual only        | M      |
+| M3  | `ArcadeCabinet.tsx` (878 lines): keyboard, gamepad and touch input, panels, replays and clips, game over flow, preferences, high scores.                                         | Hooks: `useGameInput` (keys, bindings, gamepad, touch, latency), `usePanels` (one reducer for which panel is open and the hold), `useReplays`, `useGameOver`; the component wires them.                       | Same play          | L      |
+| M4  | `PracticePanel.tsx` (552) and `LearnModeOverlay.tsx` (409) carry long copy-pasted toggle buttons.                                                                                | A `ToggleCard` component and O2's hook; sections as small components.                                                                                                                                         | Visual only        | M      |
+| M5  | Global singletons: `soundEngine` and the `GameEvents` bus are module-level instances shared across tests (`isolate: false` relies on every test cleaning up).                    | The runner owns its sound engine and event bus (the UI receives them); tests get fresh ones.                                                                                                                  | Same play          | M      |
 
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------ |'
-| N1 | "Round", "level" and "life" are mixed: `dotsEatenThisRound` is per level; `currLevelFrame` restarts with every life; `RoundSequencer` runs lives and levels. | One vocabulary (level = maze; life = from READY to death; round = a life on a level) and renames: `dotsEatenThisLevel`, `lifeFrame`. Agent driver keeps old names as aliases for one version. | Same play, new save shape | M |'
-| N2 | Two views of the round: `RoundPhase` (exact) and `PlayState` (coarse, plus PAUSED derived from the runner\'s holds). The `playState` setter starts phases by side effect. | Keep `PlayState` for the UI only, read-only; scenarios set phases explicitly. | Same play | M |'
-| N3 | Ghost state is spread across `location`, `frightened`, `wave`, `mode` (derived), `enteringHousePhase`, `reversalPrimed`. | Document the state machine in one place (types plus a diagram in the manual); remove fields P2 makes unnecessary. | Same play | S |'
-| N4 | Estimates are mostly named and marked, but not all: the eyes\' speed and the mouth\'s frame mapping are not in the list, and the marks are scattered. | Every estimate is a named constant with a one-line "estimate" or source note, and `docs/manual` lists them all (feeds the footage checklist). | Same play | S |'
-| N5 | Non-null assertions (`maze!`, `pacman!`, `ghosts!`) because the engine builds its actors after the constructor. | Build them in the constructor; strict types without `!`. | Same play | S |'
-'
+### 5. Naming and consistency
 
-### 6. Tests and tooling'
+| ID  | Issue                                                                                                                                                                    | Fix                                                                                                                                                                                           | Effect on the game        | Effort |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------ |
+| N1  | "Round", "level" and "life" are mixed: `dotsEatenThisRound` is per level; `currLevelFrame` restarts with every life; `RoundSequencer` runs lives and levels.             | One vocabulary (level = maze; life = from READY to death; round = a life on a level) and renames: `dotsEatenThisLevel`, `lifeFrame`. Agent driver keeps old names as aliases for one version. | Same play, new save shape | M      |
+| N2  | Two views of the round: `RoundPhase` (exact) and `PlayState` (coarse, plus PAUSED derived from the runner's holds). The `playState` setter starts phases by side effect. | Keep `PlayState` for the UI only, read-only; scenarios set phases explicitly.                                                                                                                 | Same play                 | M      |
+| N3  | Ghost state is spread across `location`, `frightened`, `wave`, `mode` (derived), `enteringHousePhase`, `reversalPrimed`.                                                 | Document the state machine in one place (types plus a diagram in the manual); remove fields P2 makes unnecessary.                                                                             | Same play                 | S      |
+| N4  | Estimates are mostly named and marked, but not all: the eyes' speed and the mouth's frame mapping are not in the list, and the marks are scattered.                      | Every estimate is a named constant with a one-line "estimate" or source note, and `docs/manual` lists them all (feeds the footage checklist).                                                 | Same play                 | S      |
+| N5  | Non-null assertions (`maze!`, `pacman!`, `ghosts!`) because the engine builds its actors after the constructor.                                                          | Build them in the constructor; strict types without `!`.                                                                                                                                      | Same play                 | S      |
 
-'
-| ID | Issue | Fix | Effect on the game | Effort |'
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------ |'
-| T1 | Golden coverage still misses parts of the rules: level 17+ (energizer without blue), level 21+ speeds, fruit eaten, an Elroy chase with collisions on, a level clear and the next level\'s start, Ms. Pac-Man\'s other mazes. | Add scenarios set up like `l2-eat-ghosts`; a coverage note per golden. | Same play | M |'
-| T2 | The diagnostics invariants run in dev builds every frame and in the soak tests; some overlap with tests. | Keep the invariants that tests can\'t express; move the rest into tests (as T8 did). | Same play | S |'
-| T3 | No CI config in the repo (the checks run locally and in the pre-commit hook). | A CI workflow: `vp check`, `vp test`, `vp run golden:check`, `vp build`. | Same play | S |'
-| T4 | README file map and `AGENT_DRIVER.md` drift as files move. | Update with each step; DOC10 later adds a check. | Same play | S |'
-'
+### 6. Tests and tooling
 
-## Order'
+| ID  | Issue                                                                                                                                                                                                                       | Fix                                                                                 | Effect on the game | Effort |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------ | ------ |
+| T1  | Golden coverage still misses parts of the rules: level 17+ (energizer without blue), level 21+ speeds, fruit eaten, an Elroy chase with collisions on, a level clear and the next level's start, Ms. Pac-Man's other mazes. | Add scenarios set up like `l2-eat-ghosts`; a coverage note per golden.              | Same play          | M      |
+| T2  | The diagnostics invariants run in dev builds every frame and in the soak tests; some overlap with tests.                                                                                                                    | Keep the invariants that tests can't express; move the rest into tests (as T8 did). | Same play          | S      |
+| T3  | No CI config in the repo (the checks run locally and in the pre-commit hook).                                                                                                                                               | A CI workflow: `vp check`, `vp test`, `vp run golden:check`, `vp build`.            | Same play          | S      |
+| T4  | README file map and `AGENT_DRIVER.md` drift as files move.                                                                                                                                                                  | Update with each step; DOC10 later adds a check.                                    | Same play          | S      |
 
-'
-Each step is one or a few commits, with the full suite and the golden check green at each.'
-'
+## Order
 
-1. **Removals:** D1, D2, D4, D5. Small, safe, and they shrink what the later steps touch.'
-2. **Single sources of truth:** O1, O4, O5, then O2.'
-3. **Simulation vs. presentation:** P1, then P2 (the one planned save-shape change, done once'
-   together with N1's renames), P3, then P4.'
-4. **Splits:** M1 (engine), M2 and O3 (renderer and overlays), M3 and M4 (UI), M5 (singletons).'
-5. **Naming and types:** N2, N3, N4, N5.'
-6. **Tests and tooling:** T1 (more goldens: best done before step 4, so the splits run under'
-   the widest net), T2, T3, T4.'
-   '
-   Suggested: T1 first, before everything else.'
-   '
+Each step is one or a few commits, with the full suite and the golden check green at each.
 
-## What players would notice'
+1. **Removals:** D1, D2, D4, D5. Small, safe, and they shrink what the later steps touch.
+2. **Single sources of truth:** O1, O4, O5, then O2.
+3. **Simulation vs. presentation:** P1, then P2 (the one planned save-shape change, done once
+   together with N1's renames), P3, then P4.
+4. **Splits:** M1 (engine), M2 and O3 (renderer and overlays), M3 and M4 (UI), M5 (singletons).
+5. **Naming and types:** N2, N3, N4, N5.
+6. **Tests and tooling:** T1 (more goldens: best done before step 4, so the splits run under
+   the widest net), T2, T3, T4.
 
-'
-Nothing, apart from:'
-'
+   Suggested: T1 first, before everything else.
 
-- **P3:** energizers and the invincibility shield follow game time: they freeze when the game is'
-  paused and slow down at practice speed, as everything else does.'
-- **D5:** the Game Modes texts.'
-- **P2 and N1:** replay files and links made before them open with the existing "saved with'
-  another state version" note. They may play differently, since their save shape is older.'
-  '
+## What players would notice
 
-## Decisions for you'
+Nothing, apart from:
 
-'
+- **P3:** energizers and the invincibility shield follow game time: they freeze when the game is
+  paused and slow down at practice speed, as everything else does.
+- **D5:** the Game Modes texts.
+- **P2 and N1:** replay files and links made before them open with the existing "saved with
+  another state version" note. They may play differently, since their save shape is older.
 
-1. **Energizer look (P3).** Keep a smooth pulse tied to game frames, or blink on and off like the'
-   arcade? The arcade's energizers blink. Blinking would be a visual change.'
-2. **Agent driver names (N1, N2).** Rename its fields and methods to the new vocabulary with'
-   aliases for one version, or keep the old names?'
-3. **Learn vs. Debug overlays (O3).** Merge them into one overlay with styles, or keep two'
-   modules that share drawing code?'
-4. **Golden coverage first (T1)?** Recommended.'
-5. **Branching.** You mentioned merging `refactor-pass-1` into `ai-experiments` and starting a'
-   new branch from there. The plan assumes Z1 runs on that new branch.'
+## Decisions for you
+
+1. **Energizer look (P3).** Keep a smooth pulse tied to game frames, or blink on and off like the
+   arcade? The arcade's energizers blink. Blinking would be a visual change.
+2. **Agent driver names (N1, N2).** Rename its fields and methods to the new vocabulary with
+   aliases for one version, or keep the old names?
+3. **Learn vs. Debug overlays (O3).** Merge them into one overlay with styles, or keep two
+   modules that share drawing code?
+4. **Golden coverage first (T1)?** Recommended.
+5. **Branching.** You mentioned merging `refactor-pass-1` into `ai-experiments` and starting a
+   new branch from there. The plan assumes Z1 runs on that new branch.
