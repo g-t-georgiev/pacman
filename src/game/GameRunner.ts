@@ -160,7 +160,7 @@ export class GameRunner {
     if (!this.engine.settings.soundEnabled || siren.kind === "OFF") {
       soundEngine.stopSiren();
     } else if (siren.kind === "NORMAL") {
-      soundEngine.updateSiren("NORMAL", siren.dotsRatio);
+      soundEngine.updateSiren("NORMAL", siren.stage);
     } else {
       soundEngine.updateSiren(siren.kind);
     }
@@ -209,6 +209,11 @@ export function dispatchSimEvent(event: SimEvent): void {
       break;
     case "EXTRA_LIFE":
       soundEngine.playExtraLife();
+      break;
+    case "INTRO":
+      soundEngine.playIntro().catch(() => {
+        /* audio may be blocked until the first user gesture */
+      });
       break;
     case "PACMAN_DIED":
       soundEngine.playDeath().catch(() => {

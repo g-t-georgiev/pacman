@@ -39,6 +39,7 @@ import { DiagnosticController, type DiagnosticData } from "../diagnostics/Diagno
 import { seamPx } from "./mazes";
 import { RULESETS, type Ruleset } from "./rulesets";
 import type { SimEvent, SirenState } from "./simEvents";
+import { sirenStage } from "./siren";
 import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
 import { ReplayLog } from "./replay";
 
@@ -308,15 +309,20 @@ export default class GameEngine {
     this.emitScore();
   }
 
-  /** The background siren for the current state (the shell plays it). */
+  /**
+   * The background siren for the current state (the shell plays it). Only during play: silent
+   * through READY, the ghost-eaten pause, deaths, level clears and while paused. Eyes going home
+   * win over frightened, which wins over the normal siren (the arcade's "Return to Home",
+   * "Turn to Blue" and "Normal Move" / "Spurt Move" sounds).
+   */
   public getSirenState(): SirenState {
-    if (this.playState !== "PLAYING") return { kind: "OFF" };
+    if (this.paused || this.sequencer.phase !== "PLAYING") return { kind: "OFF" };
     const ghosts = Object.values(this.ghosts);
     if (ghosts.some((g) => g.mode === "EATEN")) return { kind: "EYES" };
     if (ghosts.some((g) => g.mode === "FRIGHTENED")) return { kind: "FRIGHTENED" };
     return {
       kind: "NORMAL",
-      dotsRatio: this.totalDots > 0 ? this.dotsRemaining / this.totalDots : 1,
+      stage: sirenStage(this.totalDots - this.dotsRemaining, this.totalDots),
     };
   }
 
@@ -403,6 +409,7 @@ export default class GameEngine {
 
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
+    this.emit({ type: "INTRO" });
     this.enterPhase("READY", READY_FRAMES_GAME_START);
     this.replayLog.reset(this);
   }

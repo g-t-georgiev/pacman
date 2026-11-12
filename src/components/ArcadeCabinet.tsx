@@ -261,9 +261,6 @@ export const ArcadeCabinet: React.FC = () => {
     // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading)
     void document.fonts?.load(arcadeFont(16));
 
-    // Play intro sound
-    void soundEngine.playIntro();
-
     // Start deterministic game loop via GameLoopController
     runner.start();
 
@@ -487,7 +484,6 @@ export const ArcadeCabinet: React.FC = () => {
       setShowMenu(false);
       setShowRestartPanel(false);
       setIsGameOverState(false);
-      void soundEngine.playIntro();
     }
   };
 
@@ -532,9 +528,6 @@ export const ArcadeCabinet: React.FC = () => {
     runnerRef.current?.setPaused("user", false);
     setShowRestartPanel(false);
     setIsGameOverState(false);
-    soundEngine.playIntro().catch(() => {
-      /* GG */
-    });
   };
 
   const handleNewGame = () => {
@@ -547,7 +540,6 @@ export const ArcadeCabinet: React.FC = () => {
     runnerRef.current?.setPaused("user", false);
     setShowRestartPanel(false);
     setIsGameOverState(false);
-    void soundEngine.playIntro();
   };
 
   const handleOpenRestartPanel = () => {

@@ -1,19 +1,67 @@
+import { READY_FRAMES_GAME_START, PHASE_FRAMES } from "../game/RoundSequencer";
+import { SIM_FPS } from "../game/constants";
+
+/**
+ * Procedural sounds (S1/S2). The arcade used a 3-voice wavetable chip (32-step, 4-bit waveforms);
+ * we approximate its character with our own small wavetables and pitch sweeps, matched by ear to
+ * the original's behavior: when each sound plays, its rhythm, pitch range and shape. No samples or
+ * data from the original are used. Every pitch and length below is an estimate.
+ */
+
+type SirenKind = "NORMAL" | "FRIGHTENED" | "EYES" | "NONE";
+
+/** A 32-step, 4-bit waveform (values 0-15), like the arcade chip's wavetables. Our own shapes. */
+const WAVES = {
+  /** A rounded tone: sine quantized to 16 levels (the slight grit of a 4-bit table). */
+  soft: Array.from({ length: 32 }, (_, i) =>
+    Math.round(7.5 + 7.5 * Math.sin((i / 32) * 2 * Math.PI))
+  ),
+  /** A reedy, buzzy tone for the chomp and the death sound: a lopsided triangle. */
+  buzz: Array.from({ length: 32 }, (_, i) =>
+    i < 12 ? Math.round((i / 11) * 15) : Math.round(15 - ((i - 12) / 19) * 15)
+  ),
+  /** A rough, nasal tone for the chomp: a stepped saw with a notch. */
+  rasp: Array.from({ length: 32 }, (_, i) =>
+    i < 4 ? 15 : i < 8 ? 3 : i < 20 ? Math.round(15 - ((i - 8) / 11) * 12) : i < 24 ? 12 : 0
+  ),
+  /** A hollow pulse for beeps. */
+  pulse: Array.from({ length: 32 }, (_, i) => (i < 10 ? 15 : i < 14 ? 8 : 0)),
+};
+type WaveName = keyof typeof WAVES;
+
+/** Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s). */
+const SIREN_STAGES: ReadonlyArray<{ lo: number; hi: number; period: number }> = [
+  { lo: 360, hi: 640, period: 0.42 },
+  { lo: 400, hi: 700, period: 0.38 },
+  { lo: 440, hi: 770, period: 0.34 },
+  { lo: 490, hi: 850, period: 0.3 },
+  { lo: 540, hi: 940, period: 0.26 },
+];
+/** Frightened: a low, fast, rising warble. Eyes: a high, faster, falling one. */
+const FRIGHTENED_SIREN = { lo: 180, hi: 520, rate: 7.5 };
+const EYES_SIREN = { lo: 600, hi: 1300, rate: 12 };
+
+/** One frequency point of a sweep: seconds from the sound's start, Hz. */
+type Sweep = Array<[number, number]>;
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private enabled: boolean = true;
   private volume: number = 0.5;
+  private waves = new Map<WaveName, PeriodicWave>();
 
-  // Continuous sound oscillators / nodes
+  // The siren: one tone whose pitch an LFO sweeps; kept running and re-tuned on state changes
   private sirenOsc: OscillatorNode | null = null;
+  private sirenLfo: OscillatorNode | null = null;
+  private sirenDepth: GainNode | null = null;
   private sirenGain: GainNode | null = null;
-  private sirenType: "NORMAL" | "FRIGHTENED" | "EYES" | "NONE" = "NONE";
+  private sirenType: SirenKind = "NONE";
+  private sirenStageNow = -1;
+
   private wakaFlip: boolean = false;
   private lastWakaTime: number = 0;
-
-  constructor() {
-    // Lazy initialized on first user interaction
-  }
+  private introNodes: OscillatorNode[] = [];
 
   private initCtx() {
     if (typeof window === "undefined") return;
@@ -33,6 +81,61 @@ class SoundEngine {
     if (this.ctx && this.ctx.state === "suspended") {
       this.ctx.resume().catch(() => {});
     }
+  }
+
+  /** The PeriodicWave for a 32-step table (its Fourier series, first 16 harmonics). */
+  private wave(name: WaveName): PeriodicWave {
+    const cached = this.waves.get(name);
+    if (cached) return cached;
+    const table = WAVES[name];
+    const n = table.length;
+    // The chip plays the table as a staircase (each step held), and the hard steps are where
+    // its grit comes from: take the staircase's own Fourier series, well past the table's 16
+    // smooth harmonics.
+    const harmonics = 64;
+    const real = new Float32Array(harmonics + 1);
+    const imag = new Float32Array(harmonics + 1);
+    for (let k = 1; k <= harmonics; k++) {
+      const w = 2 * Math.PI * k;
+      for (let i = 0; i < n; i++) {
+        const v = (table[i] - 7.5) / 7.5;
+        const t0 = i / n;
+        const t1 = (i + 1) / n;
+        real[k] += (2 * v * (Math.sin(w * t1) - Math.sin(w * t0))) / w;
+        imag[k] += (2 * v * (Math.cos(w * t0) - Math.cos(w * t1))) / w;
+      }
+    }
+    const periodic = this.ctx!.createPeriodicWave(real, imag);
+    this.waves.set(name, periodic);
+    return periodic;
+  }
+
+  /**
+   * Plays one note: a wavetable tone following `sweep` (linear ramps between its points) at
+   * `level`, starting `delay` s from now, with a short release so it doesn't click.
+   */
+  private tone(wave: WaveName, sweep: Sweep, level: number, delay = 0): OscillatorNode | null {
+    if (!this.ctx || !this.masterGain) return null;
+    const t0 = this.ctx.currentTime + delay;
+    const end = t0 + sweep[sweep.length - 1][0];
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.setPeriodicWave(this.wave(wave));
+    osc.frequency.setValueAtTime(sweep[0][1], t0);
+    for (const [at, hz] of sweep.slice(1)) osc.frequency.linearRampToValueAtTime(hz, t0 + at);
+    gain.gain.setValueAtTime(level, t0);
+    gain.gain.setValueAtTime(level, Math.max(t0, end - 0.01));
+    gain.gain.linearRampToValueAtTime(0, end);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t0);
+    osc.stop(end + 0.01);
+    return osc;
+  }
+
+  private ready(): boolean {
+    this.initCtx();
+    return !!this.ctx && this.enabled && !!this.masterGain;
   }
 
   public setEnabled(enabled: boolean) {
@@ -60,295 +163,291 @@ class SoundEngine {
     return this.volume;
   }
 
-  // Play intro game start music
+  /** Which siren is playing (for the agent driver and debugging). */
+  public get sirenStatus(): { kind: SirenKind; stage: number } {
+    return { kind: this.sirenType, stage: this.sirenStageNow };
+  }
+
+  /**
+   * The start tune, two voices (melody and bass), stretched to end just before READY does.
+   * A new start cuts off a tune still playing.
+   */
   public playIntro(): Promise<void> {
-    this.initCtx();
-    if (!this.ctx || !this.enabled || !this.masterGain) return Promise.resolve();
+    for (const node of this.introNodes) {
+      try {
+        node.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    this.introNodes = [];
+    if (!this.ready()) return Promise.resolve();
 
-    const ctx = this.ctx;
-    const now = ctx.currentTime + 0.05;
-
-    // Classic arcade Pac-Man intro notes & durations (approx frequencies)
-    // B4, B5, F#5, D#5, B5, F#5, D#5, C5, C6, G5, E5, C6, G5, E5, B4, B5, F#5, D#5, B5, F#5, D#5, D#5, E5, F5, F5, F#5, G5, G#5, A5, B5
-    const notes: Array<{ f: number; d: number }> = [
-      { f: 493.88, d: 0.12 }, // B4
-      { f: 987.77, d: 0.12 }, // B5
-      { f: 739.99, d: 0.12 }, // F#5
-      { f: 622.25, d: 0.12 }, // D#5
-      { f: 987.77, d: 0.08 }, // B5
-      { f: 739.99, d: 0.14 }, // F#5
-      { f: 622.25, d: 0.22 }, // D#5
-
-      { f: 523.25, d: 0.12 }, // C5
-      { f: 1046.5, d: 0.12 }, // C6
-      { f: 783.99, d: 0.12 }, // G5
-      { f: 659.25, d: 0.12 }, // E5
-      { f: 1046.5, d: 0.08 }, // C6
-      { f: 783.99, d: 0.14 }, // G5
-      { f: 659.25, d: 0.22 }, // E5
-
-      { f: 493.88, d: 0.12 }, // B4
-      { f: 987.77, d: 0.12 }, // B5
-      { f: 739.99, d: 0.12 }, // F#5
-      { f: 622.25, d: 0.12 }, // D#5
-      { f: 987.77, d: 0.08 }, // B5
-      { f: 739.99, d: 0.14 }, // F#5
-      { f: 622.25, d: 0.22 }, // D#5
-
-      { f: 622.25, d: 0.06 }, // D#5
-      { f: 659.25, d: 0.06 }, // E5
-      { f: 698.46, d: 0.06 }, // F5
-      { f: 698.46, d: 0.06 },
-      { f: 739.99, d: 0.06 }, // F#5
-      { f: 783.99, d: 0.06 }, // G5
-      { f: 830.61, d: 0.06 }, // G#5
-      { f: 880.0, d: 0.06 }, // A5
-      { f: 987.77, d: 0.28 }, // B5
+    // Melody in beats (B, C, B phrases, then the closing run), as [Hz, beats]
+    const B4 = 493.88,
+      B5 = 987.77,
+      Fs5 = 739.99,
+      Ds5 = 622.25,
+      C5 = 523.25,
+      C6 = 1046.5;
+    const G5 = 783.99,
+      E5 = 659.25,
+      F5 = 698.46,
+      Gs5 = 830.61,
+      A5 = 880.0;
+    const phrase = (
+      root: number,
+      oct: number,
+      fifth: number,
+      third: number
+    ): Array<[number, number]> => [
+      [root, 1],
+      [oct, 1],
+      [fifth, 1],
+      [third, 1],
+      [oct, 0.5],
+      [fifth, 1],
+      [third, 1.5],
     ];
+    const melody: Array<[number, number]> = [
+      ...phrase(B4, B5, Fs5, Ds5),
+      ...phrase(C5, C6, G5, E5),
+      ...phrase(B4, B5, Fs5, Ds5),
+      [Ds5, 0.5],
+      [E5, 0.5],
+      [F5, 1],
+      [F5, 0.5],
+      [Fs5, 0.5],
+      [G5, 1],
+      [G5, 0.5],
+      [Gs5, 0.5],
+      [A5, 1],
+      [B5, 2],
+    ];
+    const beats = melody.reduce((sum, [, b]) => sum + b, 0);
+    const length = READY_FRAMES_GAME_START / SIM_FPS - 0.15;
+    const beat = length / beats;
 
-    let t = now;
-    notes.forEach((n) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(n.f, t);
-
-      gain.gain.setValueAtTime(0.25, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + n.d);
-
-      osc.connect(gain);
-      gain.connect(this.masterGain!);
-
-      osc.start(t);
-      osc.stop(t + n.d);
-      t += n.d;
+    let at = 0;
+    for (const [hz, b] of melody) {
+      const d = b * beat;
+      const node = this.tone(
+        "soft",
+        [
+          [0, hz],
+          [d * 0.9, hz],
+        ],
+        0.16,
+        at
+      );
+      if (node) this.introNodes.push(node);
+      at += d;
+    }
+    // Bass: root and octave on every beat, following the phrase's chord (B, C, B, then G-A-B)
+    const bassRoots: number[] = [];
+    const phraseBeats = 7;
+    for (const root of [123.47, 130.81, 123.47])
+      for (let i = 0; i < phraseBeats; i++) bassRoots.push(root);
+    for (const root of [155.56, 155.56, 174.61, 196.0, 196.0, 220.0, 246.94, 246.94])
+      bassRoots.push(root);
+    bassRoots.forEach((root, i) => {
+      if (i * beat >= length) return;
+      const hz = i % 2 === 0 ? root : root * 2;
+      const node = this.tone(
+        "buzz",
+        [
+          [0, hz],
+          [beat * 0.8, hz],
+        ],
+        0.12,
+        i * beat
+      );
+      if (node) this.introNodes.push(node);
     });
 
-    return new Promise((resolve) => {
-      setTimeout(resolve, (t - now) * 1000);
-    });
+    return new Promise((resolve) => setTimeout(resolve, length * 1000));
   }
 
-  // Waka-waka dot eating sound
+  /** One half of the chomp per dot, alternating a falling and a rising sweep ("wa", "ka"). */
   public playWaka() {
-    this.initCtx();
-    if (!this.ctx || !this.enabled || !this.masterGain) return;
-
-    const now = this.ctx.currentTime;
-    if (now - this.lastWakaTime < 0.07) return; // Prevent audio congestion
+    if (!this.ready()) return;
+    const now = this.ctx!.currentTime;
+    if (now - this.lastWakaTime < 0.06) return; // turbo: don't pile up
     this.lastWakaTime = now;
-
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = "triangle";
-
     this.wakaFlip = !this.wakaFlip;
-    const startFreq = this.wakaFlip ? 360 : 480;
-    const endFreq = this.wakaFlip ? 480 : 360;
-
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.07);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.07);
+    const [from, to] = this.wakaFlip ? [880, 330] : [330, 880];
+    this.tone(
+      "rasp",
+      [
+        [0, from],
+        [0.1, to],
+      ],
+      0.2
+    );
   }
 
-  // Eat ghost sound
+  /** Eating a ghost: a rising sweep, about half a second (the eat pause is 1 s). */
   public playEatGhost() {
-    this.initCtx();
-    if (!this.ctx || !this.enabled || !this.masterGain) return;
-
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = "square";
-    osc.frequency.setValueAtTime(200, now);
-    osc.frequency.linearRampToValueAtTime(800, now + 0.35);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.35);
+    if (!this.ready()) return;
+    this.tone(
+      "soft",
+      [
+        [0, 150],
+        [0.15, 330],
+        [0.5, 1150],
+      ],
+      0.22
+    );
   }
 
-  // Fruit eat sound
+  /** Eating the fruit: a quick dip and rise. */
   public playEatFruit() {
-    this.initCtx();
-    if (!this.ctx || !this.enabled || !this.masterGain) return;
-
-    const now = this.ctx.currentTime;
-    const chord = [523.25, 659.25, 783.99, 1046.5];
-    chord.forEach((freq, idx) => {
-      const osc = this.ctx!.createOscillator();
-      const gain = this.ctx!.createGain();
-      const t = now + idx * 0.06;
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, t);
-
-      gain.gain.setValueAtTime(0.2, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-
-      osc.connect(gain);
-      gain.connect(this.masterGain!);
-
-      osc.start(t);
-      osc.stop(t + 0.15);
-    });
+    if (!this.ready()) return;
+    this.tone(
+      "soft",
+      [
+        [0, 900],
+        [0.17, 300],
+        [0.36, 950],
+      ],
+      0.2
+    );
   }
 
-  // Death sound
+  /**
+   * The death sound, the length of the death animation: wobbling chirps that fall in pitch, then
+   * two short falling blips.
+   */
   public playDeath(): Promise<void> {
-    this.initCtx();
     this.stopSiren();
-    if (!this.ctx || !this.enabled || !this.masterGain) return Promise.resolve();
+    const length = PHASE_FRAMES.DEATH_ANIM / SIM_FPS;
+    if (!this.ready()) return Promise.resolve();
 
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "triangle";
-    // Classic Pac-Man death descending pitch sweep with stepped slides
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(100, now + 1.2);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-
-    osc.start(now);
-    osc.stop(now + 1.2);
-
-    // Final pop
-    setTimeout(() => {
-      if (!this.ctx || !this.masterGain) return;
-      const popOsc = this.ctx.createOscillator();
-      const popGain = this.ctx.createGain();
-      const popNow = this.ctx.currentTime;
-      popOsc.type = "sine";
-      popOsc.frequency.setValueAtTime(120, popNow);
-      popOsc.frequency.exponentialRampToValueAtTime(40, popNow + 0.15);
-      popGain.gain.setValueAtTime(0.35, popNow);
-      popGain.gain.exponentialRampToValueAtTime(0.01, popNow + 0.15);
-
-      popOsc.connect(popGain);
-      popGain.connect(this.masterGain);
-      popOsc.start(popNow);
-      popOsc.stop(popNow + 0.15);
-    }, 1250);
-
-    return new Promise((resolve) => setTimeout(resolve, 1500));
+    const chirps = 11;
+    const chirpLength = (length * 0.77) / chirps;
+    for (let i = 0; i < chirps; i++) {
+      const lo = 620 * Math.pow(0.88, i);
+      const hi = lo * 1.6;
+      this.tone(
+        "buzz",
+        [
+          [0, lo],
+          [chirpLength * 0.6, hi],
+          [chirpLength, lo * 0.9],
+        ],
+        0.2,
+        i * chirpLength
+      );
+    }
+    for (const at of [length * 0.83, length * 0.93]) {
+      this.tone(
+        "soft",
+        [
+          [0, 950],
+          [0.09, 180],
+        ],
+        0.22,
+        at
+      );
+    }
+    return new Promise((resolve) => setTimeout(resolve, length * 1000));
   }
 
-  // Extra life chime
+  /** The extra life: a run of short high beeps, about 2 s. */
   public playExtraLife() {
-    this.initCtx();
-    if (!this.ctx || !this.enabled || !this.masterGain) return;
-
-    const now = this.ctx.currentTime;
-    const notes = [659.25, 783.99, 987.77, 1318.51];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx!.createOscillator();
-      const gain = this.ctx!.createGain();
-      const t = now + idx * 0.08;
-
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, t);
-
-      gain.gain.setValueAtTime(0.25, t);
-      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-
-      osc.connect(gain);
-      gain.connect(this.masterGain!);
-
-      osc.start(t);
-      osc.stop(t + 0.2);
-    });
+    if (!this.ready()) return;
+    for (let i = 0; i < 12; i++)
+      this.tone(
+        "pulse",
+        [
+          [0, 1180],
+          [0.08, 1180],
+        ],
+        0.12,
+        i * 0.16
+      );
   }
 
-  // Background Siren management
-  public updateSiren(mode: "NORMAL" | "FRIGHTENED" | "EYES" | "NONE", dotsRatio: number = 1) {
-    if (!this.enabled) {
+  /**
+   * The background siren: switches at once to the requested state (like the arcade), and re-tunes
+   * the normal siren when its stage changes. `stage` is 0-4 (normal / spurt 1-4).
+   */
+  public updateSiren(mode: SirenKind, stage: number = 0) {
+    if (!this.enabled || mode === "NONE") {
       this.stopSiren();
       return;
     }
     this.initCtx();
     if (!this.ctx || !this.masterGain) return;
+    if (mode === this.sirenType && (mode !== "NORMAL" || stage === this.sirenStageNow)) return;
 
-    if (mode === "NONE") {
-      this.stopSiren();
-      return;
-    }
-
-    if (this.sirenType !== mode || !this.sirenOsc) {
-      this.stopSiren();
-      this.sirenType = mode;
-
+    if (!this.sirenOsc) {
       const osc = this.ctx.createOscillator();
+      const lfo = this.ctx.createOscillator();
+      const depth = this.ctx.createGain();
       const gain = this.ctx.createGain();
-
-      if (mode === "NORMAL") {
-        osc.type = "sawtooth";
-        // Base frequency scales up as dots decrease (from 140Hz up to 260Hz)
-        const baseFreq = 140 + (1 - dotsRatio) * 120;
-        osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
-        gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
-      } else if (mode === "FRIGHTENED") {
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(240, this.ctx.currentTime);
-        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-      } else if (mode === "EYES") {
-        osc.type = "square";
-        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-      }
-
+      osc.setPeriodicWave(this.wave("soft"));
+      lfo.connect(depth);
+      depth.connect(osc.frequency);
       osc.connect(gain);
       gain.connect(this.masterGain);
       osc.start();
-
+      lfo.start();
       this.sirenOsc = osc;
+      this.sirenLfo = lfo;
+      this.sirenDepth = depth;
       this.sirenGain = gain;
-    } else if (mode === "NORMAL" && this.sirenOsc) {
-      // Modulate frequency dynamically with remaining dots
-      const baseFreq = 140 + (1 - dotsRatio) * 120;
-      this.sirenOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.2);
     }
+
+    const now = this.ctx.currentTime;
+    let lo: number, hi: number, rate: number, level: number;
+    if (mode === "NORMAL") {
+      const s = SIREN_STAGES[Math.max(0, Math.min(SIREN_STAGES.length - 1, stage))];
+      ({ lo, hi } = s);
+      rate = 1 / s.period;
+      level = 0.07;
+      this.sirenLfo!.type = "triangle"; // up and down
+    } else if (mode === "FRIGHTENED") {
+      ({ lo, hi, rate } = FRIGHTENED_SIREN);
+      level = 0.08;
+      this.sirenLfo!.type = "sawtooth"; // rising ramps
+    } else {
+      ({ lo, hi, rate } = EYES_SIREN);
+      level = 0.06;
+      this.sirenLfo!.type = "sawtooth";
+    }
+    const falling = mode === "EYES";
+    this.sirenOsc.frequency.setValueAtTime((lo + hi) / 2, now);
+    this.sirenDepth!.gain.setValueAtTime(((hi - lo) / 2) * (falling ? -1 : 1), now);
+    this.sirenLfo!.frequency.setValueAtTime(rate, now);
+    this.sirenGain!.gain.setValueAtTime(level, now);
+    this.sirenType = mode;
+    this.sirenStageNow = mode === "NORMAL" ? stage : -1;
   }
 
   public stopSiren() {
-    if (this.sirenOsc) {
+    for (const node of [this.sirenOsc, this.sirenLfo]) {
+      if (!node) continue;
       try {
-        this.sirenOsc.stop();
-        this.sirenOsc.disconnect();
+        node.stop();
+        node.disconnect();
       } catch {
         // ignore
       }
-      this.sirenOsc = null;
     }
-    if (this.sirenGain) {
+    for (const node of [this.sirenDepth, this.sirenGain]) {
       try {
-        this.sirenGain.disconnect();
+        node?.disconnect();
       } catch {
         // ignore
       }
-      this.sirenGain = null;
     }
+    this.sirenOsc = null;
+    this.sirenLfo = null;
+    this.sirenDepth = null;
+    this.sirenGain = null;
     this.sirenType = "NONE";
+    this.sirenStageNow = -1;
   }
 }
 

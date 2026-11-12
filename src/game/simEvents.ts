@@ -19,6 +19,8 @@ export type SimEvent =
   | { type: "EXTRA_LIFE"; lives: number }
   /** The death animation starts (after the freeze), with its sound. */
   | { type: "PACMAN_DIED" }
+  /** A game or level starts fresh (new game, restart level): the start tune plays over READY. */
+  | { type: "INTRO" }
   /** A rewind showed an earlier frame (the round may be back from a death or a game over). */
   | { type: "REWOUND"; playState: PlayState };
 
@@ -27,4 +29,5 @@ export type SirenState =
   | { kind: "OFF" }
   | { kind: "EYES" }
   | { kind: "FRIGHTENED" }
-  | { kind: "NORMAL"; dotsRatio: number };
+  /** Stage 0 = the normal siren; 1-4 = the faster, higher "spurt" sirens as the maze empties. */
+  | { kind: "NORMAL"; stage: number };
