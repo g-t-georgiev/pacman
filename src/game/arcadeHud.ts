@@ -27,11 +27,15 @@ export const HUD_LAYOUT = {
   /** The newest fruit's left column; older ones go leftward, two tiles each. */
   fruitEndCol: 24,
   maxFruitShown: 7,
+  /** PAUSED (not an arcade text): top right, where it never covers the fruit or an actor. */
+  pausedCol: 21,
+  pausedRow: 0,
   /** 1UP blinks while playing, toggling this often (frames). Estimate. */
   oneUpBlinkFrames: 16,
 } as const;
 
 const TEXT = "#ffffff";
+const PAUSED_COLOR = "#00ffff";
 /** Emulogic at one tile (16 px): the arcade's one character per tile. */
 const FONT = arcadeFont(T);
 
@@ -74,6 +78,11 @@ export function renderArcadeHud(ctx: CanvasRenderingContext2D, engine: GameEngin
     !engine.paused &&
     Math.floor(engine.tick / L.oneUpBlinkFrames) % 2 === 1;
   if (!blinkOff) drawTiles(ctx, "1UP", L.oneUpCol, L.labelRow);
+  if (engine.playState === "PAUSED") {
+    ctx.fillStyle = PAUSED_COLOR;
+    drawTiles(ctx, "PAUSED", L.pausedCol, L.pausedRow);
+    ctx.fillStyle = TEXT;
+  }
   drawTiles(ctx, "HIGH SCORE", L.highScoreLabelCol, L.labelRow);
   const score = formatScore(engine.score);
   drawTiles(ctx, score, L.oneUpScoreEndCol - score.length + 1, L.scoreRow);
