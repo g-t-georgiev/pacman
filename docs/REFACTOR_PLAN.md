@@ -8,7 +8,9 @@
 > **Scope note:** this plan covers **mechanics, timing, feel, architecture and tooling**. It
 > deliberately makes no suggestions for reproducing the original's art, audio, maze look or
 > branding more closely. For the presentation layer, use your own visuals, sounds and maze
-> designs. Item A4 makes mazes data-driven, which makes that easy.
+> designs. Item A4 makes mazes data-driven, which makes that easy. **Update (2026-11-11/12):**
+> sprites (F27) and sounds (S1-S2) match the original's size, behavior and feel with our own
+> shapes and procedural audio; nothing is copied from the original's art, audio or ROM.
 
 Legend: **Impact** = how much a player would notice. **Effort** S < 1h, M = a few hours, L = a day+.
 
@@ -170,6 +172,19 @@ there are `Math.random`/`Date.now` calls inside the sim.
 | F26 | ✅ Done (popups cleared when a life is lost and on level load). **Score popups survive a death.** If Pac-Man dies on the frame he eats a fruit, the floating score freezes through the death sequence and carries on after the respawn. (Reported in play-testing, 2026-11-10.)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Play-test                   | Clear `scorePopups` when a life is lost (and on level load); check whether the arcade shows the fruit score at all once the death freeze starts.                                                                                                                                                                                                                                                                                                                                                                          | Low / S             |
 | F27 | ✅ Done (2026-11-11), checked in the browser 2026-11-12: Pac-Man (and Ms. Pac-Man's details, the death animation) are scaled 13/9 around his center (~13 arcade px across), ghosts and eyes 1.75× (~14 px wide), the fruit is a ~2-tile emoji centered on the 13/14 seam; Learn badges and the debug readout moved above the 2-tile box. Constants in `constants.ts` (`PACMAN_DRAW_SCALE`, `GHOST_DRAW_SCALE`, `FRUIT_FONT_PX`, `SPRITE_HALF`). Golden replays unchanged (purely visual). **Actor sprites are drawn about one tile wide; the arcade's are two** (requested 2026-11-11). Pac-Man, the ghosts and the bonus fruit are 16×16-pixel sprites in the arcade (2×2 tiles), centered on the actor's center point, so they spill over the walls beside the corridor (and over each other in the ghost house). Today the renderer draws them at roughly a tile plus a pixel. Purely visual: the Dossier (\"What Tile Am I In?\") says an actor occupies one tile, \"although its graphic will overlap into the surrounding tiles\"; collision, targeting and tile entry use only the center pixel's tile, so nothing in the sim changes and the golden replays must stay identical. | Dossier, What Tile Am I In? | Scale the drawn shapes to the 2×2-tile sprite box around the center (Pac-Man's body ~13 px of 16, a ghost ~14 px wide, in arcade pixels), keep them centered on the actor's position, and draw the fruit the same size centered on its spot (on the 13/14 seam like the spawns, F9; its 2-tile collision is already right). Our own shapes, not the arcade's artwork. Check overlays (learn reticles, debug readout, score pop-ups) still sit right, and the tunnel wrap and the house look fine with the larger sprites. | Medium (feel) / S   |
 
+### Sound (requested 2026-11-12)
+
+The same approach as the sprites (F27): our own procedural Web Audio sounds (`SoundEngine`),
+no samples or data from the original, matched to the original's **behavior and feel**: when each
+sound plays, how it changes with the game state, its rhythm, pitch range and character. Eating
+(waka-waka), the start jingle and the death sound already work this way. Eating a ghost and a
+fruit are fine for now.
+
+| ID  | Finding                                                                                                                                                                                                                                                                                                                                                  | Source                                                       | Fix                                                                                                                                                                                                                                                                                                            | Impact / Effort |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| S1  | **Background siren.** The original plays a continuous siren under play whose state changes with the game: a normal siren during scatter/chase, a different loop while ghosts are frightened, and another while eyes return to the house. Published descriptions also have the siren rising in pitch/speed as the maze empties. Today there is one siren. | Footage and published descriptions (to collect); no ROM data | Research when each state starts and ends (wave, frightened start/end, eyes in transit, dots left), then drive a siren state machine from sim state each frame (not from one-off events), so pauses, rewinds and replays put the right siren back. One source per state, crossfade-free switch like the arcade. | High (feel) / M |
+| S2  | **Sound timing audit.** Check each existing sound against the sim: waka alternation per dot (and silence when no dot), start jingle length vs. READY, death sound vs. `DEATH_ANIM`, extra life, eat-ghost and fruit sounds during the eat pause, silence on game over, and the replay viewer and rewind (no stale loops after a seek).                   | Footage                                                      | Drive sounds from sim events and state; add a headless test that records which sound states the shell requests per frame.                                                                                                                                                                                      | Medium / S      |
+
 ---
 
 ## Phase 3: Architecture
@@ -221,6 +236,17 @@ there are `Math.random`/`Date.now` calls inside the sim.
 
 ---
 
+## Final pass
+
+- **Z1. Clean-up, refactor and sanitization (do last).** Once most open questions and bugs are
+  settled: remove dead code, legacy adapters (`pacmanState` / `ghostStates` getters, unused
+  settings), stale comments and code refs in this plan; unify naming (phases, locations,
+  timers); make every estimate a named constant with a one-line source or "estimate" note; check
+  the mechanics end to end against the fidelity suite and the Dossier once more; tighten types
+  and the diagnostics rules; keep the golden replays identical unless a change is intended.
+
+---
+
 ## Suggested order
 
 1. **H1** (case fix) → H2–H6
@@ -234,28 +260,26 @@ there are `Math.random`/`Date.now` calls inside the sim.
 9. **T11** (one dev panel, one pause owner) last, once the crucial features are polished.
 10. **T12** (replay viewer and shareable replay links), with or after T11: both are UI work.
 11. **T13** (arcade HUD in the dead rows).
-12. **F27** (arcade-size sprites), then Phase 5, then the follow-ups below as they come up.
+12. **F27** (arcade-size sprites), **S1-S2** (sound), then Phase 5, then the follow-ups below as they come up.
+13. **Z1** (clean-up and sanitization) last, once most uncertainties and bugs are settled.
 
 ## Follow-ups (small, from finished items)
 
 - **Browser checks done (2026-11-12):** HUD rows, Emulogic font and favicon; arcade-size sprites
   (tunnel, house, fruit); replay viewer (Watch, Space, 2×, slider, Esc back to the exact live game),
   a share link opened in a fresh load; game over (ghosts hidden), R from the Restart panel; ghosts
-  leaving one at a time after Restart Level 3. Found and fixed on the way: setting `playState` or
+  released after Restart Level 3. Found and fixed on the way: setting `playState` or
   starting a game could release the agent's hold (the runner now re-applies holds every frame);
   R after a game over landed inside the death animation (now `rewindBeforeDeath`: 2 s before the
   fatal collision). Cosmetic, open: the PAUSED banner shares row 20 with the bonus fruit.
-- **HUD placement and font (T13).** Compare the `HUD_LAYOUT` columns with footage. The text uses
-  bold Courier New, one character per tile; an original pixel font with an open license could
-  replace it (one constant), without copying the arcade's own character set.
-- **Fixed 2026-11-11: ghosts left the house together** (seen after Restart level from a game over,
-  i.e. any level start where several dot limits are 0, from level 2). A released ghost was no
-  longer "waiting", so the next one was released on the very next frame and they overlapped at the
-  door. Now a release (dot limit or idle timer) waits while another ghost is on its way out, so
-  they come out one after another, as in the arcade; dot counting is unchanged. **Decision
-  (2026-11-11):** "out" includes the door. The next ghost may go once the leaving one reaches the
-  gate row (`HOUSE_DOOR_ROW`, row 15); the exact arcade moment (door tile vs. the tile in front)
-  is not documented and too fine to matter. Deaths and rewinds were fine: after
+- **HUD placement (T13).** Compare the `HUD_LAYOUT` columns with footage. The text uses the
+  Emulogic font (2026-11-11), one character per tile.
+- **Ghosts leaving the house together (2026-11-11, reverted 2026-11-12).** Seen after Restart
+  level from level 2 on. A door wait was added (the next ghost held until the previous one was
+  out), then removed on re-reading the Dossier ("Home Sweet Home"): a ghost whose limit is met
+  "immediately exits", and the next counter starts as the previous ghost leaves. With limits of 0
+  several ghosts are released on consecutive frames and overlap in the house as they walk out;
+  we take that as the original design. Open item under **House release overlap** below. After
   a death the personal counters are kept as the Dossier says ("disables (but does not reset)").
 - **Fixed 2026-11-11: the Restart panel stayed open after rewinding out of a game over.** A rewind
   now emits `REWOUND`; the UI closes the panel, cancels its delayed opening and clears the game
@@ -275,7 +299,27 @@ source or footage; the code marks these values as estimates):
   so timers count 60 frames per "second" at 60.606 Hz. Unverified.
 - **Global counter at 32 (F11).** Kept the Dossier rule (if Clyde is inside, the counter turns
   off). Under the user's review.
-- **House speed (50%)** and the eyes' speed (below) have no source.
+- **House speed (50%)** and the eyes' speed (below) have no source (the house path is verified, below).
+- **House release overlap (open, 2026-11-12) [ ].** Release follows the Dossier only: personal
+  counters, the global counter after a death, the no-dot timer, always in the order Pinky, Inky,
+  Clyde, with no wait for the previous ghost to get out. From level 2 Inky's limit is 0 and
+  from level 3 Clyde's too, so they are released 1-2 frames after Pinky; on level 3+ Inky and
+  Clyde walk out stacked and exit on the same frame (Pinky out 0.63 s into play, Inky and Clyde
+  1.10 s). Reported by feel (2026-11-12): Inky seems to leave too soon after Pinky from level 2.
+  To investigate: watch level 2+ starts on the original game, or a reliable, legally usable
+  technical source on release timing inside the house.
+- **No-dot timer on a death (decision, 2026-11-12).** The Dossier says the timer always runs and
+  restarts on every dot and on every release; it does not say what a death does. We restart it
+  when a life is lost, so no time is left over from before the death (`onLifeLost`).
+- **House movement (verified by observation, 2026-11-12).** Not in the Dossier, but confirmed
+  by play and video: waiting ghosts bob up and down; a released ghost lines up with the center
+  of the door and goes straight out; returning eyes line up with the center going in. The speed
+  inside the house (50%) is still an estimate.
+- **Restart level = a fresh start at that level** (2026-11-12). `restartLevel` and `initGame`
+  share one reset (`startFresh`): 3 lives, house counters (global counter off, Elroy
+  suspension off), timers, fruit, PRNG and recording as at a level start. Only the score and
+  high score are kept, and the bonus life stays given if the kept score already passed it. A
+  test checks the state hashes match a new game at that level, before and after 600 frames.
 
 - **Original speed bit patterns.** The default masks are hand-spaced placeholders on the Dossier
   scale. Swap them in `src/game/speedMasks.ts` if a verified disassembly turns up.
