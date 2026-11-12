@@ -113,6 +113,7 @@ export default class GameEngine {
     invincible: false,
     gameSpeed: 1.0,
     arcadeRefreshRate: true,
+    releaseClearsBuffer: false,
     soundEnabled: true,
     soundVolume: 0.5,
     crtFilter: false,
@@ -511,6 +512,15 @@ export default class GameEngine {
     if (this.pacman && !this.pacman.isDying) {
       this.pacman.setRequestedDirection(dir);
     }
+  }
+
+  /**
+   * The player let go of `dir`. With `releaseClearsBuffer`, a turn queued with it and not taken
+   * yet is forgotten (logged as a NONE input, so replays stay exact); Pac-Man keeps going.
+   */
+  public releaseInputDirection(dir: Direction) {
+    if (!this.settings.releaseClearsBuffer || !this.pacman) return;
+    if (this.pacman.nextDir === dir && this.pacman.dir !== dir) this.setInputDirection("NONE");
   }
 
   /** Advances the simulation by exactly one frame. */

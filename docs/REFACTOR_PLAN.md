@@ -225,9 +225,13 @@ fruit are fine for now.
 
 ## Phase 5: Modern touches (optional, after fidelity)
 
-- **Ruleset presets:** "Arcade" (all quirks, 60.606 Hz) vs "Modern" (quirks off, optional
-  assist). Input buffering stays on in both (Decision 5). An optional "clear buffered direction
-  on key release" setting gets closer to joystick behavior for players who want it.
+- ✅ **Ruleset presets** (done 2026-11-12, `src/game/presets.ts`). In the Game Modes menu:
+  Arcade (targeting overflow on, 60.606 Hz) or Modern (overflow off, an even 60 Hz). A Lab
+  toggle that matches neither shows CUSTOM. Separate option "Joystick feel"
+  (`releaseClearsBuffer`): letting go of a key or the stick forgets a queued turn not yet taken,
+  logged as a NONE input so replays stay exact. Both remembered in the browser. Not done: an
+  "assist" for Modern (no concrete design yet; suggest one if wanted). Input buffering stays on in
+  both (Decision 5).
 - **Accessibility:** remappable keys, colorblind-safe frightened/flash palette, reduced-flash
   mode for the level-clear and energizer flashes.
 - **Practice:** pattern recorder (save a replay as a "pattern", overlay it as a ghost trail),

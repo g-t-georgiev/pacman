@@ -45,6 +45,10 @@ corridor; which tile an actor is in (and so every collision) depends only on its
 
 Touch swipes, an on-screen D-pad and gamepads work too.
 
+The Game Modes menu picks the rules: **Arcade** (the original's targeting overflow, 60.606 Hz)
+or **Modern** (no overflow, 60 Hz), and an optional **joystick feel** where letting go of a
+direction cancels a turn you queued but haven't reached yet.
+
 ## Mechanics
 
 The simulation runs in the arcade's own units: 8-px tiles, integer pixel positions, one tick per

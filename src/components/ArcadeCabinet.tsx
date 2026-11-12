@@ -17,10 +17,28 @@ import { ReplayBar } from "./ReplayBar";
 import type { Replay } from "../game/replay";
 import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShare";
 import { RULESETS } from "../game/rulesets";
+import { type RulesPreset, applyRulesPreset, rulesPresetOf } from "../game/presets";
+import { PREF_PRESET, PREF_RELEASE, loadPreference, savePreference } from "../utils/preferences";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { useGameEvent } from "../hooks/useGameEvent";
+
+/** Movement keys (keyboard): arrows and WASD. */
+const KEY_DIRECTIONS: Record<string, Direction> = {
+  ArrowUp: "UP",
+  w: "UP",
+  W: "UP",
+  ArrowDown: "DOWN",
+  s: "DOWN",
+  S: "DOWN",
+  ArrowLeft: "LEFT",
+  a: "LEFT",
+  A: "LEFT",
+  ArrowRight: "RIGHT",
+  d: "RIGHT",
+  D: "RIGHT",
+};
 
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -45,6 +63,12 @@ export const ArcadeCabinet: React.FC = () => {
   // UI state for reactive modals and controls
   const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
   const [turbo, setTurbo] = useState<boolean>(false);
+  const [rulesPreset, setRulesPreset] = useState<RulesPreset | "CUSTOM">(
+    () => loadPreference<RulesPreset>(PREF_PRESET) ?? "ARCADE"
+  );
+  const [releaseClears, setReleaseClears] = useState<boolean>(
+    () => loadPreference<boolean>(PREF_RELEASE) ?? false
+  );
   /** The Lab panel (Learn / Practice / Debug tabs), or null when closed (plan T11). */
   const [lab, setLab] = useState<LabTab | null>(null);
   const [learnVisualsActive, setLearnVisualsActive] = useState<boolean>(true);
@@ -227,6 +251,11 @@ export const ArcadeCabinet: React.FC = () => {
 
     const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
+    // The player's remembered rules preset and joystick feel
+    const preset = loadPreference<RulesPreset>(PREF_PRESET);
+    if (preset === "ARCADE" || preset === "MODERN") applyRulesPreset(engine, preset);
+    engine.settings.releaseClearsBuffer = loadPreference<boolean>(PREF_RELEASE) === true;
+    engine.replayLog.reset(engine); // the recording starts with these settings
     const runner = new GameRunner(engine);
     runnerRef.current = runner;
     setLearnVisualsActive(engine.settings.learnVisualsEnabled ?? true);
@@ -415,8 +444,18 @@ export const ArcadeCabinet: React.FC = () => {
       }
     };
 
+    // Letting go of a direction (only matters with "release clears the turn")
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const dir = KEY_DIRECTIONS[e.key];
+      if (dir) engineRef.current?.releaseInputDirection(dir);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
   }, []);
 
   // Touch Swipe Gesture Detection
@@ -468,7 +507,8 @@ export const ArcadeCabinet: React.FC = () => {
       if (dir !== "NONE" && dir !== lastGamepadDirRef.current) {
         lastGamepadDirRef.current = dir;
         engine.setInputDirection(dir);
-      } else if (dir === "NONE") {
+      } else if (dir === "NONE" && lastGamepadDirRef.current !== "NONE") {
+        engine.releaseInputDirection(lastGamepadDirRef.current);
         lastGamepadDirRef.current = "NONE";
       }
     }
@@ -485,6 +525,24 @@ export const ArcadeCabinet: React.FC = () => {
       setShowRestartPanel(false);
       setIsGameOverState(false);
     }
+  };
+
+  // Rules preset and joystick feel (Phase 5), remembered in this browser
+  const handleSelectPreset = (preset: RulesPreset) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    applyRulesPreset(engine, preset);
+    setRulesPreset(preset);
+    savePreference(PREF_PRESET, preset);
+  };
+
+  const handleToggleReleaseClears = () => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    const next = !engine.settings.releaseClearsBuffer;
+    engine.settings.releaseClearsBuffer = next;
+    setReleaseClears(next);
+    savePreference(PREF_RELEASE, next);
   };
 
   const handleToggleTurbo = () => {
@@ -703,6 +761,12 @@ export const ArcadeCabinet: React.FC = () => {
       >
         <div className="relative">
           <ModeSelector
+            rulesPreset={
+              engineRef.current ? rulesPresetOf(engineRef.current.settings) : rulesPreset
+            }
+            onSelectPreset={handleSelectPreset}
+            releaseClears={releaseClears}
+            onToggleReleaseClears={handleToggleReleaseClears}
             currentMode={currentMode}
             onSelectMode={handleSelectMode}
             turbo={turbo}

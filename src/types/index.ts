@@ -188,6 +188,11 @@ export interface GameSettings {
   crtFilter: boolean;
   touchControls: boolean;
   emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
+  /**
+   * Joystick feel: releasing a direction forgets a turn queued with it that hasn't been taken
+   * yet (keyboard and gamepad). Off: a queued turn waits until the next junction (Decision 5).
+   */
+  releaseClearsBuffer: boolean;
   showDiagnosticConsole: boolean; // In-game testing & diagnostics HUD console
   /** Debug overlay (F1, dev builds): the master switch and its layers (plan T1-T3). */
   debugOverlay: boolean;
