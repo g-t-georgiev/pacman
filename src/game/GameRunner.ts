@@ -37,6 +37,8 @@ export class GameRunner {
    * never resumes a game the player or the agent paused.
    */
   private pauses = new Set<PauseReason>();
+  /** Inside stepWhilePaused: the hold is lifted on purpose for the stepped frames. */
+  private stepping = false;
 
   public get pausedBy(): PauseReason[] {
     return [...this.pauses];
@@ -90,6 +92,7 @@ export class GameRunner {
     const engine = this.engine;
     if (!engine.paused || engine.rewindIndex !== -1) return 0;
     engine.paused = false;
+    this.stepping = true;
     let frames = 0;
     try {
       while (frames < maxFrames) {
@@ -98,6 +101,7 @@ export class GameRunner {
         if (until?.()) break;
       }
     } finally {
+      this.stepping = false;
       engine.paused = true;
     }
     if (render) this.renderer?.render(engine);
@@ -106,6 +110,9 @@ export class GameRunner {
 
   /** Runs one simulation tick and everything that follows it. */
   public tick(): void {
+    // The runner owns pausing (T11): engine calls such as setting playState or starting a new
+    // game clear the engine's flag, so re-apply who holds the game before every frame.
+    if (!this.stepping) this.engine.paused = this.pauses.size > 0;
     this.onPreUpdate?.();
     this.viewer.beforeTick();
     this.onBeforeTick?.();

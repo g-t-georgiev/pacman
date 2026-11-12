@@ -90,6 +90,28 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     expect(e.drainEvents()).toEqual([{ type: "REWOUND", playState: "PLAYING" }]);
   });
 
+  it("rewindBeforeDeath lands before the fatal collision, not inside the death animation", () => {
+    // Plain random play from a new game with one life, so the recording covers the run-up
+    const e = new GameEngine("PACMAN", 0);
+    const agent = new AgentDriver(e);
+    e.lives = 1;
+    const rng = new SimRandom();
+    rng.reset(7);
+    const dirs: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
+    let deathTick = -1;
+    for (let f = 0; f < 20_000 && e.phase !== "GAME_OVER"; f++) {
+      if (f % 23 === 0) agent.input(dirs[rng.nextInt(4)]);
+      agent.advance(1);
+      if (deathTick < 0 && e.phase === "DEATH_FREEZE") deathTick = e.tick;
+    }
+    expect(e.phase).toBe("GAME_OVER");
+
+    e.rewindBeforeDeath(2);
+    expect(e.phase).toBe("PLAYING");
+    expect(deathTick - e.tick).toBeGreaterThanOrEqual(120);
+    expect(deathTick - e.tick).toBeLessThan(120 + 31);
+  });
+
   it("rewinding out of a game over brings the round back", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     agent.scenario({ level: 1, playState: "PLAYING" });

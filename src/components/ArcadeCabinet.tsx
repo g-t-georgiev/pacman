@@ -402,9 +402,14 @@ export const ArcadeCabinet: React.FC = () => {
             engine.rewindSeconds(2);
             setUiTick((t) => t + 1);
           } else if (anyPanelOpenRef.current) {
-            // E.g. the Restart panel after a game over: back 2 s, then hold there (your pause)
-            // with the board in view, so you can get ready and press Space
-            engine.rewindSeconds(2);
+            // E.g. the Restart panel after a game over: back to 2 s before the fatal collision,
+            // then hold there (your pause) with the board in view; press Space when ready
+            // The round phase, not playState: an open panel makes playState read "PAUSED"
+            if (engine.phase === "GAME_OVER" || engine.phase.startsWith("DEATH_")) {
+              engine.rewindBeforeDeath(2);
+            } else {
+              engine.rewindSeconds(2);
+            }
             engine.resumeFromScrub();
             runnerRef.current?.setPaused("user", true);
             setUiTick((t) => t + 1);
@@ -478,6 +483,7 @@ export const ArcadeCabinet: React.FC = () => {
     if (engineRef.current) {
       soundEngine.stopSiren();
       engineRef.current.initGame(mode, 1);
+      runnerRef.current?.setPaused("user", false); // a new game starts running
       setShowMenu(false);
       setShowRestartPanel(false);
       setIsGameOverState(false);
@@ -523,6 +529,7 @@ export const ArcadeCabinet: React.FC = () => {
       gameOverTimerRef.current = null;
     }
     engineRef.current.restartLevel(engineRef.current.level);
+    runnerRef.current?.setPaused("user", false);
     setShowRestartPanel(false);
     setIsGameOverState(false);
     soundEngine.playIntro().catch(() => {
@@ -537,6 +544,7 @@ export const ArcadeCabinet: React.FC = () => {
       gameOverTimerRef.current = null;
     }
     engineRef.current.initGame(currentMode, 1);
+    runnerRef.current?.setPaused("user", false);
     setShowRestartPanel(false);
     setIsGameOverState(false);
     void soundEngine.playIntro();

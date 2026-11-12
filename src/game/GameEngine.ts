@@ -1003,6 +1003,26 @@ export default class GameEngine {
     this.seekTick(target);
   }
 
+  /**
+   * Steps back to `seconds` before Pac-Man last died: past the death sequence (freeze, animation,
+   * game over) to the last frame he was alive, then `seconds` more. For a quick retry after a
+   * death or a game over, where a plain 2 s rewind would land inside the death animation.
+   */
+  public rewindBeforeDeath(seconds: number) {
+    const oldest = this.replayLog.oldestTick;
+    let target = this.rewindIndex !== -1 ? this.tick : this.replayLog.headTick;
+    this.seekTick(target);
+    const alive = () => {
+      const phase = this.sequencer.phase;
+      return phase === "PLAYING" || phase === "GHOST_EATEN_PAUSE" || phase === "READY";
+    };
+    while (!alive() && target > oldest) {
+      target = Math.max(oldest, target - 30);
+      this.seekTick(target);
+    }
+    this.seekTick(Math.max(oldest, target - Math.round(seconds * 60)));
+  }
+
   /** Plays on from the scrubbed frame. Everything recorded after it is forgotten. */
   public resumeFromScrub() {
     if (this.rewindIndex !== -1) {

@@ -70,3 +70,18 @@ describe("One pause owner (T11)", () => {
     }
   });
 });
+
+describe("The runner's holds win over engine calls (T11)", () => {
+  it("setting playState or starting a new game does not release a hold", () => {
+    const { runner, agent, engine } = live();
+    agent.pause();
+    agent.scenario({ playState: "PLAYING" }); // clears the engine's own flag...
+    engine.initGame("PACMAN", 1); // ...and so does a new game
+    const tick = engine.tick;
+    for (let i = 0; i < 30; i++) runner.tick(); // the real-time loop
+    expect(engine.tick).toBe(tick); // still held by the agent
+    agent.resume();
+    runner.tick();
+    expect(engine.tick).toBe(tick + 1);
+  });
+});
