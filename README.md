@@ -15,7 +15,8 @@ vp install           # after pulling
 vp dev --port=3000   # dev server (debug overlay, agent driver and diagnostics enabled)
 vp check             # format, lint, type check
 vp test              # unit, integration, fidelity and golden replay tests
-vp run golden:update # re-record golden replays after an intended mechanics change
+vp run golden:update # re-record golden replays (and bump versions) after an intended change
+vp run golden:check  # do the golden replays still match? (the pre-commit hook runs it)
 ```
 
 ## Screen
@@ -100,9 +101,9 @@ questions.
 - **Replay viewer.** Watch a clip of the last 20 s inside the game (Lab, Practice tab), with
   play/pause, speed and scrub, or share it as a link (`#replay=...` opens the viewer).
 - **Golden replays.** `tests/golden/*.json` must replay hash for hash; a mechanics change fails
-  at the first second that differs. Bump `RULES_VERSION` (`src/game/replay.ts`) with an intended
-  change before `vp run golden:update`: replays record it, and the viewer warns about clips made
-  with other rules.
+  at the first second that differs. After an intended change, `vp run golden:update` re-records
+  them and bumps `RULES_VERSION` (or `GAME_STATE_VERSION`) by itself; the pre-commit hook runs
+  `vp run golden:check` and stops a commit whose goldens no longer match.
 - **Debug overlay (F1).** Layers for the grid, occupied tiles, ghost targets and decisions,
   no-up and tunnel zones, intersections, Pac-Man's turn window, a speed readout, the
   scatter/chase timeline and the ghost house counters.
