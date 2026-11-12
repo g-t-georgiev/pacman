@@ -5,6 +5,7 @@ import type GameEngine from "./GameEngine";
 import type GameRenderer from "./GameRenderer";
 import type { SimEvent } from "./simEvents";
 import { ReplayViewer } from "./ReplayViewer";
+import { PracticeTools } from "./practiceTools";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
@@ -19,6 +20,8 @@ export class GameRunner {
   public readonly loop: GameLoopController;
   /** Watches replays inside the game (T12). */
   public readonly viewer: ReplayViewer = new ReplayViewer(this);
+  /** Pattern recorder and first-death heatmap (Phase 5). */
+  public readonly practice = new PracticeTools();
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
@@ -116,7 +119,9 @@ export class GameRunner {
     this.onPreUpdate?.();
     this.viewer.beforeTick();
     this.onBeforeTick?.();
+    const before = this.engine.tick;
     this.engine.update();
+    if (this.engine.tick !== before) this.practice.afterTick(this.engine);
     this.onAfterTick?.();
     this.viewer.afterTick();
     this.flush();
@@ -136,7 +141,10 @@ export class GameRunner {
   public flush(): void {
     const events = this.engine.drainEvents();
     for (const event of events) dispatchSimEvent(event);
-    if (events.length > 0) this.onEvents?.(events);
+    if (events.length > 0) {
+      this.practice.onEvents(this.engine, events);
+      this.onEvents?.(events);
+    }
     this.syncSiren();
   }
 

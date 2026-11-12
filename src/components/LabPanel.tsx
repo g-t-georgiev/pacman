@@ -1,3 +1,4 @@
+import type { PracticeTools } from "../game/practiceTools";
 import React from "react";
 import type GameEngine from "../game/GameEngine";
 import { LearnModeOverlay } from "./LearnModeOverlay";
@@ -16,6 +17,8 @@ interface LabPanelProps {
   onVisualSettingsChange: () => void;
   /** Clip actions for the Practice tab (T12). */
   clips?: React.ComponentProps<typeof PracticePanel>["clips"];
+  /** Pattern recorder and first-death heatmap (Phase 5). */
+  practice?: PracticeTools;
 }
 
 const TABS: Array<{ id: LabTab; label: string; devOnly?: boolean }> = [
@@ -36,6 +39,7 @@ export const LabPanel: React.FC<LabPanelProps> = ({
   onUpdate,
   onVisualSettingsChange,
   clips,
+  practice,
 }) => {
   const tabs = TABS.filter((t) => !t.devOnly || import.meta.env.DEV);
   return (
@@ -89,6 +93,7 @@ export const LabPanel: React.FC<LabPanelProps> = ({
           onClose={onClose}
           embedded
           clips={clips}
+          practice={practice}
         />
       )}
       {tab === "DEBUG" && import.meta.env.DEV && (

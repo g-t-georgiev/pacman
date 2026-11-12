@@ -241,8 +241,12 @@ fruit are fine for now.
   **Colorblind-safe colors**: Okabe-Ito ghost colors and a darker frightened blue
   (`src/game/accessibility.ts`). Display options are not sim settings: replays and hashes don't
   depend on them.
-- **Practice:** pattern recorder (save a replay as a "pattern", overlay it as a ghost trail),
-  a per-level "first death" heatmap.
+- ✅ **Practice** (done 2026-11-12, `src/game/practiceTools.ts`, Lab → Practice). Save this
+  life's route as the level's pattern (per mode and level, one point per level frame, saved in
+  the browser); show it as a faint trail with a marker where the pattern was at this frame. A
+  first-death heatmap per level (the first death after each level start or fresh start). Outside
+  the sim: nothing in GameState; a rewind overwrites the route's replayed frames; nothing is
+  recorded while watching a replay.
 - **Input latency:** sample input at the start of each sim tick and render immediately after.
   Optionally, a latency readout in the debug HUD.
 

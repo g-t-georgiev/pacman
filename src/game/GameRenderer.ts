@@ -1,3 +1,4 @@
+import type { PracticeTools } from "./practiceTools";
 import {
   frightenedColors,
   frightenedEnding,
@@ -34,6 +35,9 @@ export default class GameRenderer {
     this.ctx = ctx;
   }
 
+  /** Practice overlays (pattern trail, first-death heatmap), owned by the runner. */
+  public practice: PracticeTools | null = null;
+
   public render(engine: GameEngine) {
     const ctx = this.ctx;
     ctx.save();
@@ -57,6 +61,9 @@ export default class GameRenderer {
     if (showGrid) {
       this.renderGrid(engine);
     }
+
+    // Practice overlays: the saved pattern and the first-death heatmap (Phase 5)
+    this.practice?.render(ctx, engine, px);
 
     // Render Fruit / Treats
     this.renderFruit(engine);

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type GameEngine from "../game/GameEngine";
+import type { PracticeTools } from "../game/practiceTools";
 
 interface PracticePanelProps {
   engine: GameEngine;
@@ -13,6 +14,8 @@ interface PracticePanelProps {
     copyLink: (seconds: number) => Promise<string>;
     download: (seconds: number) => void;
   };
+  /** Pattern recorder and first-death heatmap (Phase 5). */
+  practice?: PracticeTools;
 }
 
 export const PracticePanel: React.FC<PracticePanelProps> = ({
@@ -21,7 +24,10 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   onClose,
   embedded = false,
   clips,
+  practice,
 }) => {
+  const [, refreshPractice] = useState(0);
+  const [patternStatus, setPatternStatus] = useState<string>("");
   const [clipStatus, setClipStatus] = useState<string>("");
   const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
   const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
@@ -242,6 +248,69 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Patterns and the first-death heatmap (Phase 5) */}
+      {practice && (
+        <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
+          <span className="font-bold text-yellow-300">
+            🧭 Patterns &amp; heatmap · level {engine.level}
+          </span>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => {
+                const frames = practice.savePattern(engine);
+                setPatternStatus(
+                  frames > 0
+                    ? `Saved this life's route (${(frames / 60).toFixed(1)} s) as the level ${engine.level} pattern.`
+                    : "Nothing recorded yet in this life."
+                );
+                refreshPractice((n) => n + 1);
+              }}
+              className="py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-100"
+            >
+              Save route as pattern
+            </button>
+            <button
+              onClick={() => {
+                practice.showPattern = !practice.showPattern;
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              aria-pressed={practice.showPattern}
+              className={`py-1.5 rounded ${practice.showPattern ? "bg-yellow-500 text-black font-bold" : "bg-neutral-800 hover:bg-neutral-700 text-neutral-100"}`}
+            >
+              {practice.pattern(engine) ? "Show pattern" : "Show pattern (none saved)"}
+            </button>
+            <button
+              onClick={() => {
+                practice.showHeatmap = !practice.showHeatmap;
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              aria-pressed={practice.showHeatmap}
+              className={`py-1.5 rounded ${practice.showHeatmap ? "bg-red-600 text-white font-bold" : "bg-neutral-800 hover:bg-neutral-700 text-neutral-100"}`}
+            >
+              First-death heatmap ({practice.deathsHere(engine).length})
+            </button>
+            <button
+              onClick={() => {
+                practice.clearPattern(engine);
+                practice.clearDeaths(engine);
+                setPatternStatus("Cleared this level's pattern and this mode's heatmap.");
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              className="py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
+            >
+              Clear
+            </button>
+          </div>
+          <span className="text-[10px] text-neutral-400 leading-snug">
+            {patternStatus ||
+              "The game is deterministic: replay a saved route frame for frame and the ghosts do the same. The yellow dot shows where the pattern was at this moment of the life."}
+          </span>
+        </div>
+      )}
 
       {/* Clips of the last 20 seconds (T12) */}
       {clips && (

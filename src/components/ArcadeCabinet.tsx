@@ -291,6 +291,7 @@ export const ArcadeCabinet: React.FC = () => {
         const renderer = new GameRenderer(ctx);
         rendererRef.current = renderer;
         runner.renderer = renderer;
+        renderer.practice = runner.practice;
       }
     }
 
@@ -760,6 +761,7 @@ export const ArcadeCabinet: React.FC = () => {
                 setLearnVisualsActive(engineRef.current.settings.learnVisualsEnabled);
               }
             }}
+            practice={runnerRef.current?.practice}
             clips={clips}
           />
         )}
