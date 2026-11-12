@@ -1,6 +1,7 @@
 {
   "format": "pacman-replay",
-  "version": 1,
+  "version": 2,
+  "made": { "rules": 1, "state": 5 },
   "settings": {
     "emulateRomQuirks": true,
     "invincible": false,

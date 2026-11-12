@@ -88,6 +88,7 @@ export const ReplayBar: React.FC<ReplayBarProps> = ({ runner, onExit }) => {
         }}
         className="w-full accent-red-500 cursor-pointer"
       />
+      {v.versionNote !== null && <span className="text-amber-400">{v.versionNote}</span>}
       {v.divergedAt !== null && (
         <span className="text-amber-400">
           This build plays the clip differently from {clock(v.divergedAt - v.startTick)} on (it was

@@ -40,7 +40,7 @@ import { seamPx } from "./mazes";
 import { RULESETS, type Ruleset } from "./rulesets";
 import type { SimEvent, SirenState } from "./simEvents";
 import { sirenStage } from "./siren";
-import { type GameState, decodeTilesInto, encodeTiles } from "./gameState";
+import { type GameState, decodeTilesInto, encodeTiles, GAME_STATE_VERSION } from "./gameState";
 import { ReplayLog } from "./replay";
 
 /** Copies a ghost state, including its nested tile objects. */
@@ -898,7 +898,7 @@ export default class GameEngine {
     });
 
     return {
-      version: 5,
+      version: GAME_STATE_VERSION,
       mode: this.mode,
       sequence: { ...this.sequencer.state },
       level: this.level,

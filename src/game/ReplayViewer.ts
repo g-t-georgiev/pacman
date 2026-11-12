@@ -1,6 +1,12 @@
 import type { Direction, GameSettings } from "../types";
 import { type GameState, hashGameState } from "./gameState";
-import { type Replay, type ReplayLog, playReplay } from "./replay";
+import {
+  type Replay,
+  type ReplayLog,
+  checkReplayFile,
+  playReplay,
+  replayVersionNote,
+} from "./replay";
 import type { GameRunner } from "./GameRunner";
 
 export interface ReplayViewState {
@@ -14,6 +20,8 @@ export interface ReplayViewState {
   tick: number;
   /** First tick whose state hash did not match the recording (another build), or null. */
   divergedAt: number | null;
+  /** Known before playing: the clip was made with other rules or state versions (or none). */
+  versionNote: string | null;
 }
 
 /**
@@ -45,14 +53,13 @@ export class ReplayViewer {
       endTick: r?.endTick ?? 0,
       tick: engine.tick,
       divergedAt: this.divergedAt,
+      versionNote: r ? replayVersionNote(r) : null,
     };
   }
 
   /** Starts watching `replay` from its beginning (playing). */
   public start(replay: Replay): void {
-    if (replay.format !== "pacman-replay" || replay.version !== 1) {
-      throw new Error("Not a pacman-replay v1 file");
-    }
+    checkReplayFile(replay);
     const engine = this.runner.engine;
     if (!this.saved) {
       this.saved = {

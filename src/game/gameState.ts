@@ -18,8 +18,11 @@ import type { HouseState } from "../controllers/HouseController";
  * Static maze data (walls, tunnels, spawns) is not stored: it is rebuilt from `mode` + `level`.
  * Only the tiles that change (dots and energizers) are, as one character per tile.
  */
+/** The shape of GameState. Bump it when fields are added, removed or change meaning. */
+export const GAME_STATE_VERSION = 5;
+
 export interface GameState {
-  version: 5;
+  version: typeof GAME_STATE_VERSION;
   mode: GameMode;
   /** Round phase and its countdown (READY, PLAYING, eat pause, death and level-clear steps). */
   sequence: SequenceState;

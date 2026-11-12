@@ -1,5 +1,5 @@
 import type { Direction, GameSettings } from "../types";
-import { type GameState, hashGameState } from "./gameState";
+import { GAME_STATE_VERSION, type GameState, hashGameState } from "./gameState";
 import type GameEngine from "./GameEngine";
 
 /**
@@ -19,9 +19,20 @@ export interface SimSettings {
   turboSpeedMultiplier: number;
 }
 
+/**
+ * The game rules' version: bump it with every intended change to what a tick does (the same
+ * change that makes `vp run golden:update` necessary; the script refuses to re-record a golden
+ * whose hashes changed while this stayed the same). Replays record it, so a clip from other rules
+ * says so before it plays instead of only diverging.
+ */
+export const RULES_VERSION = 1;
+
+/** File format 2 adds `made`; format 1 files (no versions) still load. */
 export interface Replay {
   format: "pacman-replay";
-  version: 1;
+  version: 1 | 2;
+  /** The rules and state versions of the build that made it (missing in format 1). */
+  made?: { rules: number; state: number };
   settings: SimSettings;
   start: GameState;
   /** [tick, direction]: applied right before the sim frame with that tick number runs. */
@@ -158,7 +169,8 @@ export class ReplayLog {
     if (checkpoints[checkpoints.length - 1]?.[0] !== now) checkpoints.push([now, endHash]);
     return {
       format: "pacman-replay",
-      version: 1,
+      version: 2,
+      made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
       settings: { ...start.settings },
       start: structuredClone(start.state),
       inputs: this.inputs.filter(([t]) => t > from),
@@ -197,7 +209,8 @@ export function recordReplay(
   engine.drainEvents();
   return {
     format: "pacman-replay",
-    version: 1,
+    version: 2,
+    made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
     settings,
     start,
     inputs,
@@ -211,9 +224,7 @@ export function recordReplay(
  * after each frame (rendering, events). Stops at the first checkpoint that does not match.
  */
 export function playReplay(engine: GameEngine, replay: Replay, onTick?: () => void): ReplayResult {
-  if (replay.format !== "pacman-replay" || replay.version !== 1) {
-    throw new Error("Not a pacman-replay v1 file");
-  }
+  checkReplayFile(replay);
   Object.assign(engine.settings, replay.settings);
   if (engine.pacman) engine.pacman.invincible = replay.settings.invincible;
   engine.setState(replay.start);
@@ -243,6 +254,30 @@ export function playReplay(engine: GameEngine, replay: Replay, onTick?: () => vo
     lastMatchedAt = engine.tick;
   }
   return { ticks, matched: true, divergedAt: null, lastMatchedAt };
+}
+
+/** Throws unless `replay` is a replay file this build can read (format 1 or 2). */
+export function checkReplayFile(replay: Replay): void {
+  if (replay?.format !== "pacman-replay" || (replay.version !== 1 && replay.version !== 2)) {
+    throw new Error("Not a pacman-replay file (format 1 or 2)");
+  }
+}
+
+/**
+ * Why this build may play `replay` differently, known before it plays: made with other rules,
+ * another state version, or before replays recorded versions. Null when the versions match.
+ */
+export function replayVersionNote(replay: Replay): string | null {
+  const made = replay.made;
+  if (!made)
+    return "This clip was recorded before replays carried a version; it may play differently.";
+  if (made.state !== GAME_STATE_VERSION) {
+    return `This clip was saved with game state version ${made.state} (this build: ${GAME_STATE_VERSION}); it will likely play differently.`;
+  }
+  if (made.rules !== RULES_VERSION) {
+    return `This clip was recorded with rules version ${made.rules} (this build: ${RULES_VERSION}); it may play differently.`;
+  }
+  return null;
 }
 
 function stepOrThrow(engine: GameEngine): void {

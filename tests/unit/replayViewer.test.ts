@@ -3,7 +3,8 @@ import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
 import { AgentDriver } from "../../src/agent/AgentDriver";
 import { SimRandom } from "../../src/core/SimRandom";
-import { hashGameState } from "../../src/game/gameState";
+import { GAME_STATE_VERSION, hashGameState } from "../../src/game/gameState";
+import { RULES_VERSION, replayVersionNote } from "../../src/game/replay";
 import {
   decodeReplay,
   encodeReplay,
@@ -113,5 +114,43 @@ describe("Shareable replay links (T12)", () => {
   it("rejects what is not a replay link", async () => {
     expect(replayCodeFromHash("#something=else")).toBeNull();
     await expect(decodeReplay("not-a-replay")).rejects.toThrow();
+  });
+});
+
+describe("Replay versions", () => {
+  it("a new replay records this build's rules and state versions, and has no note", () => {
+    const agent = new AgentDriver(new GameEngine("PACMAN", 0));
+    agent.scenario({ playState: "PLAYING" });
+    agent.advance(30);
+    const replay = agent.saveReplay();
+    expect(replay.version).toBe(2);
+    expect(replay.made).toEqual({ rules: RULES_VERSION, state: GAME_STATE_VERSION });
+    expect(replayVersionNote(replay)).toBeNull();
+  });
+
+  it("says up front when a clip comes from other rules, another state shape, or no version", () => {
+    const agent = new AgentDriver(new GameEngine("PACMAN", 0));
+    agent.scenario({ playState: "PLAYING" });
+    agent.advance(30);
+    const replay = agent.saveReplay();
+    expect(
+      replayVersionNote({
+        ...replay,
+        made: { rules: RULES_VERSION + 1, state: GAME_STATE_VERSION },
+      })
+    ).toMatch(/rules version/);
+    expect(replayVersionNote({ ...replay, made: { rules: RULES_VERSION, state: 4 } })).toMatch(
+      /state version 4/
+    );
+    const { made: _made, ...old } = replay;
+    expect(replayVersionNote({ ...old, version: 1 })).toMatch(/before replays carried a version/);
+  });
+
+  it("format 1 files still play", () => {
+    const agent = new AgentDriver(new GameEngine("PACMAN", 0));
+    agent.scenario({ playState: "PLAYING" });
+    agent.advance(120);
+    const { made: _made, ...replay } = agent.saveReplay();
+    expect(agent.verifyReplay({ ...replay, version: 1 }).matched).toBe(true);
   });
 });

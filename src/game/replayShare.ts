@@ -1,4 +1,4 @@
-import type { Replay } from "./replay";
+import { checkReplayFile, type Replay } from "./replay";
 
 /**
  * Shareable replay links (plan T12): the replay as JSON, deflate-compressed and base64url-encoded
@@ -36,9 +36,7 @@ export async function encodeReplay(replay: Replay): Promise<string> {
 export async function decodeReplay(code: string): Promise<Replay> {
   const json = await pipe(fromBase64Url(code), new DecompressionStream("deflate-raw"));
   const replay = JSON.parse(new TextDecoder().decode(json)) as Replay;
-  if (replay.format !== "pacman-replay" || replay.version !== 1) {
-    throw new Error("Not a pacman-replay v1 link");
-  }
+  checkReplayFile(replay);
   return replay;
 }
 

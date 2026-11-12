@@ -93,7 +93,9 @@ questions.
 - **Replay viewer.** Watch a clip of the last 20 s inside the game (Lab, Practice tab), with
   play/pause, speed and scrub, or share it as a link (`#replay=...` opens the viewer).
 - **Golden replays.** `tests/golden/*.json` must replay hash for hash; a mechanics change fails
-  at the first second that differs.
+  at the first second that differs. Bump `RULES_VERSION` (`src/game/replay.ts`) with an intended
+  change before `vp run golden:update`: replays record it, and the viewer warns about clips made
+  with other rules.
 - **Debug overlay (F1).** Layers for the grid, occupied tiles, ghost targets and decisions,
   no-up and tunnel zones, intersections, Pac-Man's turn window, a speed readout, the
   scatter/chase timeline and the ghost house counters.

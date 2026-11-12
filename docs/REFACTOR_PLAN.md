@@ -286,8 +286,12 @@ fruit are fine for now.
 - **Fixed 2026-11-11: the Restart panel stayed open after rewinding out of a game over.** A rewind
   now emits `REWOUND`; the UI closes the panel, cancels its delayed opening and clears the game
   over. R with only a panel open rewinds 2 s and holds there (your pause) so you can get ready.
-- **Replay files carry no build/rules version (T12).** A changed build shows up through the hash
-  check; a version field would let the viewer say why up front.
+- **Done 2026-11-12: replay files carry versions (T12).** Format 2 records
+  `made: { rules, state }` (`RULES_VERSION` in `replay.ts`, `GAME_STATE_VERSION` in
+  `gameState.ts`); the replay bar says up front when a clip comes from other rules, another state
+  shape, or before versioning (format 1 still loads). `vp run golden:update` refuses to re-record
+  a golden whose hashes changed while both versions stayed the same: bump `RULES_VERSION` with
+  every intended mechanics change.
 
 ## Open questions
 
