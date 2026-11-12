@@ -1,3 +1,4 @@
+import type { LatencyStats } from "./latencyMeter";
 import type GameEngine from "./GameEngine";
 import type { Ghost } from "../core/Ghost";
 import { Pacman } from "../core/Pacman";
@@ -46,7 +47,11 @@ const tileCenter = (t: number) => t * T + T / 2;
  * The debug overlay (plan T1-T3): independent layers drawn over the game, in canvas space.
  * Everything here only reads the engine.
  */
-export function renderDebugOverlay(ctx: CanvasRenderingContext2D, engine: GameEngine): void {
+export function renderDebugOverlay(
+  ctx: CanvasRenderingContext2D,
+  engine: GameEngine,
+  latency: LatencyStats | null = null
+): void {
   const layers = engine.settings.debugLayers;
   ctx.save();
   if (layers.zones) drawZones(ctx, engine.maze);
@@ -56,7 +61,10 @@ export function renderDebugOverlay(ctx: CanvasRenderingContext2D, engine: GameEn
   if (layers.targets) drawTargets(ctx, engine);
   if (layers.decisions) drawDecisions(ctx, engine);
   if (layers.cornerWindow) drawCornerWindow(ctx, engine);
-  if (layers.readout) drawReadout(ctx, engine);
+  if (layers.readout) {
+    drawReadout(ctx, engine);
+    drawLatency(ctx, latency);
+  }
   if (layers.timeline) {
     // These rows hold the arcade HUD (T13): cover it while this layer is on
     ctx.fillStyle = engine.maze.bgColor || "#000000";
@@ -270,6 +278,18 @@ function drawReadout(ctx: CanvasRenderingContext2D, engine: GameEngine): void {
     ctx.fillStyle = ghostColor(g.type);
     ctx.fillText(label(s.pct, s.source, g.speed), px(g.x), px(g.y) - T * 1.2);
   }
+}
+
+/** Input to screen (Phase 5), in the blank row above the maze. */
+function drawLatency(ctx: CanvasRenderingContext2D, stats: LatencyStats | null): void {
+  ctx.font = "bold 8px monospace";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#7fffd4";
+  const text = stats
+    ? `input→frame ${stats.last.toFixed(0)} ms (avg ${stats.avg.toFixed(0)}, max ${stats.max.toFixed(0)}, n ${stats.samples})`
+    : "input→frame: press a direction";
+  ctx.fillText(text, CANVAS_WIDTH - 4, 2 * T + T / 2);
 }
 
 // --- Timeline and house (T2) ---------------------------------------------------------------------

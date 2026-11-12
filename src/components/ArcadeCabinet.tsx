@@ -292,6 +292,7 @@ export const ArcadeCabinet: React.FC = () => {
         rendererRef.current = renderer;
         runner.renderer = renderer;
         renderer.practice = runner.practice;
+        renderer.latency = runner.latency;
       }
     }
 
@@ -397,6 +398,7 @@ export const ArcadeCabinet: React.FC = () => {
       const moveDir = directionForKey(bindingsRef.current, e.key);
       if (moveDir) {
         e.preventDefault();
+        runnerRef.current?.latency.onInput(e.timeStamp);
         engine.setInputDirection(moveDir);
         return;
       }
@@ -507,6 +509,7 @@ export const ArcadeCabinet: React.FC = () => {
 
       if (dir !== "NONE" && dir !== lastGamepadDirRef.current) {
         lastGamepadDirRef.current = dir;
+        runnerRef.current?.latency.onInput(performance.now());
         engine.setInputDirection(dir);
       } else if (dir === "NONE" && lastGamepadDirRef.current !== "NONE") {
         engine.releaseInputDirection(lastGamepadDirRef.current);

@@ -247,8 +247,12 @@ fruit are fine for now.
   first-death heatmap per level (the first death after each level start or fresh start). Outside
   the sim: nothing in GameState; a rewind overwrites the route's replayed frames; nothing is
   recorded while watching a replay.
-- **Input latency:** sample input at the start of each sim tick and render immediately after.
-  Optionally, a latency readout in the debug HUD.
+- ✅ **Input latency** (done 2026-11-12). The loop already did this: keyboard events reach the
+  engine as they arrive, the gamepad is polled before every tick, and each animation frame runs
+  its ticks then renders. Added the readout (`src/game/latencyMeter.ts`): from the input event to
+  the end of the first render with a tick after it, last 30 inputs; in the debug overlay's
+  readout layer (row 2) and `pacmanAgent.latency()`. Measured 12-17 ms (under one 60 Hz frame);
+  display and compositor delay come on top and can't be measured from the page.
 
 ---
 

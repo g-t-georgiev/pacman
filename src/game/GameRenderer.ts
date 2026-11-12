@@ -1,3 +1,4 @@
+import type { LatencyMeter } from "./latencyMeter";
 import type { PracticeTools } from "./practiceTools";
 import {
   frightenedColors,
@@ -37,6 +38,8 @@ export default class GameRenderer {
 
   /** Practice overlays (pattern trail, first-death heatmap), owned by the runner. */
   public practice: PracticeTools | null = null;
+  /** Input latency readout for the debug overlay (Phase 5), owned by the runner. */
+  public latency: LatencyMeter | null = null;
 
   public render(engine: GameEngine) {
     const ctx = this.ctx;
@@ -93,7 +96,7 @@ export default class GameRenderer {
     renderArcadeHud(ctx, engine);
 
     // Debug overlay layers (F1, dev builds; plan T1-T3)
-    if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine);
+    if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine, this.latency?.stats ?? null);
 
     // Render Floating Score Popups
     this.renderScorePopups(engine);

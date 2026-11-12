@@ -1,3 +1,4 @@
+import type { LatencyStats } from "../game/latencyMeter";
 import GameEngine from "../game/GameEngine";
 import { type Replay, type ReplayResult, playReplay } from "../game/replay";
 import type { ReplayViewState } from "../game/ReplayViewer";
@@ -386,6 +387,16 @@ export class AgentDriver {
   /** Measured vs table speed per actor and source, plus real ticks per second (live play). */
   public speedReport(): SpeedReport | null {
     return this.speedRecorder?.report() ?? null;
+  }
+
+  /**
+   * Input latency of live play (Phase 5): from a direction key or gamepad press to the end of
+   * the first render that includes a tick after it, over the last 30 inputs. Null before any
+   * input. Display and compositor delay come on top and can't be measured from the page.
+   */
+  public latency(): LatencyStats | null {
+    if (!this.runner) throw new Error("latency needs the live game (window.pacmanAgent)");
+    return this.runner.latency.stats;
   }
 
   /**

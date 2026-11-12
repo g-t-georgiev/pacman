@@ -6,6 +6,7 @@ import type GameRenderer from "./GameRenderer";
 import type { SimEvent } from "./simEvents";
 import { ReplayViewer } from "./ReplayViewer";
 import { PracticeTools } from "./practiceTools";
+import { LatencyMeter } from "./latencyMeter";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
@@ -22,6 +23,8 @@ export class GameRunner {
   public readonly viewer: ReplayViewer = new ReplayViewer(this);
   /** Pattern recorder and first-death heatmap (Phase 5). */
   public readonly practice = new PracticeTools();
+  /** Input-to-screen latency readout (Phase 5). */
+  public readonly latency = new LatencyMeter();
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
@@ -68,7 +71,10 @@ export class GameRunner {
   constructor(public readonly engine: GameEngine) {
     this.loop = new GameLoopController(
       () => this.tick(),
-      () => this.renderer?.render(this.engine),
+      () => {
+        this.renderer?.render(this.engine);
+        this.latency.afterRender(performance.now());
+      },
       // Practice speed and the arcade refresh rate change how many ticks run per real second,
       // never what a tick does.
       () => this.ticksPerSecond / GameLoopController.LOGIC_FPS
@@ -121,7 +127,10 @@ export class GameRunner {
     this.onBeforeTick?.();
     const before = this.engine.tick;
     this.engine.update();
-    if (this.engine.tick !== before) this.practice.afterTick(this.engine);
+    if (this.engine.tick !== before) {
+      this.practice.afterTick(this.engine);
+      this.latency.afterTick();
+    }
     this.onAfterTick?.();
     this.viewer.afterTick();
     this.flush();
