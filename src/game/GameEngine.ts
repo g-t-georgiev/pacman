@@ -629,8 +629,7 @@ export default class GameEngine {
     // Update Ghosts physical movement via MovementController & GhostAiController
     this.updateGhostsMovement(speedConfig);
 
-    // Update Visual Animations via AnimationController
-    this.animationController.updatePacmanAnimation(this.pacman);
+    // Update Visual Animations via AnimationController (Pac-Man's mouth follows his position)
     this.animationController.updateGhostVisuals(
       this.ghosts,
       this.level,
@@ -652,6 +651,7 @@ export default class GameEngine {
     const speedPct = this.pacman.getSpeedPercentage(this.level, isFrightened, speedConfig);
     const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
 
+    const { x, y } = this.pacman;
     this.movementController.updatePacmanMovement(
       this.pacman,
       this.currLevelFrame,
@@ -659,6 +659,7 @@ export default class GameEngine {
       turboMult,
       this.maze
     );
+    if (this.pacman.x !== x || this.pacman.y !== y) this.pacman.hasMoved = true;
   }
 
   private updateGhostsMovement(speedConfig: LevelSpeedConfig) {
@@ -897,7 +898,7 @@ export default class GameEngine {
     });
 
     return {
-      version: 4,
+      version: 5,
       mode: this.mode,
       sequence: { ...this.sequencer.state },
       level: this.level,

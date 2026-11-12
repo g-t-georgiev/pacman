@@ -98,8 +98,8 @@ export interface PacmanState {
   dir: Direction;
   nextDir: Direction;
   speed: number;
-  mouthAngle: number;
-  mouthOpening: boolean;
+  /** Moved since this life began (until then: a closed circle). Missing in old saves = moved. */
+  hasMoved?: boolean;
   isDying: boolean;
   deathProgress: number; // 0 to 1
   invincible: boolean;

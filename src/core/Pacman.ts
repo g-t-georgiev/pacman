@@ -5,13 +5,16 @@ import { CORNER_WINDOW_LOW, TILE_SIZE } from "../game/constants";
 import { getDirectionVector, getOppositeDirection } from "../game/ghostAiUtils";
 import { getSpeedConfigForLevel } from "../utils";
 
+/** Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center). */
+const MOUTH_FRAMES: ReadonlyArray<0 | 1 | 2> = [1, 1, 2, 2, 1, 1, 0, 0];
+
 /**
  * Pac-Man Actor specialized with player input buffering, responsive cornering,
  * immediate 180-degree directional reversal, and chomp animation properties.
  */
 export class Pacman extends Actor {
-  public mouthAngle: number = 0.2;
-  public mouthOpening: boolean = true;
+  /** He has moved since this life began: until then he is drawn as a closed circle. */
+  public hasMoved: boolean = false;
   public isDying: boolean = false;
   public deathProgress: number = 0;
   public invincible: boolean = false;
@@ -123,16 +126,16 @@ export class Pacman extends Actor {
   }
 
   /**
-   * Advances mouth chomp animation by one frame.
+   * The mouth frame to draw: 0 closed, 1 half open, 2 wide open. Closed until he first moves;
+   * then it follows his position inside the tile along the axis he faces (closed, half, open,
+   * half every 8 px), so it chomps only while he moves and holds its frame when he stops. At a
+   * tile center (where he stops against a wall) it is half open. Estimate from footage: the
+   * arcade's exact pixel-to-frame mapping is not documented.
    */
-  public updateMouthAnimation(): void {
-    if (this.mouthOpening) {
-      this.mouthAngle += 0.05;
-      if (this.mouthAngle >= 0.45) this.mouthOpening = false;
-    } else {
-      this.mouthAngle -= 0.05;
-      if (this.mouthAngle <= 0.05) this.mouthOpening = true;
-    }
+  public get mouthFrame(): 0 | 1 | 2 {
+    if (!this.hasMoved) return 0;
+    const along = this.dir === "UP" || this.dir === "DOWN" ? this.y : this.x;
+    return MOUTH_FRAMES[((along % TILE_SIZE) + TILE_SIZE) % TILE_SIZE];
   }
 
   /**
@@ -145,8 +148,7 @@ export class Pacman extends Actor {
       dir: this.dir,
       nextDir: this.nextDir,
       speed: this.speed,
-      mouthAngle: this.mouthAngle,
-      mouthOpening: this.mouthOpening,
+      hasMoved: this.hasMoved,
       isDying: this.isDying,
       deathProgress: this.deathProgress,
       invincible: this.invincible,
@@ -164,8 +166,7 @@ export class Pacman extends Actor {
     this.dir = state.dir;
     this.nextDir = state.nextDir;
     this.speed = state.speed;
-    this.mouthAngle = state.mouthAngle;
-    this.mouthOpening = state.mouthOpening;
+    this.hasMoved = state.hasMoved ?? true;
     this.isDying = state.isDying;
     this.deathProgress = state.deathProgress;
     this.invincible = state.invincible;

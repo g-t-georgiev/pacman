@@ -1,24 +1,14 @@
 import type { Ghost } from "../core/Ghost";
-import type { Pacman } from "../core/Pacman";
 import { FRIGHTENED_FLASH_TOGGLE_FRAMES } from "../game/constants";
 import { getFrightenedFlashCount } from "../utils";
 
 /**
  * Animation Controller responsible for managing visual sprite cycles:
- * - Pac-Man mouth chomp oscillation
  * - Ghost feet wavy scallop animation
  * - Frightened ending warning flashes (14-frame toggle periods)
  * - Level clear maze flashing
  */
 export class AnimationController {
-  /**
-   * Updates Pac-Man mouth chomp animation by one frame.
-   */
-  public updatePacmanAnimation(pacman: Pacman): void {
-    if (pacman.isDying) return;
-    pacman.updateMouthAnimation();
-  }
-
   /**
    * Updates feet animations and computes the warning flash state (white vs. blue) for frightened
    * ghosts in the final frames before expiration.

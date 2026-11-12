@@ -238,7 +238,8 @@ export default class GameRenderer {
     ctx.rotate(rot);
 
     const radius = TILE_SIZE / 2 + 1;
-    const mouth = p.mouthAngle;
+    // Mouth half-angle (as a fraction of pi) per frame: closed circle, half open, wide open
+    const mouth = [0, 0.13, 0.27][engine.pacman.mouthFrame];
 
     if (engine.ruleset.playerLook === "PACMAN") {
       // Classic Pac-Man
@@ -830,10 +831,6 @@ export default class GameRenderer {
       ctx.font = arcadeFont(16);
       ctx.fillStyle = "#ff0000";
       ctx.fillText("GAME OVER", centerX, centerY);
-    } else if (engine.playState === "PAUSED") {
-      ctx.font = arcadeFont(16);
-      ctx.fillStyle = "#00ffff";
-      ctx.fillText("PAUSED", centerX, centerY);
     } else if (engine.playState === "LEVEL_CLEAR") {
       ctx.font = arcadeFont(16);
       ctx.fillStyle = "#00ff88";

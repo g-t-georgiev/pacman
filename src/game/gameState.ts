@@ -19,7 +19,7 @@ import type { HouseState } from "../controllers/HouseController";
  * Only the tiles that change (dots and energizers) are, as one character per tile.
  */
 export interface GameState {
-  version: 4;
+  version: 5;
   mode: GameMode;
   /** Round phase and its countdown (READY, PLAYING, eat pause, death and level-clear steps). */
   sequence: SequenceState;
