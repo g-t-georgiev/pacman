@@ -276,7 +276,7 @@ chapter, readable on GitHub as well) and shown inside the game on its own page.
 | DOC9  | **Files and scripts reference.** Every source file and folder with what it owns, every `package.json` script and `scripts/*.ts` (golden update/check), config files (`vite.config.ts`, hooks), assets and fonts with their licenses. Generated where possible (e.g. a check that every `src/` file appears in the reference).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                      | M      |
 | DOC10 | **Keeping it true.** Docs checked like code: links and anchors valid, code references (`file:line` or symbol names) still exist, examples in the agent chapter run as tests.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | A small docs test in CI.                                                             | S      |
 
-Order: DOC1 (the page) with DOC3 (short) first, then DOC2 and DOC4, then DOC5-DOC8 and DOC11, DOC9-DOC10 last. Best
+Phase 6 comes last, after Z1 (decided 2026-11-16). Within it: DOC1 (the page) with DOC3 (short) first, then DOC2 and DOC4, then DOC5-DOC8 and DOC11, DOC9-DOC10 last. Best
 done after Z1, so the manual describes the cleaned-up code (or alongside it, chapter by chapter).
 
 ---
@@ -308,8 +308,10 @@ done after Z1, so the manual describes the cleaned-up code (or alongside it, cha
 10. **T12** (replay viewer and shareable replay links), with or after T11: both are UI work.
 11. **T13** (arcade HUD in the dead rows).
 12. **F27** (arcade-size sprites), **S1-S2** (sound), then Phase 5, then the follow-ups below as they come up.
-13. **Z1** (clean-up and sanitization), once most uncertainties and bugs are settled.
-14. **Phase 6** (documentation: the in-game manual), after or alongside Z1.
+13. **Z1** (clean-up and sanitization, `docs/CLEANUP_PLAN.md`), once most uncertainties and bugs
+    are settled.
+14. **Phase 6** (documentation: the in-game manual) last, after Z1 (decided 2026-11-16), so it
+    describes the cleaned-up code.
 
 ## Follow-ups (small, from finished items)
 
@@ -363,6 +365,19 @@ source or footage; the code marks these values as estimates):
 - **Footage checklist [ ]** (needs someone to watch and listen to the original; no source has
   these). Current value, then the constant that sets it:
   - READY at game start 4 s (`READY_FRAMES_GAME_START`); after a death 2 s (`PHASE_FRAMES.READY`).
+  - **Energizer look (open, 2026-11-16) [ ].** Now: a smooth pulse in size. Decided: a different
+    effect (cleanup P3). Your recollection: the color shifts; mine: they blink on and off. Check
+    on footage: what an energizer does during play, its rhythm (frames on and off, or the color
+    cycle), and whether it changes during READY, while paused or when frightened.
+  - **When the start tune plays (open, 2026-11-12) [ ].** Now: on a new game and on Restart
+    Level (a fresh start), with the 4 s READY; not when the next level starts after a clear, and
+    not after a death (both a silent 2 s READY). Proposed: also at the start of every level. My
+    understanding of the original is the opposite (the tune only once per game, levels and
+    respawns start with a silent READY), but no source found confirms either way (searched
+    2026-11-12). Check on footage: (1) a new game, (2) the start of level 2 after a clear, (3) a
+    respawn after a death; note whether the tune plays and how long READY lasts in each. The
+    change is small: `startFresh` emits `INTRO`; a level start would emit it too and use the
+    longer READY.
   - Death: freeze with ghosts 1 s (`DEATH_FREEZE`), animation 1.5 s (`DEATH_ANIM`), blank wait
     1 s (`DEATH_WAIT`). The death sound lasts as long as the animation.
   - Level clear: freeze 1 s (`LEVEL_CLEAR_FREEZE`), then 4 white flashes, 12 frames per
