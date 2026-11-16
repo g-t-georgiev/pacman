@@ -1,34 +1,38 @@
-import {
-  type FruitDataType,
-  FRIGHTENED_DURATIONS,
-  FRIGHTENED_FLASH_COUNTS,
-  SCATTER_CHASE_LEVEL_1,
-  SCATTER_CHASE_LEVELS_2_TO_4,
-  SCATTER_CHASE_LEVELS_5_PLUS,
-  SPEED_CONFIG_LEVEL_1,
-  SPEED_CONFIG_LEVELS_2_TO_4,
-  SPEED_CONFIG_LEVELS_5_TO_20,
-  SPEED_CONFIG_LEVELS_21_PLUS,
-} from "../game/constants";
-import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
+import { FRUIT_CATALOG, type FruitInfo, SIM_FPS } from "../game/constants";
+import { levelRow } from "../game/levelTable";
+import type { ElroyStage, LevelSpeedConfig, ScatterChaseSchedule } from "../types";
+import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 
-export function getFruitDataPerLevel(data: FruitDataType, level: number) {
-  return data[Math.min(level - 1, data.length - 1)];
+/** Dots remaining at which Blinky becomes Elroy 1 and Elroy 2 on a level (Dossier, Table A.1). */
+export function getElroyDotThresholds(level: number): { elroy1: number; elroy2: number } {
+  const elroy1 = levelRow(level).elroy1Dots;
+  return { elroy1, elroy2: elroy1 / 2 };
 }
 
 /**
- * Retrieves the frightened state duration (in seconds) for a given level.
- * Automatically handles endgame/infinite levels (Level 20+) by defaulting to 0.
- *
- * @param level The current level number (1-indexed).
- * @returns The fright mode duration in seconds.
+ * Blinky's Cruise Elroy stage. After a life is lost, Elroy is suspended (stage 0) until Clyde
+ * starts leaving the house (Dossier, Blinky).
  */
-export function getFrightenedDuration(level: number): number {
-  // Guard clause for safety against invalid inputs
-  if (level < 1) return 0;
+export function getElroyStage(
+  level: number,
+  dotsRemaining: number,
+  suspended: boolean
+): ElroyStage {
+  if (suspended) return 0;
+  const { elroy1, elroy2 } = getElroyDotThresholds(level);
+  if (dotsRemaining <= elroy2) return 2;
+  if (dotsRemaining <= elroy1) return 1;
+  return 0;
+}
 
-  // Return the explicit configuration if it exists, otherwise default to 0 for levels 20+
-  return FRIGHTENED_DURATIONS[level] ?? 0;
+/** The bonus fruit a level shows (LEVEL_TABLE), with its points and art. */
+export function getFruitDataPerLevel(level: number): FruitInfo {
+  return FRUIT_CATALOG[levelRow(level).fruit];
+}
+
+/** Frightened duration for a level, in frames (0: an energizer only reverses the ghosts). */
+export function getFrightenedDuration(level: number): number {
+  return levelRow(level).frightSeconds * SIM_FPS;
 }
 
 /**
@@ -39,8 +43,7 @@ export function getFrightenedDuration(level: number): number {
  * @returns The number of warning flashes before a ghost's frightened phase ends.
  */
 export function getFrightenedFlashCount(level: number): number {
-  if (level < 1) return 0;
-  return FRIGHTENED_FLASH_COUNTS[level] ?? 0;
+  return levelRow(level).flashes;
 }
 
 /**
@@ -73,9 +76,7 @@ export function getFrightenedFlashCount(level: number): number {
  * @returns The array of schedule phases for this level tier.
  */
 export function getScatterChaseSchedule(level: number): readonly ScatterChaseSchedule[] {
-  if (level <= 1) return SCATTER_CHASE_LEVEL_1;
-  if (level >= 5) return SCATTER_CHASE_LEVELS_5_PLUS;
-  return SCATTER_CHASE_LEVELS_2_TO_4;
+  return levelRow(level).schedule;
 }
 
 /**
@@ -91,8 +92,22 @@ export function getScatterChaseSchedule(level: number): readonly ScatterChaseSch
  * @returns The LevelSpeedConfig for the corresponding level tier.
  */
 export function getSpeedConfigForLevel(level: number): LevelSpeedConfig {
-  if (level <= 1) return SPEED_CONFIG_LEVEL_1;
-  if (level <= 4) return SPEED_CONFIG_LEVELS_2_TO_4;
-  if (level <= 20) return SPEED_CONFIG_LEVELS_5_TO_20;
-  return SPEED_CONFIG_LEVELS_21_PLUS;
+  return levelRow(level).speeds;
+}
+
+/**
+ * Pixels to move this frame, from the speed's 16-frame step masks (see `speedMasks.ts`).
+ * Callers must move one sim pixel at a time and run full per-pixel logic for each.
+ *
+ * @param currLevelFrame Monotonically increasing frame counter for the level.
+ * @param speedPct A speed percentage that has an entry in SPEED_MASKS.
+ * @param turboMultiplier Optional turbo multiplier (to be replaced by tick-rate scaling, plan D2).
+ */
+export function getPixelStepsThisFrame(
+  currLevelFrame: number,
+  speedPct: number,
+  turboMultiplier: number = 1.0
+): number {
+  const steps = arcadeStepsOnFrame(SPEED_MASKS[speedPct], currLevelFrame);
+  return turboMultiplier > 1.0 ? Math.round(steps * turboMultiplier) : steps;
 }

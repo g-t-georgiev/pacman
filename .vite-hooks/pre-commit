@@ -1,1 +1,2 @@
 vp staged
+vpx ./scripts/check-golden.ts

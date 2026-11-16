@@ -1,16 +1,16 @@
 import React from "react";
 
 interface HUDProps {
-  score: number;
-  highScore: number;
-  level: number;
   turbo: boolean;
   onToggleTurbo: () => void;
-  learnMode: boolean;
-  onToggleLearnMode: () => void;
+  /** The Lab panel (Learn / Practice / Debug) is open. */
+  labOpen: boolean;
+  onToggleLab: () => void;
   learnVisualsEnabled?: boolean;
-  practiceMode: boolean;
-  onTogglePracticeMode: () => void;
+  /** The game is held, and by whom (T11). */
+  paused: boolean;
+  pausedBy: string[];
+  onTogglePause: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   crtFilter: boolean;
@@ -18,19 +18,19 @@ interface HUDProps {
   onOpenRestart: () => void;
   restartPanelOpen: boolean;
   isGameOver?: boolean;
+  showDiagnostics?: boolean;
+  onToggleDiagnostics?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
-  score,
-  highScore,
-  level,
   turbo,
   onToggleTurbo,
-  learnMode,
-  onToggleLearnMode,
+  labOpen,
+  onToggleLab,
   learnVisualsEnabled = true,
-  practiceMode,
-  onTogglePracticeMode,
+  paused,
+  pausedBy,
+  onTogglePause,
   soundEnabled,
   onToggleSound,
   crtFilter,
@@ -38,31 +38,13 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenRestart,
   restartPanelOpen,
   isGameOver = false,
+  showDiagnostics = false,
+  onToggleDiagnostics,
 }) => {
   return (
     <div className="w-full max-w-[480px] bg-neutral-900 border border-neutral-800 rounded-t-xl px-3 sm:px-4 py-2.5 flex flex-col gap-2 select-none text-white">
-      {/* Top Arcade Scoreboard */}
-      <div className="grid grid-cols-3 text-center tracking-widest font-mono text-xs sm:text-sm">
-        <div className="flex flex-col items-start">
-          <span className="text-red-500 font-bold">1UP</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {score.toString().padStart(2, "0")}
-          </span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="text-yellow-400 font-bold">HIGH SCORE</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">
-            {highScore.toString().padStart(2, "0")}
-          </span>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-cyan-400 font-bold">LEVEL</span>
-          <span className="text-white text-base sm:text-lg font-bold tabular-nums">{level}</span>
-        </div>
-      </div>
-
       {/* Control Quick Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-neutral-800/80 text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
         {/* Restart Panel Button */}
         <button
           onClick={onOpenRestart}
@@ -92,20 +74,20 @@ export const HUD: React.FC<HUDProps> = ({
           {turbo && <span className="text-[9px] bg-black/20 px-1 rounded">ON</span>}
         </button>
 
-        {/* Learn Mode Toggle */}
+        {/* Lab: Learn, Practice and Debug tabs */}
         <button
-          onClick={onToggleLearnMode}
+          onClick={onToggleLab}
           className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-            learnMode
+            labOpen
               ? "bg-cyan-500 text-black shadow-sm ring-1 ring-cyan-300"
               : learnVisualsEnabled
                 ? "bg-cyan-950/80 border border-cyan-800 text-cyan-300 hover:text-white"
                 : "bg-neutral-800 text-neutral-400 hover:text-white"
           }`}
-          title="Learn Mode: AI Targeting Lab & Maze Visualizer"
+          title="Lab: ghost AI (L), practice & rewind (P), debug overlay (F1)"
         >
-          <span>🎯 LEARN</span>
-          {learnVisualsEnabled && !learnMode && (
+          <span>🧪 LAB</span>
+          {learnVisualsEnabled && !labOpen && (
             <span
               className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"
               title="Visual cues active on maze"
@@ -113,18 +95,20 @@ export const HUD: React.FC<HUDProps> = ({
           )}
         </button>
 
-        {/* Practice Mode Toggle */}
-        <button
-          onClick={onTogglePracticeMode}
-          className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-            practiceMode
-              ? "bg-emerald-500 text-black shadow-sm ring-1 ring-emerald-300"
-              : "bg-neutral-800 text-neutral-400 hover:text-white"
-          }`}
-          title="Practice Mode: rewind, slow-mo, invincibility"
-        >
-          <span>🛠️ PRACTICE</span>
-        </button>
+        {/* Diagnostics Console Toggle */}
+        {onToggleDiagnostics && (
+          <button
+            onClick={onToggleDiagnostics}
+            className={`px-2 py-1 rounded font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+              showDiagnostics
+                ? "bg-cyan-600 text-white shadow-sm ring-1 ring-cyan-300"
+                : "bg-neutral-800 text-neutral-400 hover:text-white"
+            }`}
+            title="In-Game Diagnostics & Telemetry HUD"
+          >
+            <span>🔬 DIAG</span>
+          </button>
+        )}
 
         {/* CRT Scanlines Toggle */}
         <button
@@ -138,6 +122,25 @@ export const HUD: React.FC<HUDProps> = ({
         >
           CRT
         </button>
+
+        {/* Pause / resume (dev builds; Space works everywhere). Shows who holds the game. */}
+        {import.meta.env.DEV && (
+          <button
+            onClick={onTogglePause}
+            className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
+              paused
+                ? "bg-amber-500 text-black"
+                : "bg-neutral-800 text-neutral-300 hover:text-white"
+            }`}
+            title={
+              paused
+                ? `Paused by: ${pausedBy.join(", ") || "game"} (Space to play)`
+                : "Pause (Space)"
+            }
+          >
+            {paused ? "▶" : "⏸"}
+          </button>
+        )}
 
         {/* Audio Toggle */}
         <button

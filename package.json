@@ -4,12 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev --port=3000 --host=0.0.0.0",
+    "start": "vp dev --port=3000 --host=0.0.0.0",
+    "build": "vp build",
     "clean": "rm -rf dist",
     "lint": "vp lint .",
     "lint:fix": "vp lint . --fix",
-    "format": "vp fmt .",
-    "format:check": "vp fmt --check .",
+    "fmt": "vp fmt .",
+    "fmt:check": "vp fmt --check .",
+    "test": "vp test",
+    "golden:update": "vpx ./scripts/update-golden.ts",
+    "golden:check": "vpx ./scripts/check-golden.ts",
     "prepare": "vp config"
   },
   "dependencies": {

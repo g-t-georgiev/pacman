@@ -1,21 +1,45 @@
 import React, { useState } from "react";
-import type { GameEngine } from "../game/gameEngine";
+import type GameEngine from "../game/GameEngine";
+import type { PracticeTools } from "../game/practiceTools";
 
 interface PracticePanelProps {
   engine: GameEngine;
   onUpdate: () => void;
   onClose: () => void;
+  /** Inside the Lab panel: no frame or header of its own. */
+  embedded?: boolean;
+  /** Clips of the last seconds (T12): watch in the game, copy a link, download a file. */
+  clips?: {
+    watch: (seconds: number) => void;
+    copyLink: (seconds: number) => Promise<string>;
+    download: (seconds: number) => void;
+  };
+  /** Pattern recorder and first-death heatmap (Phase 5). */
+  practice?: PracticeTools;
 }
 
-export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, onClose }) => {
+export const PracticePanel: React.FC<PracticePanelProps> = ({
+  engine,
+  onUpdate,
+  onClose,
+  embedded = false,
+  clips,
+  practice,
+}) => {
+  const [, refreshPractice] = useState(0);
+  const [patternStatus, setPatternStatus] = useState<string>("");
+  const [clipStatus, setClipStatus] = useState<string>("");
   const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
   const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
   const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
   const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const [isPaused, setIsPaused] = useState<boolean>(
-    engine.playState === "PAUSED" || engine.rewindIndex !== -1
+  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
+    engine.settings.emulateRomQuirks ?? false
   );
+  const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
+  // Read from the engine on every render, so it is right however the state changed (R key...)
+  const isScrubbing = engine.rewindIndex !== -1;
 
   const bufferLen = engine.getRewindBufferLength();
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
@@ -53,53 +77,62 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
     onUpdate();
   };
 
+  const handleToggleRomQuirks = () => {
+    const nextVal = !engine.settings.emulateRomQuirks;
+    engine.settings.emulateRomQuirks = nextVal;
+    engine.ghostAiController.emulateRomQuirks = nextVal;
+    setEmulateRomQuirks(nextVal);
+    onUpdate();
+  };
+
+  const handleToggleDiagnosticConsole = () => {
+    const nextVal = !engine.settings.showDiagnosticConsole;
+    engine.settings.showDiagnosticConsole = nextVal;
+    onUpdate();
+  };
+
   const handleRewindSeconds = (secs: number) => {
     engine.rewindSeconds(secs);
-    setIsPaused(true);
     onUpdate();
   };
 
   const handleScrub = (idx: number) => {
     engine.scrubToFrame(idx);
-    setIsPaused(true);
     onUpdate();
   };
 
   const handleResume = () => {
     engine.resumeFromScrub();
-    setIsPaused(engine.playState === "PAUSED");
-    onUpdate();
-  };
-
-  const togglePause = () => {
-    if (engine.playState === "PAUSED") {
-      engine.playState = "PLAYING";
-    } else if (engine.playState === "PLAYING") {
-      engine.playState = "PAUSED";
-    }
-    setIsPaused(engine.playState === "PAUSED" || engine.rewindIndex !== -1);
     onUpdate();
   };
 
   return (
-    <div className="w-full max-w-[480px] bg-neutral-950/95 border border-emerald-800/80 rounded-xl p-4 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3">
+    <div
+      className={
+        embedded
+          ? "w-full text-xs font-mono text-neutral-300 flex flex-col gap-3"
+          : "w-full max-w-[480px] bg-neutral-950/95 border border-emerald-800/80 rounded-xl p-4 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3"
+      }
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-emerald-800/50 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-400 font-bold text-sm tracking-wider">
-            🛠️ PRACTICE & REWIND SANDBOX
-          </span>
-          <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">
-            PRACTICE
-          </span>
+      {!embedded && (
+        <div className="flex items-center justify-between border-b border-emerald-800/50 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 font-bold text-sm tracking-wider">
+              🛠️ PRACTICE & REWIND SANDBOX
+            </span>
+            <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded">
+              PRACTICE
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-white px-2 py-0.5 rounded hover:bg-neutral-800"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="text-neutral-400 hover:text-white px-2 py-0.5 rounded hover:bg-neutral-800"
-        >
-          ✕
-        </button>
-      </div>
+      )}
 
       {/* Playback & Speed Controls */}
       <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
@@ -163,7 +196,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
               ({(bufferLen / 60).toFixed(1)}s recorded)
             </span>
           </div>
-          {engine.rewindIndex !== -1 && (
+          {isScrubbing && (
             <button
               onClick={handleResume}
               className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shadow"
@@ -185,18 +218,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
         />
 
         <div className="flex items-center justify-between gap-1 text-[10px]">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={togglePause}
-              className={`px-2.5 py-1 rounded font-bold transition-colors ${
-                isPaused
-                  ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 hover:bg-neutral-700 text-white"
-              }`}
-            >
-              {isPaused ? "▶ PLAY" : "⏸ PAUSE"}
-            </button>
-          </div>
+          <span className="text-neutral-500">Pause: Space or ⏸ in the HUD</span>
 
           <div className="flex items-center gap-1">
             <button
@@ -226,6 +248,107 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
           </div>
         </div>
       </div>
+
+      {/* Patterns and the first-death heatmap (Phase 5) */}
+      {practice && (
+        <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
+          <span className="font-bold text-yellow-300">
+            🧭 Patterns &amp; heatmap · level {engine.level}
+          </span>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => {
+                const frames = practice.savePattern(engine);
+                setPatternStatus(
+                  frames > 0
+                    ? `Saved this life's route (${(frames / 60).toFixed(1)} s) as the level ${engine.level} pattern.`
+                    : "Nothing recorded yet in this life."
+                );
+                refreshPractice((n) => n + 1);
+              }}
+              className="py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-100"
+            >
+              Save route as pattern
+            </button>
+            <button
+              onClick={() => {
+                practice.showPattern = !practice.showPattern;
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              aria-pressed={practice.showPattern}
+              className={`py-1.5 rounded ${practice.showPattern ? "bg-yellow-500 text-black font-bold" : "bg-neutral-800 hover:bg-neutral-700 text-neutral-100"}`}
+            >
+              {practice.pattern(engine) ? "Show pattern" : "Show pattern (none saved)"}
+            </button>
+            <button
+              onClick={() => {
+                practice.showHeatmap = !practice.showHeatmap;
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              aria-pressed={practice.showHeatmap}
+              className={`py-1.5 rounded ${practice.showHeatmap ? "bg-red-600 text-white font-bold" : "bg-neutral-800 hover:bg-neutral-700 text-neutral-100"}`}
+            >
+              First-death heatmap ({practice.deathsHere(engine).length})
+            </button>
+            <button
+              onClick={() => {
+                practice.clearPattern(engine);
+                practice.clearDeaths(engine);
+                setPatternStatus("Cleared this level's pattern and this mode's heatmap.");
+                refreshPractice((n) => n + 1);
+                onUpdate();
+              }}
+              className="py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-400"
+            >
+              Clear
+            </button>
+          </div>
+          <span className="text-[10px] text-neutral-400 leading-snug">
+            {patternStatus ||
+              "The game is deterministic: replay a saved route frame for frame and the ghosts do the same. The yellow dot shows where the pattern was at this moment of the life."}
+          </span>
+        </div>
+      )}
+
+      {/* Clips of the last 20 seconds (T12) */}
+      {clips && (
+        <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-300 font-semibold">CLIP: LAST 20 S</span>
+            {clipStatus && <span className="text-[10px] text-emerald-400">{clipStatus}</span>}
+          </div>
+          <div className="flex items-center gap-1 text-[10px]">
+            <button
+              onClick={() => clips.watch(20)}
+              className="px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white font-bold"
+            >
+              🎬 Watch
+            </button>
+            <button
+              onClick={() => {
+                clips
+                  .copyLink(20)
+                  .then((status) => setClipStatus(status))
+                  .catch(() => setClipStatus("could not copy"));
+              }}
+              className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700"
+            >
+              🔗 Copy link
+            </button>
+            <button
+              onClick={() => {
+                clips.download(20);
+                setClipStatus("saved as a .json file");
+              }}
+              className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700"
+            >
+              💾 Download
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Visualizers & Cheats Toggles */}
       <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -336,6 +459,60 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
             Maze tile grid & decision intersections
           </span>
         </button>
+
+        {/* 1980 ROM Overflow Quirks Toggle */}
+        <button
+          onClick={handleToggleRomQuirks}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            emulateRomQuirks
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-300"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>👾</span>
+              <span>1980 Quirks</span>
+            </span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${emulateRomQuirks ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
+            >
+              {emulateRomQuirks ? "ON" : "OFF"}
+            </span>
+          </div>
+          <span
+            className={`text-[9px] font-normal leading-tight ${emulateRomQuirks ? "text-purple-100/90" : "text-neutral-400"}`}
+          >
+            Z80 UP bug (Pinky/Inky leftward shift)
+          </span>
+        </button>
+
+        {/* Live Diagnostics HUD Toggle */}
+        <button
+          onClick={handleToggleDiagnosticConsole}
+          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
+            showDiagnosticConsole
+              ? "bg-teal-600 text-white shadow-md shadow-teal-600/20 ring-1 ring-teal-300"
+              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-1.5">
+              <span>🔬</span>
+              <span>Diagnostics</span>
+            </span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showDiagnosticConsole ? "bg-teal-900 text-teal-100" : "bg-neutral-800 text-neutral-400"}`}
+            >
+              {showDiagnosticConsole ? "ON" : "OFF"}
+            </span>
+          </div>
+          <span
+            className={`text-[9px] font-normal leading-tight ${showDiagnosticConsole ? "text-teal-100/90" : "text-neutral-400"}`}
+          >
+            Floating HUD telemetry & invariant rules
+          </span>
+        </button>
       </div>
 
       {/* Instant Action Triggers */}
@@ -369,18 +546,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({ engine, onUpdate, 
         >
           🏠 Reset Ghosts
         </button>
-
-        {engine.mode === "COOKIE_MAN" && (
-          <button
-            onClick={() => {
-              engine.loadLevel(engine.level);
-              onUpdate();
-            }}
-            className="w-full px-2 py-1.5 mt-1 rounded bg-orange-900/60 border border-orange-700/60 hover:bg-orange-800/80 text-orange-200 font-semibold text-center"
-          >
-            🎲 Regenerate Procedural Maze
-          </button>
-        )}
       </div>
     </div>
   );

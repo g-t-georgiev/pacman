@@ -1,7 +1,12 @@
 import React from "react";
 import type { GameMode } from "../types";
+import { RULES_PRESETS, type RulesPreset } from "../game/presets";
 
 interface ModeSelectorProps {
+  rulesPreset: RulesPreset | "CUSTOM";
+  onSelectPreset: (preset: RulesPreset) => void;
+  releaseClears: boolean;
+  onToggleReleaseClears: () => void;
   currentMode: GameMode;
   onSelectMode: (mode: GameMode) => void;
   turbo: boolean;
@@ -10,6 +15,10 @@ interface ModeSelectorProps {
 }
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({
+  rulesPreset,
+  onSelectPreset,
+  releaseClears,
+  onToggleReleaseClears,
   currentMode,
   onSelectMode,
   turbo,
@@ -44,26 +53,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       accent: "border-pink-500/60 text-pink-400",
       description:
         "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
-    },
-    {
-      id: "CRAZY_OTTO",
-      title: "Crazy Otto",
-      subtitle: "1981 GCC Historical Prototype",
-      badge: "PROTOTYPE",
-      icon: "👟",
-      accent: "border-cyan-500/60 text-cyan-400",
-      description:
-        "The legendary precursor to Ms. Pac-Man! Animated running legs, red antenna hat, and big eyes.",
-    },
-    {
-      id: "COOKIE_MAN",
-      title: "Cookie Man",
-      subtitle: "Procedural Solvable Mazes",
-      badge: "INFINITE MAZES",
-      icon: "🍪",
-      accent: "border-amber-600/60 text-amber-400",
-      description:
-        "Randomly generated symmetric solvable mazes, chocolate chip pellets, milk glass treats & baker hat.",
     },
   ];
 
@@ -109,6 +98,53 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
             </button>
           );
         })}
+      </div>
+
+      {/* Rules preset (Phase 5) */}
+      <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-xs text-cyan-300">RULES</span>
+          {rulesPreset === "CUSTOM" && (
+            <span className="text-[9px] px-1 rounded bg-neutral-800 text-neutral-400">
+              CUSTOM (changed in the Lab)
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.keys(RULES_PRESETS) as RulesPreset[]).map((id) => {
+            const p = RULES_PRESETS[id];
+            const on = rulesPreset === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onSelectPreset(id)}
+                aria-pressed={on}
+                className={`p-2 rounded-lg border text-left transition-all ${
+                  on
+                    ? "bg-cyan-950/60 border-cyan-500/70 ring-2 ring-cyan-400/30"
+                    : "bg-neutral-950/60 border-neutral-800 hover:border-neutral-700"
+                }`}
+              >
+                <div className="font-bold text-xs text-white">{p.title}</div>
+                <div className="text-[10px] text-neutral-400 leading-snug mt-0.5">
+                  {p.description}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <label className="flex items-start gap-2 text-[11px] text-neutral-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={releaseClears}
+            onChange={onToggleReleaseClears}
+            className="mt-0.5 accent-cyan-400"
+          />
+          <span>
+            Joystick feel: letting go of a direction cancels a turn you queued but haven&apos;t
+            reached yet
+          </span>
+        </label>
       </div>
 
       {/* Turbo Speed Option */}

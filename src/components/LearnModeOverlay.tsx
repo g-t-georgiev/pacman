@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { ELROY_1_DOTS_LEFT, ELROY_2_DOTS_LEFT, GHOST_COLORS } from "../game/constants";
-import type { GameEngine } from "../game/gameEngine";
+import { GHOST_COLORS, SIM_FPS } from "../game/constants";
+import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
-import { getScatterChaseSchedule } from "../utils";
+import { getElroyDotThresholds, getScatterChaseSchedule } from "../utils";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
   onClose: () => void;
   onVisualSettingsChange?: () => void;
+  /** Inside the Lab panel: no frame or header of its own. */
+  embedded?: boolean;
 }
 
 // Mini SVG Arcade Ghost Avatar
@@ -40,13 +42,22 @@ const GhostAvatar: React.FC<{ type: GhostType; size?: number; active: boolean }>
   );
 };
 
+/** A ghost's target tile, or "random" while frightened (no target). */
+function formatTarget(target: { col: number; row: number } | null): string {
+  return target ? `(${target.col}, ${target.row})` : "random";
+}
+
 export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   engine,
   onClose,
   onVisualSettingsChange,
+  embedded = false,
 }) => {
   const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
     engine.settings.learnVisualsEnabled ?? true
+  );
+  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
+    engine.settings.emulateRomQuirks ?? false
   );
   const [ghostFilters, setGhostFilters] = useState<Record<GhostType, boolean>>({
     BLINKY: engine.settings.activeGhostVisuals?.BLINKY ?? true,
@@ -57,14 +68,22 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
 
   const wave = getScatterChaseSchedule(engine.level)[engine.waveIndex];
   const isFrightened = engine.frightenedGlobalTimer > 0;
-  const dotsRemaining = engine.dotsRemaining;
-  const isElroy1 = dotsRemaining <= ELROY_1_DOTS_LEFT && dotsRemaining > ELROY_2_DOTS_LEFT;
-  const isElroy2 = dotsRemaining <= ELROY_2_DOTS_LEFT;
+  const elroyDots = getElroyDotThresholds(engine.level);
+  const isElroy1 = engine.ghosts.BLINKY.elroyStage === 1;
+  const isElroy2 = engine.ghosts.BLINKY.elroyStage === 2;
 
   const handleToggleMasterVisuals = () => {
     const nextVal = !visualsEnabled;
     setVisualsEnabled(nextVal);
     engine.settings.learnVisualsEnabled = nextVal;
+    if (onVisualSettingsChange) onVisualSettingsChange();
+  };
+
+  const handleToggleRomQuirks = () => {
+    const nextVal = !emulateRomQuirks;
+    setEmulateRomQuirks(nextVal);
+    engine.settings.emulateRomQuirks = nextVal;
+    engine.ghostAiController.emulateRomQuirks = nextVal;
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -93,28 +112,36 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const noneActive = ghostList.every((g) => !ghostFilters[g]);
 
   return (
-    <div className="w-full max-w-[500px] bg-neutral-950/95 border-2 border-cyan-700/80 rounded-2xl p-4 sm:p-5 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3.5 select-none ring-1 ring-cyan-500/30">
+    <div
+      className={
+        embedded
+          ? "w-full text-xs font-mono text-neutral-300 flex flex-col gap-3.5 select-none"
+          : "w-full max-w-[500px] bg-neutral-950/95 border-2 border-cyan-700/80 rounded-2xl p-4 sm:p-5 text-xs font-mono text-neutral-300 shadow-2xl backdrop-blur-md flex flex-col gap-3.5 select-none ring-1 ring-cyan-500/30"
+      }
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-cyan-800/60 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🎯</span>
-          <div>
-            <h2 className="text-cyan-400 font-bold text-sm sm:text-base tracking-wider">
-              GHOST AI INTELLIGENCE LAB
-            </h2>
-            <span className="text-[10px] text-neutral-400">
-              Interactive Targeting & Path Visualization
-            </span>
+      {!embedded && (
+        <div className="flex items-center justify-between border-b border-cyan-800/60 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🎯</span>
+            <div>
+              <h2 className="text-cyan-400 font-bold text-sm sm:text-base tracking-wider">
+                GHOST AI INTELLIGENCE LAB
+              </h2>
+              <span className="text-[10px] text-neutral-400">
+                Interactive Targeting & Path Visualization
+              </span>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-neutral-800 transition-colors text-sm font-bold border border-neutral-800"
+            title="Close lab and return to game"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="text-neutral-400 hover:text-white px-2.5 py-1 rounded-lg hover:bg-neutral-800 transition-colors text-sm font-bold border border-neutral-800"
-          title="Close lab and return to game"
-        >
-          ✕
-        </button>
-      </div>
+      )}
 
       {/* Persistent Visual Cues & Ghost Checkboxes Section */}
       <div className="p-3 rounded-xl bg-neutral-900/90 border border-cyan-900/50 flex flex-col gap-2.5">
@@ -217,13 +244,13 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           <span className="text-neutral-400 text-[10px] block">GLOBAL AI WAVE CYCLE:</span>
           {isFrightened ? (
             <span className="text-blue-400 font-bold text-xs sm:text-sm animate-pulse">
-              FRIGHTENED ({engine.frightenedGlobalTimer.toFixed(1)}s left)
+              FRIGHTENED ({(engine.frightenedGlobalTimer / SIM_FPS).toFixed(1)}s left)
             </span>
           ) : (
             <span className="text-white font-bold text-xs sm:text-sm">
               {wave?.mode === "SCATTER" ? "🛡️ SCATTER MODE" : "⚔️ CHASE MODE"}{" "}
-              {wave?.duration !== Infinity
-                ? `(${Math.max(0, Math.ceil(wave.duration - engine.waveTimer))}s left)`
+              {wave && wave.frames !== Infinity
+                ? `(${Math.max(0, Math.ceil((wave.frames - engine.waveTimer) / SIM_FPS))}s left)`
                 : "(Permanent)"}
             </span>
           )}
@@ -260,10 +287,10 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
             Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le;{" "}
-            {ELROY_1_DOTS_LEFT} (Cruise Elroy) and ignores scatter!
+            {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
           </p>
           <div className="text-[10px] text-red-300">
-            Target: ({engine.ghosts.BLINKY.target.col}, {engine.ghosts.BLINKY.target.row})
+            Target: {formatTarget(engine.ghostStates.BLINKY.target)}
           </div>
         </div>
 
@@ -282,7 +309,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             (arcade overflow bug)!
           </p>
           <div className="text-[10px] text-pink-300">
-            Target: ({engine.ghosts.PINKY.target.col}, {engine.ghosts.PINKY.target.row})
+            Target: {formatTarget(engine.ghostStates.PINKY.target)}
           </div>
         </div>
 
@@ -301,7 +328,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             to trap player!
           </p>
           <div className="text-[10px] text-cyan-300">
-            Target: ({engine.ghosts.INKY.target.col}, {engine.ghosts.INKY.target.row})
+            Target: {formatTarget(engine.ghostStates.INKY.target)}
           </div>
         </div>
 
@@ -315,12 +342,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghosts.CLYDE.clydeWanderState === "CHASE"
+                engine.ghostStates.CLYDE.clydeWanderState === "CHASE"
                   ? "bg-emerald-900 text-emerald-300"
                   : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghosts.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
+              {engine.ghostStates.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
@@ -328,9 +355,44 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             always retreats to bottom-left!
           </p>
           <div className="text-[10px] text-amber-300">
-            Target: ({engine.ghosts.CLYDE.target.col}, {engine.ghosts.CLYDE.target.row})
+            Target: {formatTarget(engine.ghostStates.CLYDE.target)}
           </div>
         </div>
+      </div>
+
+      {/* 1980 Z80 ROM Quirks Configuration */}
+      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-white font-bold text-[11px] tracking-wide">
+              👾 1980 Z80 ROM OVERFLOW QUIRKS
+            </span>
+            <span
+              className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                emulateRomQuirks
+                  ? "bg-purple-900 text-purple-200 border border-purple-700"
+                  : "bg-neutral-800 text-neutral-400"
+              }`}
+            >
+              {emulateRomQuirks ? "ACTIVE (AUTHENTIC)" : "OFF (NORMALIZED)"}
+            </span>
+          </div>
+          <button
+            onClick={handleToggleRomQuirks}
+            className={`px-2.5 py-1 rounded font-bold text-[10px] transition-colors cursor-pointer ${
+              emulateRomQuirks
+                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-md ring-1 ring-purple-300"
+                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+            }`}
+          >
+            {emulateRomQuirks ? "Authentic Overflow" : "Normalized Math"}
+          </button>
+        </div>
+        <p className="text-[10px] text-neutral-400 leading-tight">
+          When Pac-Man faces UP, the authentic 1980 Z80 assembly code shifts Pinky's target 4 tiles
+          UP + 4 tiles LEFT, and Inky's pivot 2 tiles UP + 2 tiles LEFT. Turn OFF for normalized
+          straight forward targeting.
+        </p>
       </div>
 
       <div className="flex items-center justify-between border-t border-cyan-950 pt-2 text-[10px] text-neutral-400">

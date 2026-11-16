@@ -200,6 +200,12 @@ export default defineConfig({
       },
     ],
   },
+  test: {
+    // Reuse workers across test files instead of one fresh worker per file (plan T14). Files
+    // then share loaded modules, so tests must clean up shared singletons (e.g. GameEvents
+    // listeners). Run `vp test --sequence.shuffle` to check nothing leaks between files.
+    isolate: false,
+  },
   plugins: lazyPlugins(() => [react(), tailwindcss(), lanQrPluginInit()]),
   resolve: {
     alias: {

@@ -1,80 +1,57 @@
-import type {
-  GameMode,
-  GhostType,
-  LevelSpeedConfig,
-  ScatterChaseSchedule,
-  TileCoord,
-} from "../types";
-
-export const TILE_SIZE = 16;
-export const MAZE_COLS = 28;
-export const MAZE_ROWS = 36;
-export const CANVAS_WIDTH = MAZE_COLS * TILE_SIZE; // 448px
-export const CANVAS_HEIGHT = MAZE_ROWS * TILE_SIZE; // 576px
-
-/** Speeds based on `100% = 1.2625px/fr` at 60 FPS. */
-export const BASE_100_PERCENT_SPEED = 1.2625;
-
-/** Remaining number of dots pacman has to eat for Blinky's "Elroy 1" mode to activate. */
-export const ELROY_1_DOTS_LEFT = 20;
-/** Remaining number of dots pacman has to eat for Blinky's "Elroy 2" mode to activate. */
-export const ELROY_2_DOTS_LEFT = 10;
-
-export const SPEED_CONFIG_LEVEL_1: LevelSpeedConfig = {
-  pacmanNormal: 0.8 * BASE_100_PERCENT_SPEED, // 1.01 px
-  pacmanEating: 0.71 * BASE_100_PERCENT_SPEED, // 0.896375 px
-  pacmanFright: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanFrightEating: 0.83 * BASE_100_PERCENT_SPEED, // 1.047875 px
-  ghostNormal: 0.75 * BASE_100_PERCENT_SPEED, // 0.946875 px
-  ghostTunnel: 0.4 * BASE_100_PERCENT_SPEED, // 0.505 px
-  ghostFrightened: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  elroy1: 0.8 * BASE_100_PERCENT_SPEED, // 1.01 px
-  elroy2: 0.85 * BASE_100_PERCENT_SPEED, // 1.073125 px
-};
-
-export const SPEED_CONFIG_LEVELS_2_TO_4: LevelSpeedConfig = {
-  pacmanNormal: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanEating: 0.79 * BASE_100_PERCENT_SPEED, // 0.997375 px
-  pacmanFright: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.85 * BASE_100_PERCENT_SPEED, // 1.073125 px
-  ghostTunnel: 0.45 * BASE_100_PERCENT_SPEED, // 0.568125 px
-  ghostFrightened: 0.55 * BASE_100_PERCENT_SPEED, // 0.694375 px
-  elroy1: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  elroy2: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-};
-
-export const SPEED_CONFIG_LEVELS_5_TO_20: LevelSpeedConfig = {
-  pacmanNormal: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  pacmanFright: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  ghostTunnel: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  ghostFrightened: 0.6 * BASE_100_PERCENT_SPEED, // 0.7575 px
-  elroy1: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  elroy2: 1.05 * BASE_100_PERCENT_SPEED, // 1.325625 px
-};
-
-export const SPEED_CONFIG_LEVELS_21_PLUS: LevelSpeedConfig = {
-  pacmanNormal: 0.9 * BASE_100_PERCENT_SPEED, // 1.13625 px
-  pacmanEating: 0.79 * BASE_100_PERCENT_SPEED, // 0.997375 px
-  pacmanFright: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  pacmanFrightEating: 0.87 * BASE_100_PERCENT_SPEED, // 1.098375 px
-  ghostNormal: 0.95 * BASE_100_PERCENT_SPEED, // 1.199375 px
-  ghostTunnel: 0.5 * BASE_100_PERCENT_SPEED, // 0.63125 px
-  ghostFrightened: 0.6 * BASE_100_PERCENT_SPEED, // 0.7575 px
-  elroy1: 1.0 * BASE_100_PERCENT_SPEED, // 1.2625 px
-  elroy2: 1.05 * BASE_100_PERCENT_SPEED, // 1.325625 px
-};
-
-/** Speed value for ghosts' eyes when eaten and return to the ghost house. */
-export const GHOST_EATEN_SPEED = 2.0 * BASE_100_PERCENT_SPEED; // 200% speed for returning eyes = 2.525 px;
-/** Speed value for ghosts inside the ghost house. */
-export const GHOST_HOUSE_SPEED = 0.8 * BASE_100_PERCENT_SPEED;
+import type { DualTileCoord, GameMode, GhostType, ScatterChaseSchedule, TileCoord } from "../types";
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Frames per second used to turn the Dossier's seconds into frame counts. Every timer in the sim
+ * counts frames; one tick is one arcade frame.
+ */
+export const SIM_FPS = 60;
+
+/**
+ * The arcade's real refresh rate (Dossier, App. C: 60.606 Hz). With `settings.arcadeRefreshRate`
+ * on (the default) the real-time loop runs this many ticks per second, so 100% speed is the
+ * Dossier's 75.76 px/s. Off, it runs at a plain 60 (about 1% slower). Ticks never change.
+ */
+export const ARCADE_REFRESH_HZ = 60.606_06;
+
+/**
+ * Tile size in sim pixels. The sim runs in the arcade's own coordinates: 8-px tiles, integer
+ * pixel positions, so every pixel figure in the Dossier applies directly.
+ */
+export const TILE_SIZE = 8;
+/** The renderer draws every sim pixel as RENDER_SCALE x RENDER_SCALE canvas pixels. */
+export const RENDER_SCALE = 2;
+/** Tile size on the canvas. Only the renderer and UI use this. */
+export const RENDER_TILE_SIZE = TILE_SIZE * RENDER_SCALE;
+export const MAZE_COLS = 28;
+export const MAZE_ROWS = 36;
+export const CANVAS_WIDTH = MAZE_COLS * RENDER_TILE_SIZE; // 448px
+export const CANVAS_HEIGHT = MAZE_ROWS * RENDER_TILE_SIZE; // 576px
+
+/**
+ * Pac-Man's turn window around a turn's center pixel (Dossier, "Cornering"). Pac-Man may start a
+ * turn while he is within CORNER_WINDOW_LOW pixels on the low-coordinate side of the center
+ * (left / above) or CORNER_WINDOW_HIGH pixels on the high side (right / below). So entering from
+ * the left or top gives 3 pre-turn and 4 post-turn pixels, and from the right or bottom 4 and 3.
+ * The window is 8 pixels wide, so every position belongs to exactly one turn.
+ */
+export const CORNER_WINDOW_LOW = 3;
+/** Follows from the 8-px window: TILE_SIZE - 1 - CORNER_WINDOW_LOW. */
+export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
+
+/*
+ * Per-level values (speeds, Elroy, frightened time, flashes, fruit, house limits) live in
+ * LEVEL_TABLE (levelTable.ts). Speeds are percentages: 100% = 75.7576 arcade px/s = 1.25 px per
+ * frame at 60.606 Hz (Dossier, Table A.1); Pac-Man's slower "eating" speeds come from the 1- and
+ * 3-frame stalls, not from separate entries.
+ */
+
+/** Speed value for ghosts' eyes when eaten and return to the ghost house. */
+export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning eyes (see speedMasks.ts)
+/** Speed inside the ghost house (bobbing and leaving). Not in the Dossier: an estimate. */
+export const GHOST_HOUSE_SPEED_PCT = 50;
+
+/**
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Level 1:
  *
@@ -84,18 +61,18 @@ export const GHOST_HOUSE_SPEED = 0.8 * BASE_100_PERCENT_SPEED;
  * - SCATTER: 5s, CHASE: permanent
  */
 export const SCATTER_CHASE_LEVEL_1: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Levels 2 - 4:
  *
@@ -105,155 +82,84 @@ export const SCATTER_CHASE_LEVEL_1: readonly ScatterChaseSchedule[] = [
  * - SCATTER: 1/60s, CHASE: permanent
  */
 export const SCATTER_CHASE_LEVELS_2_TO_4: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 7 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 1033 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 7 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 1033 * SIM_FPS },
+  { mode: "SCATTER", frames: 1 },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
 /**
- * Scatter / Chase timing table (in seconds).
+ * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Levels 5+:
  *
  * - SCATTER: 5s, CHASE: 20s
  * - SCATTER: 5s, CHASE: 20s
- * - SCATTER: 1/60s, CHASE: 1037s (~17.3 min)
+ * - SCATTER: 5s, CHASE: 1037s (~17.3 min)
  * - SCATTER: 1/60s, CHASE: permanent
  *
- * *Note: In level 5 and beyond every 3rd scatter drops down to 1 frame here due to an integer underflow in the ROM*
+ * The third scatter is 5 s on every level (Dossier, Scatter/Chase table).
  */
 export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 5 },
-  { mode: "CHASE", duration: 20 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: 1037 },
-  { mode: "SCATTER", duration: 1 / 60 },
-  { mode: "CHASE", duration: Infinity },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 20 * SIM_FPS },
+  { mode: "SCATTER", frames: 5 * SIM_FPS },
+  { mode: "CHASE", frames: 1037 * SIM_FPS },
+  { mode: "SCATTER", frames: 1 },
+  { mode: "CHASE", frames: Infinity },
 ] as const;
 
-export const FRIGHTENED_DURATIONS: Record<number, number> = {
-  1: 6,
-  2: 5,
-  3: 4,
-  4: 3,
-  5: 2,
-  6: 5,
-  7: 2,
-  8: 2,
-  9: 1,
-  10: 5,
-  11: 2,
-  12: 1,
-  13: 1,
-  14: 3,
-  15: 1,
-  16: 1,
-  17: 0,
-  18: 1,
-  19: 0,
-} as const;
+/** Frames per white/blue half-cycle of the frightened warning flash. */
+export const FRIGHTENED_FLASH_TOGGLE_FRAMES = 14;
 
-export const FRIGHTENED_FLASH_COUNTS: Record<number, number> = {
-  1: 5,
-  2: 5,
-  3: 5,
-  4: 5,
-  5: 5,
-  6: 5,
-  7: 5,
-  8: 5,
-  9: 3,
-  10: 5,
-  11: 5,
-  12: 3,
-  13: 3,
-  14: 5,
-  15: 3,
-  16: 3,
-  17: 0,
-  18: 3,
-  19: 0,
-} as const;
+/** Bonus fruit names; which one a level shows is in LEVEL_TABLE (levelTable.ts). */
+export type FruitName =
+  | "Cherry"
+  | "Strawberry"
+  | "Peach"
+  | "Apple"
+  | "Melon"
+  | "Galaxian"
+  | "Bell"
+  | "Key";
 
-/**
- * Duration of each color phase (white or blue) during ghosts' warning flashes
- * (14 frames at 60 FPS = ~0.2333s) during last momemnts of frightened state.
- */
-export const FRIGHTENED_FLASH_TOGGLE_DURATION = 14 / 60;
-
-export const CLASSIC_FRUITS: Array<{
-  name: string;
+export interface FruitInfo {
+  name: FruitName;
   points: number;
   symbol: string;
   color: string;
-}> = [
-  { name: "Cherry", points: 100, symbol: "🍒", color: "#ff2244" }, // Lvl 1
-  { name: "Strawberry", points: 300, symbol: "🍓", color: "#ff3366" }, // Lvl 2
-  { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" }, // Lvl 3
-  { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" }, // Lvl 4
-  { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" }, // Lvl 5
-  { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" }, // Lvl 6
-  { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" }, // Lvl 7
-  { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" }, // Lvl 8
-  { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" }, // Lvl 9
-  { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" }, // Lvl 10
-  { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" }, // Lvl 11
-  { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" }, // Lvl 12
-  { name: "Key", points: 5000, symbol: "🗝️", color: "#00ddff" }, // Lvl 13+
-] as const;
+}
 
-export const CRAZY_OTTO_TREATS = [
-  { name: "Red Apple", points: 100, symbol: "🍎", color: "#ff3333" }, // Lvl 1
-  { name: "Banana", points: 300, symbol: "🍌", color: "#ffea00" }, // Lvl 2
-  { name: "Pretzel", points: 500, symbol: "🥨", color: "#c68a4c" }, // Lvl 3
-  { name: "Pear", points: 700, symbol: "🍐", color: "#88dd22" }, // Lvl 4
-  { name: "Pineapple", points: 1000, symbol: "🍍", color: "#ffbb11" }, // Lvl 5+
-] as const;
-
-export const COOKIE_MAN_TREATS = [
-  { name: "Glass of Milk", points: 200, symbol: "🥛", color: "#f0f4f8" }, // Lvl 1
-  { name: "Frosted Cupcake", points: 400, symbol: "🧁", color: "#ff69b4" }, // Lvl 2
-  { name: "Glazed Donut", points: 800, symbol: "🍩", color: "#e69555" }, // Lvl 3
-  { name: "Hot Cocoa", points: 1200, symbol: "☕", color: "#8b4513" }, // Lvl 4
-  { name: "Gingerbread House", points: 2500, symbol: "🏠", color: "#cd853f" }, // Lvl 5+
-] as const;
-
-export type FruitDataType =
-  | typeof CLASSIC_FRUITS
-  | typeof COOKIE_MAN_TREATS
-  | typeof CRAZY_OTTO_TREATS;
+/** Points per fruit (Dossier, Table A.1) and how the UI shows it. */
+export const FRUIT_CATALOG: Record<FruitName, FruitInfo> = {
+  Cherry: { name: "Cherry", points: 100, symbol: "🍒", color: "#ff2244" },
+  Strawberry: { name: "Strawberry", points: 300, symbol: "🍓", color: "#ff3366" },
+  Peach: { name: "Peach", points: 500, symbol: "🍑", color: "#ff9966" },
+  Apple: { name: "Apple", points: 700, symbol: "🍎", color: "#ee1111" },
+  Melon: { name: "Melon", points: 1000, symbol: "🍈", color: "#55dd66" },
+  Galaxian: { name: "Galaxian", points: 2000, symbol: "🚀", color: "#ffd700" },
+  Bell: { name: "Bell", points: 3000, symbol: "🔔", color: "#ffdd00" },
+  Key: { name: "Key", points: 5000, symbol: "🗝️", color: "#00ddff" },
+};
 
 export const DEFAULT_SCATTER_TARGETS: Record<GameMode, Record<GhostType, TileCoord>> = {
   PACMAN: {
     BLINKY: { col: 25, row: 0 },
     PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
+    INKY: { col: 27, row: 35 },
+    CLYDE: { col: 0, row: 35 },
   },
   MS_PACMAN: {
     BLINKY: { col: 25, row: 0 },
     PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
-  },
-  COOKIE_MAN: {
-    BLINKY: { col: 25, row: 0 },
-    PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
-  },
-  CRAZY_OTTO: {
-    BLINKY: { col: 25, row: 0 },
-    PINKY: { col: 2, row: 0 },
-    INKY: { col: 27, row: 34 },
-    CLYDE: { col: 0, row: 34 },
+    INKY: { col: 27, row: 35 },
+    CLYDE: { col: 0, row: 35 },
   },
 } as const;
 
@@ -263,3 +169,61 @@ export const GHOST_COLORS: Record<GhostType, { body: string; name: string; msNam
   INKY: { body: "#00FFFF", name: "Inky", msName: "Inky" },
   CLYDE: { body: "#FFB852", name: "Clyde", msName: "Sue" },
 } as const;
+
+export const DEFAULT_SPAWN_CANDIDATES: Record<"PACMAN" | "FRUIT" | GhostType, DualTileCoord> = {
+  PACMAN: [
+    { col: 13, row: 26 },
+    { col: 14, row: 26 },
+  ] as const,
+  BLINKY: [
+    { col: 13, row: 14 },
+    { col: 14, row: 14 },
+  ] as const,
+  PINKY: [
+    { col: 13, row: 17 },
+    { col: 14, row: 17 },
+  ] as const,
+  INKY: [
+    { col: 11, row: 17 },
+    { col: 12, row: 17 },
+  ] as const,
+  CLYDE: [
+    { col: 15, row: 17 },
+    { col: 16, row: 17 },
+  ] as const,
+  FRUIT: [
+    { col: 13, row: 20 },
+    { col: 14, row: 20 },
+  ] as const,
+} as const;
+
+/** One bonus life at this score (the arcade's default DIP-switch setting). */
+export const EXTRA_LIFE_SCORE = 10_000;
+
+/**
+ * Bonus fruit stays between 9 and 10 seconds (Dossier, "The Basics"). The exact length is drawn
+ * from the sim's random stream, so patterns can't rely on it but replays stay exact.
+ */
+export const FRUIT_MIN_FRAMES = 9 * SIM_FPS;
+export const FRUIT_EXTRA_FRAMES = SIM_FPS;
+
+/**
+ * The canvas font for game texts (score rows, banners, pop-ups): Emulogic, a pixel font on an
+ * 8-px grid, so 16 px (one canvas tile) and 8 px stay crisp. Falls back while it loads.
+ */
+export const arcadeFont = (px: number): string => `${px}px "Emulogic", "Courier New", monospace`;
+
+/**
+ * Actor sprites are 16x16 arcade pixels (2x2 tiles) centered on the actor, so they overlap the
+ * walls beside a corridor, as in the arcade (F27). Purely visual: an actor occupies only the tile
+ * of its center point (Dossier, "What Tile Am I In?"). The shapes are drawn on a one-tile box and
+ * scaled up around the center.
+ */
+/** Half the sprite box, in canvas pixels (one tile). */
+export const SPRITE_HALF = RENDER_TILE_SIZE;
+/** Pac-Man's body: ~13 of 16 arcade px across. Drawn with radius 9, so scaled 13 / 9. */
+export const PACMAN_DRAW_SCALE = (13 * RENDER_SCALE) / 2 / 9;
+/** A ghost: ~14 of 16 arcade px wide. Drawn one tile (16 canvas px) wide, so scaled 28 / 16. */
+export const GHOST_DRAW_SCALE = (14 * RENDER_SCALE) / RENDER_TILE_SIZE;
+/** The bonus fruit, drawn as an emoji about two tiles tall. */
+export const FRUIT_FONT_PX = Math.round(RENDER_TILE_SIZE * 1.75);

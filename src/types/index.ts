@@ -1,19 +1,30 @@
-export type GameMode = "PACMAN" | "MS_PACMAN" | "CRAZY_OTTO" | "COOKIE_MAN";
+export type GameMode = "PACMAN" | "MS_PACMAN";
 
 export type GhostType = "BLINKY" | "PINKY" | "INKY" | "CLYDE";
 
-export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN" | "IN_HOUSE";
+/** What a ghost is doing, as shown to players and tools. Derived from GhostLocation, frightened and the wave. */
+export type GhostBehavior = "CHASE" | "SCATTER" | "FRIGHTENED" | "EATEN";
+/** The global scatter/chase wave (owned by TimerController). */
+export type WaveMode = "SCATTER" | "CHASE";
+/** Blinky's Cruise Elroy stage: 0 normal, 1 and 2 faster (and chasing during scatter). */
+export type ElroyStage = 0 | 1 | 2;
+/**
+ * Where a ghost is in its life cycle:
+ * HOUSE (waiting inside) -> LEAVING (moving out through the door) -> ACTIVE (in the maze)
+ * -> EYES (eaten, returning to the door) -> ENTERING (descending to its slot) -> HOUSE.
+ */
+export type GhostLocation = "HOUSE" | "LEAVING" | "ACTIVE" | "EYES" | "ENTERING";
+export type GhostsToHousePhase = "NONE" | "APPROACH_SEAM" | "DESCENDING_DOOR" | "MOVING_TO_SLOT";
 
 export interface ScatterChaseSchedule {
-  duration: number;
-  mode: Extract<GhostBehavior, "SCATTER" | "CHASE">;
+  /** Wave length in frames (Infinity = permanent). */
+  frames: number;
+  mode: WaveMode;
 }
 
 export interface LevelSpeedConfig {
   pacmanNormal: number;
-  pacmanEating: number;
   pacmanFright: number;
-  pacmanFrightEating: number;
   ghostNormal: number;
   ghostTunnel: number;
   ghostFrightened: number;
@@ -33,6 +44,8 @@ export interface TileCoord {
   row: number;
 }
 
+export type DualTileCoord = readonly [TileCoord, TileCoord];
+
 export type TileType =
   | "EMPTY"
   | "WALL"
@@ -47,14 +60,36 @@ export interface MazeData {
   width: number; // usually 28 tiles
   height: number; // usually 31 tiles for active maze
   tiles: TileType[][];
-  pacmanSpawn: { x: number; y: number; dir: Direction };
-  ghostSpawns: Record<GhostType, { x: number; y: number; inHouse: boolean; initialDir: Direction }>;
+  pacmanSpawn: {
+    x: number;
+    y: number;
+    dir: Direction;
+    /** The two tiles Pac-Man starts between (he stands on their seam). */
+    candidates: DualTileCoord;
+  };
+  ghostSpawns: Record<
+    GhostType,
+    {
+      x: number;
+      y: number;
+      inHouse: boolean;
+      initialDir: Direction;
+      /** The two tiles the ghost starts between (it stands on their seam). */
+      candidates: DualTileCoord;
+      respawnSlot: DualTileCoord;
+    }
+  >;
+  fruitSpawn?: {
+    candidates?: DualTileCoord;
+  };
   scatterTargets: Record<GhostType, TileCoord>;
   tunnels: Array<{ y: number; leftExit: number; rightExit: number }>;
   wallColor: string;
   dotColor: string;
   bgColor: string;
   gateColor: string;
+  specialNoUpTiles?: TileCoord[];
+  intersections?: TileCoord[];
 }
 
 export interface PacmanState {
@@ -63,12 +98,14 @@ export interface PacmanState {
   dir: Direction;
   nextDir: Direction;
   speed: number;
-  mouthAngle: number;
-  mouthOpening: boolean;
+  /** Moved since this life began (until then: a closed circle). Missing in old saves = moved. */
+  hasMoved?: boolean;
   isDying: boolean;
   deathProgress: number; // 0 to 1
   invincible: boolean;
-  eatDotCooldown: number;
+  eatingFreezeFrames?: number;
+  /** Perpendicular coordinate Pac-Man is easing onto during a pre/post-turn, or null. */
+  cornerTarget?: number | null;
 }
 
 export interface GhostState {
@@ -76,21 +113,37 @@ export interface GhostState {
   x: number;
   y: number;
   dir: Direction;
+  /** The turn to take at the next tile center the ghost reaches. */
   nextDir: Direction;
+  /** Decided on tile entry: the turn for the tile after the current one (see F14). */
+  plannedDir: Direction;
+  location: GhostLocation;
+  frightened: boolean;
+  /** This ghost's copy of the global wave, set by the engine at round start and on every switch. */
+  wave: WaveMode;
+  /** Cruise Elroy stage (Blinky only; always 0 for the others). Set by the engine every frame. */
+  elroyStage: ElroyStage;
+  /** Derived from location, frightened and wave (read-only; ignored by restore). */
   mode: GhostBehavior;
-  prevMode: GhostBehavior;
-  speed: number;
-  target: TileCoord;
+  /** Derived: location is HOUSE or LEAVING (read-only; ignored by restore). */
   inHouse: boolean;
-  houseTimer: number;
-  dotCounter: number;
+  speed: number;
+  /** Target tile; null while frightened (turns come from the PRNG). */
+  target: TileCoord | null;
   flashState: boolean; // white or blue when frightened ending
-  frightenedTimer: number;
   feetAnimation: number;
-  bouncedInHouse: boolean;
   clydeWanderState?: "CHASE" | "FLEE";
-  clydeSwitchTimer?: number;
   intermediateTarget?: TileCoord;
+  reversalPrimed?: boolean;
+  lastDecisionTile?: TileCoord;
+  lastOccupiedTile?: TileCoord;
+  enteringHousePhase?: GhostsToHousePhase;
+}
+
+export interface RomQuirkSettings {
+  emulateRomQuirks: boolean; // Master switch: when true, replicates authentic Z80 hardware bugs
+  pinkyUpOverflow: boolean; // Pinky UP bug: targets 4 UP + 4 LEFT
+  inkyUpOverflow: boolean; // Inky UP bug: pivot is 2 UP + 2 LEFT
 }
 
 export interface FruitItem {
@@ -128,10 +181,48 @@ export interface GameSettings {
   showTargetLines: boolean;
   invincible: boolean;
   gameSpeed: number; // 0.1 to 2.0
+  /** Run the real-time loop at the arcade's 60.606 Hz instead of 60 (F5). */
+  arcadeRefreshRate: boolean;
   soundEnabled: boolean;
   soundVolume: number; // 0 to 1
   crtFilter: boolean;
   touchControls: boolean;
+  emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
+  /**
+   * Joystick feel: releasing a direction forgets a turn queued with it that hasn't been taken
+   * yet (keyboard and gamepad). Off: a queued turn waits until the next junction (Decision 5).
+   */
+  releaseClearsBuffer: boolean;
+  /** Accessibility: no strobing (level-clear maze flash, energizer pulse, frightened warning). */
+  reducedFlash: boolean;
+  /** Accessibility: ghost and frightened colors that stay apart under color vision deficiencies. */
+  colorblindPalette: boolean;
+  showDiagnosticConsole: boolean; // In-game testing & diagnostics HUD console
+  /** Debug overlay (F1, dev builds): the master switch and its layers (plan T1-T3). */
+  debugOverlay: boolean;
+  debugLayers: DebugLayers;
+}
+
+/** The debug overlay's layers, each toggled on its own (plan T1-T3). */
+export interface DebugLayers {
+  /** Tile grid lines. */
+  grid: boolean;
+  /** Each actor's occupied tile and exact sim position. */
+  occupiedTiles: boolean;
+  /** Ghost target tiles and the line to them. */
+  targets: boolean;
+  /** Ghost decisions: the turn at the next center (nextDir) and the planned one after (plannedDir). */
+  decisions: boolean;
+  /** No-up tiles and the tunnel slow zones. */
+  zones: boolean;
+  /** Intersections derived from the tiles, compared with the maze's hand-made list. */
+  intersections: boolean;
+  /** Pac-Man's turn window on his lane and whether his buffered turn is open. */
+  cornerWindow: boolean;
+  /** Per actor: speed %, its source, and pixels moved this frame. */
+  readout: boolean;
+  /** Scatter/chase timeline (bottom rows) and ghost house counters (top rows). */
+  timeline: boolean;
 }
 
 export interface HighScoreRecord {
@@ -151,19 +242,3 @@ export type PlayState =
   | "DYING"
   | "LEVEL_CLEAR"
   | "GAME_OVER";
-
-export interface SnapshotState {
-  pacman: PacmanState;
-  ghosts: Record<GhostType, GhostState>;
-  score: number;
-  level: number;
-  lives: number;
-  dotsRemaining: number;
-  fruit: FruitItem | null;
-  eatenGhostsInEnergizer: number;
-  globalWaveIndex: number;
-  globalWaveTimer: number;
-  frightenedGlobalTimer: number;
-  playState: PlayState;
-  tiles: TileType[][]; // snapshot of eaten dots
-}

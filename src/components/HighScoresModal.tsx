@@ -6,8 +6,6 @@ const STORAGE_KEY = "arcade_pacman_high_scores_v1";
 const DEFAULT_SCORES: HighScoreRecord[] = [
   { id: "1", name: "PAC", score: 10000, mode: "PACMAN", level: 3, date: "1980-05-22" },
   { id: "2", name: "MID", score: 8400, mode: "MS_PACMAN", level: 2, date: "1982-01-13" },
-  { id: "3", name: "OTT", score: 6200, mode: "CRAZY_OTTO", level: 2, date: "1981-10-15" },
-  { id: "4", name: "BAK", score: 5500, mode: "COOKIE_MAN", level: 2, date: "2026-03-01" },
   { id: "5", name: "ARC", score: 3200, mode: "PACMAN", level: 1, date: "1980-06-01" },
 ];
 
@@ -131,7 +129,7 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
 
       {/* Filter Tabs */}
       <div className="flex items-center justify-between gap-1 p-1 bg-neutral-900 rounded-lg text-[10px]">
-        {(["ALL", "PACMAN", "MS_PACMAN", "CRAZY_OTTO", "COOKIE_MAN"] as const).map((m) => (
+        {(["ALL", "PACMAN", "MS_PACMAN"] as const).map((m) => (
           <button
             key={m}
             onClick={() => setFilterMode(m)}
@@ -141,15 +139,7 @@ export const HighScoresModal: React.FC<HighScoresModalProps> = ({
                 : "text-neutral-400 hover:text-white"
             }`}
           >
-            {m === "ALL"
-              ? "ALL"
-              : m === "PACMAN"
-                ? "PAC-MAN"
-                : m === "MS_PACMAN"
-                  ? "MS. PAC"
-                  : m === "CRAZY_OTTO"
-                    ? "OTTO"
-                    : "COOKIE"}
+            {m === "ALL" ? "ALL" : m === "PACMAN" ? "PAC-MAN" : "MS. PAC"}
           </button>
         ))}
       </div>

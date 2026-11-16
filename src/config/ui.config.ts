@@ -1,9 +1,4 @@
-export type PanelId =
-  | "RESTART_PANEL"
-  | "LEARN_PANEL"
-  | "PRACTICE_PANEL"
-  | "MODE_SELECTOR"
-  | "HIGH_SCORES";
+export type PanelId = "RESTART_PANEL" | "LAB_PANEL" | "MODE_SELECTOR" | "HIGH_SCORES" | "OPTIONS";
 
 export type TransitionEffect =
   | "fade-slide-up"
@@ -28,10 +23,6 @@ export interface UIConfig {
   timings: {
     /** Delay in milliseconds after GAME OVER text is displayed before showing the Restart Panel */
     gameOverRestartDelayMs: number;
-    /** Duration in frames for READY! banner before gameplay commences */
-    readyBannerFrames: number;
-    /** Duration in frames for LEVEL CLEAR flashing before loading next level */
-    levelClearFrames: number;
     /** Notification / score popup duration in frames */
     scorePopupLifetimeFrames: number;
   };
@@ -41,8 +32,6 @@ export interface UIConfig {
 export const uiConfig: UIConfig = {
   timings: {
     gameOverRestartDelayMs: 1200, // 1.2 seconds so player can comprehend game over
-    readyBannerFrames: 120, // 2 seconds
-    levelClearFrames: 120, // 2 seconds
     scorePopupLifetimeFrames: 45,
   },
   panels: {
@@ -55,16 +44,7 @@ export const uiConfig: UIConfig = {
       position: "center-viewport",
       closeOnBackdropClick: false, // Prevent accidental dismissal on game over
     },
-    LEARN_PANEL: {
-      effect: "fade-slide-up",
-      durationMs: 250,
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-      backdropBlur: true,
-      backdropColor: "rgba(0, 0, 0, 0.7)",
-      position: "center-viewport",
-      closeOnBackdropClick: true,
-    },
-    PRACTICE_PANEL: {
+    LAB_PANEL: {
       effect: "scale-fade",
       durationMs: 250,
       easing: "cubic-bezier(0.16, 1, 0.3, 1)",
@@ -76,6 +56,15 @@ export const uiConfig: UIConfig = {
     MODE_SELECTOR: {
       effect: "scale-fade",
       durationMs: 280,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      backdropBlur: true,
+      backdropColor: "rgba(0, 0, 0, 0.8)",
+      position: "center-viewport",
+      closeOnBackdropClick: true,
+    },
+    OPTIONS: {
+      effect: "fade-drop",
+      durationMs: 260,
       easing: "cubic-bezier(0.16, 1, 0.3, 1)",
       backdropBlur: true,
       backdropColor: "rgba(0, 0, 0, 0.8)",
