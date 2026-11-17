@@ -26,8 +26,7 @@ export const RULES_PRESETS: Record<
   },
 };
 
-/** Applies a preset to the engine (settings and the ghost AI's copy of the quirk flag). */
+/** Applies a preset to the engine's settings (the ghost AI reads them directly). */
 export function applyRulesPreset(engine: GameEngine, preset: RulesPreset): void {
   Object.assign(engine.settings, RULES_PRESETS[preset].settings);
-  engine.ghostAiController.emulateRomQuirks = engine.settings.emulateRomQuirks;
 }

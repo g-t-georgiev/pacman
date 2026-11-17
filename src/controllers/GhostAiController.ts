@@ -15,13 +15,26 @@ import { PRNG } from "../core/PRNG";
  * house emergence, and 1-tile advance intersection lookahead.
  */
 export class GhostAiController {
-  public emulateRomQuirks: boolean = true;
+  /**
+   * The rules this AI follows. In the engine it is the engine's own settings object, so the
+   * Arcade/Modern preset reaches the AI with no copy to keep in sync (plan O1). Tests may pass a
+   * plain flag.
+   */
+  private readonly rules: { readonly emulateRomQuirks: boolean };
   /** The sim's PRNG, shared with (and reset by) the engine. Advanced only by frightened decisions. */
   public prng: PRNG;
 
-  constructor(emulateRomQuirks: boolean = true, prng: PRNG = new PRNG()) {
-    this.emulateRomQuirks = emulateRomQuirks;
+  constructor(
+    rules: { readonly emulateRomQuirks: boolean } | boolean = true,
+    prng: PRNG = new PRNG()
+  ) {
+    this.rules = typeof rules === "boolean" ? { emulateRomQuirks: rules } : rules;
     this.prng = prng;
+  }
+
+  /** The arcade's targeting overflow when Pac-Man faces up (F15): on in the Arcade rules. */
+  public get emulateRomQuirks(): boolean {
+    return this.rules.emulateRomQuirks;
   }
 
   /**

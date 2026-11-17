@@ -6,6 +6,7 @@ import { HouseController, getHouseIdleLimit } from "../../src/controllers/HouseC
 import { Ghost } from "../../src/core/Ghost";
 import { Pacman } from "../../src/core/Pacman";
 import { getMazeData } from "../../src/game/mazes";
+import { applyRulesPreset } from "../../src/game/presets";
 import { levelRow } from "../../src/game/levelTable";
 import { PHASE_FRAMES } from "../../src/game/RoundSequencer";
 import { EXTRA_LIFE_SCORE, SIM_FPS, TILE_SIZE } from "../../src/game/constants";
@@ -121,6 +122,14 @@ describe("Regression: ghost targeting", () => {
       col: 14,
       row: 22,
     });
+  });
+
+  it("the engine's ghost AI follows the rules preset with no copy to sync (O1)", () => {
+    const e = new GameEngine("PACMAN", 0);
+    applyRulesPreset(e, "MODERN");
+    expect(e.ghostAiController.emulateRomQuirks).toBe(false);
+    applyRulesPreset(e, "ARCADE");
+    expect(e.ghostAiController.emulateRomQuirks).toBe(true);
   });
 
   it("Clyde chases from 8 tiles or more, and heads for his corner when closer", () => {

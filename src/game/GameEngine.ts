@@ -94,7 +94,7 @@ export default class GameEngine {
     }
   }
 
-  public settings: GameSettings = {
+  public readonly settings: GameSettings = {
     turbo: false,
     turboSpeedMultiplier: 1.6,
     learnVisualsEnabled: false,
@@ -165,7 +165,7 @@ export default class GameEngine {
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
   public animationController: AnimationController = new AnimationController();
-  public ghostAiController: GhostAiController = new GhostAiController(true, this.prng);
+  public ghostAiController: GhostAiController = new GhostAiController(this.settings, this.prng);
   public movementController: MovementController = new MovementController();
   public houseController: HouseController = new HouseController();
   public diagnosticController: DiagnosticController = new DiagnosticController();
@@ -670,7 +670,6 @@ export default class GameEngine {
     const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
 
     // Target tile (with the optional 1980 ROM quirks)
-    this.ghostAiController.emulateRomQuirks = this.settings.emulateRomQuirks;
     g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
 
     // Discrete 16-frame bitmask speed & tile-to-tile movement
