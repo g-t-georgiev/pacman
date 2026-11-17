@@ -42,7 +42,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       icon: "🟡",
       accent: "border-yellow-500/60 text-yellow-400",
       description:
-        "The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.",
+        "The arcade rules as documented in The Pac-Man Dossier: each ghost's targeting, the speeds, the ghost house and the siren.",
     },
     {
       id: "MS_PACMAN",
@@ -52,7 +52,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       icon: "🎀",
       accent: "border-pink-500/60 text-pink-400",
       description:
-        "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
+        "The bow and the look, two pairs of tunnels, maze colors that change with the level, and fruit that bounces in place.",
     },
   ];
 
@@ -61,9 +61,9 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       {/* Title */}
       <div className="text-center flex flex-col items-center gap-1">
         <h2 className="text-xl sm:text-2xl font-bold tracking-widest text-yellow-400 drop-shadow">
-          ARCADE ARCIVE
+          GAME MODES
         </h2>
-        <p className="text-xs text-neutral-400">SELECT GAME EDITION & SPEED</p>
+        <p className="text-xs text-neutral-400">PICK A GAME, ITS RULES AND SPEED</p>
       </div>
 
       {/* Mode List */}

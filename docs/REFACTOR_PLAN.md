@@ -3,7 +3,8 @@
 > Draft for revision. Each item has an ID so you can strike, reorder, or comment
 > (for example "drop F7", "F3 before A1"). Sources: _The Pac-Man Dossier_ (Pittman, v1.0.27),
 > _Understanding Pac-Man Ghost Behavior_ (Birch), and the Steam guide (a derivative of those two;
-> where it disagrees, the Dossier wins). Code refs are to `refactor-pass-1` @ `fa1bc42`.
+> where it disagrees, the Dossier wins). Code refs are to `refactor-pass-1` @ `fa1bc42` (historical: the file and line numbers in finished
+> items describe the code as it was then, not now).
 >
 > **Scope note:** this plan covers **mechanics, timing, feel, architecture and tooling**. It
 > deliberately makes no suggestions for reproducing the original's art, audio, maze look or
