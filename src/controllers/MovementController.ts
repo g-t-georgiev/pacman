@@ -5,13 +5,11 @@ import type { Direction, MazeData } from "../types";
 import { TILE_SIZE } from "../game/constants";
 
 /** The house door: the seam between columns 13 and 14. */
-export const HOUSE_DOOR_X = 14 * TILE_SIZE;
+const HOUSE_DOOR_X = 14 * TILE_SIZE;
 /** Centerline of the house interior (row 17). */
 export const HOUSE_CENTER_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
 /** Centerline of the row just outside the door (row 14), where ghosts appear when leaving. */
 export const HOUSE_EXIT_Y = 14 * TILE_SIZE + TILE_SIZE / 2;
-/** The door (gate) row, between the row outside (14) and the house interior (16-18). */
-export const HOUSE_DOOR_ROW = 15;
 /** How far waiting ghosts bob above and below the house centerline. */
 const HOUSE_BOB = TILE_SIZE / 2;
 import {
@@ -24,7 +22,7 @@ import { getPixelStepsThisFrame } from "../utils";
 import { houseSlotX } from "../game/mazes";
 
 /** Everything a ghost's move needs besides the ghost itself. */
-export interface GhostMoveContext {
+interface GhostMoveContext {
   /** Blinky (Inky's targeting uses his position). */
   blinky: Ghost;
   pacman: Pacman;

@@ -4,7 +4,7 @@ import { checkReplayFile, type Replay } from "./replay";
  * Shareable replay links (plan T12): the replay as JSON, deflate-compressed and base64url-encoded
  * into the URL fragment (`#replay=...`). The fragment never reaches a server.
  */
-export const REPLAY_HASH_KEY = "replay";
+const REPLAY_HASH_KEY = "replay";
 
 async function pipe(
   bytes: Uint8Array<ArrayBuffer>,

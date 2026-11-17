@@ -13,7 +13,7 @@
  * arcade's biases (turning left, drifting to the bottom left), not its exact sequences.
  */
 
-export const PRNG_INDEX_MASK = 0x1fff;
+const PRNG_INDEX_MASK = 0x1fff;
 export const PRNG_PERIOD = PRNG_INDEX_MASK + 1; // 8192
 
 /** Direction code meanings (two low bits of the arcade's output byte). */

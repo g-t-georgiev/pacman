@@ -20,7 +20,7 @@ export function getStoredHighScores(): HighScoreRecord[] {
   }
 }
 
-export function saveHighScore(record: Omit<HighScoreRecord, "id" | "date">): HighScoreRecord[] {
+function saveHighScore(record: Omit<HighScoreRecord, "id" | "date">): HighScoreRecord[] {
   const current = getStoredHighScores();
   const newRecord: HighScoreRecord = {
     ...record,

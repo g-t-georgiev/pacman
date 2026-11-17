@@ -5,8 +5,6 @@ import { type SpeedSource, ghostSpeed, pacmanSpeed } from "../game/speedSource";
 import { SIM_FPS, TILE_SIZE } from "../game/constants";
 import { SPEED_MASKS, arcadeStepsOnFrame } from "../game/speedMasks";
 
-/** 100% speed in arcade pixels per second (Dossier, Table A.1). */
-export const ARCADE_PX_PER_SEC_AT_100 = 75.7576;
 /** 80% is one pixel every frame (16 of 16 mask bits), so 1% = 1/80 px per frame. */
 const PCT_PER_PX_PER_FRAME = 80;
 

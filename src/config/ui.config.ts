@@ -83,7 +83,7 @@ export const uiConfig: UIConfig = {
   },
 };
 
-export const DEFAULT_UI_CONFIG = {
+const DEFAULT_UI_CONFIG = {
   effect: "fade-slide-up",
   durationMs: 250,
   easing: "cubic-bezier(0.16, 1, 0.3, 1)",

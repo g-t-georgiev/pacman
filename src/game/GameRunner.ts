@@ -185,7 +185,7 @@ export class GameRunner {
 }
 
 /** Maps one sim event to its sounds and UI bus notifications. */
-export function dispatchSimEvent(event: SimEvent): void {
+function dispatchSimEvent(event: SimEvent): void {
   switch (event.type) {
     case "SCORE_CHANGED":
       GameEvents.emit("SCORE_CHANGED", { score: event.score, highScore: event.highScore });

@@ -61,7 +61,7 @@ export const KEYFRAME_TICKS = 60;
 /** ...keeping the last two minutes. */
 export const MAX_KEYFRAMES = 121;
 
-export function simSettingsOf(settings: GameSettings): SimSettings {
+function simSettingsOf(settings: GameSettings): SimSettings {
   const { emulateRomQuirks, invincible, turbo, turboSpeedMultiplier } = settings;
   return { emulateRomQuirks, invincible, turbo, turboSpeedMultiplier };
 }

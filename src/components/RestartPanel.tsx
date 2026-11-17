@@ -3,7 +3,7 @@ import type { GameMode } from "../types";
 import { getFruitDataPerLevel } from "../utils";
 import { RULESETS } from "../game/rulesets";
 
-export interface RestartPanelProps {
+interface RestartPanelProps {
   score: number;
   highScore: number;
   level: number;

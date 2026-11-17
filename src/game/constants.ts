@@ -22,8 +22,8 @@ export const TILE_SIZE = 8;
 export const RENDER_SCALE = 2;
 /** Tile size on the canvas. Only the renderer and UI use this. */
 export const RENDER_TILE_SIZE = TILE_SIZE * RENDER_SCALE;
-export const MAZE_COLS = 28;
-export const MAZE_ROWS = 36;
+const MAZE_COLS = 28;
+const MAZE_ROWS = 36;
 export const CANVAS_WIDTH = MAZE_COLS * RENDER_TILE_SIZE; // 448px
 export const CANVAS_HEIGHT = MAZE_ROWS * RENDER_TILE_SIZE; // 576px
 

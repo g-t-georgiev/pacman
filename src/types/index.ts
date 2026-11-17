@@ -140,12 +140,6 @@ export interface GhostState {
   enteringHousePhase?: GhostsToHousePhase;
 }
 
-export interface RomQuirkSettings {
-  emulateRomQuirks: boolean; // Master switch: when true, replicates authentic Z80 hardware bugs
-  pinkyUpOverflow: boolean; // Pinky UP bug: targets 4 UP + 4 LEFT
-  inkyUpOverflow: boolean; // Inky UP bug: pivot is 2 UP + 2 LEFT
-}
-
 export interface FruitItem {
   name: string;
   points: number;
