@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import { getElroyDotThresholds, getElroyStage } from "../../src/utils";
+import { getElroyDotThresholds } from "../../src/game/levelTable";
+import { getElroyStage } from "../../src/controllers/GhostAiController";
 
 describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
   it("should increase Blinky speed tier when dots remaining reach Elroy 1 and Elroy 2 thresholds", () => {

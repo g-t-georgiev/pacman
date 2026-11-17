@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { GHOST_COLORS, SIM_FPS } from "../game/constants";
 import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
-import { getElroyDotThresholds, getScatterChaseSchedule } from "../utils";
+import { getElroyDotThresholds, getScatterChaseSchedule } from "../game/levelTable";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;

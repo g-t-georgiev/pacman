@@ -18,7 +18,7 @@ import {
   getOppositeDirection,
   isTileWalkableForGhost,
 } from "../game/ghostAiUtils";
-import { getPixelStepsThisFrame } from "../utils";
+import { getPixelStepsThisFrame } from "../game/speedMasks";
 import { houseSlotX } from "../game/mazes";
 
 /** Everything a ghost's move needs besides the ghost itself. */

@@ -1,7 +1,7 @@
 import type { GameSettings, GhostType } from "../types";
 import type GameEngine from "./GameEngine";
 import { GHOST_COLORS, FRIGHTENED_FLASH_TOGGLE_FRAMES } from "./constants";
-import { getFrightenedFlashCount } from "../utils";
+import { getFrightenedFlashCount } from "./levelTable";
 
 /**
  * Accessibility (Phase 5): a colorblind-safe palette and reduced flashing. Purely visual: the

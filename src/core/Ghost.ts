@@ -13,7 +13,7 @@ import type {
   ElroyStage,
 } from "../types";
 import { GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT, TILE_SIZE } from "../game/constants";
-import { getSpeedConfigForLevel } from "../utils";
+import { getSpeedConfigForLevel } from "../game/levelTable";
 import { isTunnelSlowZone } from "../game/mazeAnalysis";
 
 /**

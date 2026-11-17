@@ -14,7 +14,7 @@ import {
   TILE_SIZE,
 } from "./constants";
 import { getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
-import { getScatterChaseSchedule } from "../utils";
+import { getScatterChaseSchedule } from "./levelTable";
 import { ghostSpeed, pacmanSpeed } from "./speedSource";
 import { TUNNEL_SLOW_TILES, deriveIntersections } from "./mazeAnalysis";
 import {

@@ -6,9 +6,9 @@ import {
   getFrightenedDuration,
   getFrightenedFlashCount,
   getFruitDataPerLevel,
-} from "../../src/utils";
+  getSpeedConfigForLevel,
+} from "../../src/game/levelTable";
 import { ghostSpeed, pacmanSpeed } from "../../src/game/speedSource";
-import { getSpeedConfigForLevel } from "../../src/utils";
 import { getOppositeDirection } from "../../src/game/ghostAiUtils";
 
 /**

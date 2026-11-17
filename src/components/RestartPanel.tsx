@@ -1,6 +1,6 @@
 import React from "react";
 import type { GameMode } from "../types";
-import { getFruitDataPerLevel } from "../utils";
+import { getFruitDataPerLevel } from "../game/levelTable";
 import { RULESETS } from "../game/rulesets";
 
 interface RestartPanelProps {

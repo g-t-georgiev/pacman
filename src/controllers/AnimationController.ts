@@ -1,6 +1,6 @@
 import type { Ghost } from "../core/Ghost";
 import { FRIGHTENED_FLASH_TOGGLE_FRAMES } from "../game/constants";
-import { getFrightenedFlashCount } from "../utils";
+import { getFrightenedFlashCount } from "../game/levelTable";
 
 /**
  * Animation Controller responsible for managing visual sprite cycles:

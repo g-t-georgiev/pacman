@@ -10,7 +10,7 @@ import { applyRulesPreset } from "../../src/game/presets";
 import { levelRow } from "../../src/game/levelTable";
 import { PHASE_FRAMES } from "../../src/game/RoundSequencer";
 import { EXTRA_LIFE_SCORE, SIM_FPS, TILE_SIZE } from "../../src/game/constants";
-import { getPixelStepsThisFrame } from "../../src/utils";
+import { getPixelStepsThisFrame } from "../../src/game/speedMasks";
 import type { Direction, GhostType } from "../../src/types";
 import { playHashes, playing, randomInput } from "../helpers";
 

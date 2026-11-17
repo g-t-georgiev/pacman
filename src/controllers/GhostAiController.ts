@@ -1,6 +1,7 @@
 import type { Ghost } from "../core/Ghost";
 import type { Pacman } from "../core/Pacman";
-import type { Direction, MazeData, TileCoord } from "../types";
+import type { Direction, ElroyStage, MazeData, TileCoord } from "../types";
+import { getElroyDotThresholds } from "../game/levelTable";
 import { TILE_SIZE } from "../game/constants";
 import {
   chooseNextGhostDirection,
@@ -181,4 +182,20 @@ export class GhostAiController {
 
     return chooseNextGhostDirection(ghost.toState(), ghost.target, maze, nextCol, nextRow, heading);
   }
+}
+
+/**
+ * Blinky's Cruise Elroy stage. After a life is lost, Elroy is suspended (stage 0) until Clyde
+ * starts leaving the house (Dossier, Blinky).
+ */
+export function getElroyStage(
+  level: number,
+  dotsRemaining: number,
+  suspended: boolean
+): ElroyStage {
+  if (suspended) return 0;
+  const { elroy1, elroy2 } = getElroyDotThresholds(level);
+  if (dotsRemaining <= elroy2) return 2;
+  if (dotsRemaining <= elroy1) return 1;
+  return 0;
 }

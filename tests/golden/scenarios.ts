@@ -3,7 +3,7 @@ import { SimRandom } from "../../src/core/SimRandom";
 import { type Replay, recordReplay } from "../../src/game/replay";
 import type { Direction, GameMode } from "../../src/types";
 import { AgentDriver } from "../../src/agent/AgentDriver";
-import { getElroyDotThresholds } from "../../src/utils";
+import { getElroyDotThresholds } from "../../src/game/levelTable";
 import type { Coverage } from "./coverage";
 
 /**

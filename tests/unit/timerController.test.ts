@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { TimerController } from "../../src/controllers/TimerController";
 import type { GhostBehavior } from "../../src/types";
-import { getFrightenedDuration } from "../../src/utils";
+import { getFrightenedDuration } from "../../src/game/levelTable";
 
 describe("TimerController & Scatter/Chase Schedule (integer frames)", () => {
   it("switches from the first scatter to chase after exactly 420 frames (7 s) on level 1", () => {

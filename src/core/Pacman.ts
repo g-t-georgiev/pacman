@@ -3,7 +3,7 @@ import { tileAt } from "../game/mazeAnalysis";
 import type { Direction, LevelSpeedConfig, MazeData, PacmanState } from "../types";
 import { CORNER_WINDOW_LOW, TILE_SIZE } from "../game/constants";
 import { getDirectionVector, getOppositeDirection } from "../game/ghostAiUtils";
-import { getSpeedConfigForLevel } from "../utils";
+import { getSpeedConfigForLevel } from "../game/levelTable";
 
 /** Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center). */
 const MOUTH_FRAMES: ReadonlyArray<0 | 1 | 2> = [1, 1, 2, 2, 1, 1, 0, 0];

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { getPixelStepsThisFrame } from "../../src/utils";
-import { SPEED_MASKS, arcadeStepsOnFrame } from "../../src/game/speedMasks";
+import { SPEED_MASKS, arcadeStepsOnFrame, getPixelStepsThisFrame } from "../../src/game/speedMasks";
 import { GHOST_EATEN_SPEED_PCT, GHOST_HOUSE_SPEED_PCT } from "../../src/game/constants";
 import { LEVEL_TABLE, levelRow } from "../../src/game/levelTable";
 

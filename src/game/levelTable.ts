@@ -1,6 +1,9 @@
 import type { LevelSpeedConfig, ScatterChaseSchedule } from "../types";
 import {
+  FRUIT_CATALOG,
+  type FruitInfo,
   type FruitName,
+  SIM_FPS,
   SCATTER_CHASE_LEVEL_1,
   SCATTER_CHASE_LEVELS_2_TO_4,
   SCATTER_CHASE_LEVELS_5_PLUS,
@@ -105,4 +108,37 @@ export const LEVEL_TABLE: readonly LevelRow[] = [
 export function levelRow(level: number): LevelRow {
   const i = Math.min(Math.max(Math.floor(level), 1), LEVEL_TABLE.length) - 1;
   return LEVEL_TABLE[i];
+}
+
+// --- Per-level lookups (plan O4: they lived in src/utils) ---------------------------------------
+
+/** Dots remaining at which Blinky becomes Elroy 1 and Elroy 2 on a level (Dossier, Table A.1). */
+export function getElroyDotThresholds(level: number): { elroy1: number; elroy2: number } {
+  const elroy1 = levelRow(level).elroy1Dots;
+  return { elroy1, elroy2: elroy1 / 2 };
+}
+
+/** The bonus fruit a level shows, with its points and art. */
+export function getFruitDataPerLevel(level: number): FruitInfo {
+  return FRUIT_CATALOG[levelRow(level).fruit];
+}
+
+/** Frightened time on a level, in frames (0: an energizer only reverses the ghosts). */
+export function getFrightenedDuration(level: number): number {
+  return levelRow(level).frightSeconds * SIM_FPS;
+}
+
+/** White flashes before frightened ends on a level. */
+export function getFrightenedFlashCount(level: number): number {
+  return levelRow(level).flashes;
+}
+
+/** The level's scatter/chase waves, in frames (see the schedules in `constants.ts`). */
+export function getScatterChaseSchedule(level: number): readonly ScatterChaseSchedule[] {
+  return levelRow(level).schedule;
+}
+
+/** The level's speeds, as percentages of the 100% speed. */
+export function getSpeedConfigForLevel(level: number): LevelSpeedConfig {
+  return levelRow(level).speeds;
 }

@@ -10,12 +10,7 @@ import type {
   PlayState,
   ScorePopup,
 } from "../types";
-import {
-  getElroyStage,
-  getFrightenedDuration,
-  getFruitDataPerLevel,
-  getSpeedConfigForLevel,
-} from "../utils";
+import { getFrightenedDuration, getFruitDataPerLevel, getSpeedConfigForLevel } from "./levelTable";
 import { EXTRA_LIFE_SCORE, FRUIT_EXTRA_FRAMES, FRUIT_MIN_FRAMES, TILE_SIZE } from "./constants";
 import { Pacman } from "../core/Pacman";
 import { Ghost } from "../core/Ghost";
@@ -31,7 +26,7 @@ import {
 } from "./RoundSequencer";
 import { TimerController } from "../controllers/TimerController";
 import { AnimationController } from "../controllers/AnimationController";
-import { GhostAiController } from "../controllers/GhostAiController";
+import { GhostAiController, getElroyStage } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { HouseController } from "../controllers/HouseController";
 import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
