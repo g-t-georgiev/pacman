@@ -1,2 +1,3 @@
 vp staged
 vpx ./scripts/check-golden.ts
+vp run test:regression

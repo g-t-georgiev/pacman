@@ -17,6 +17,7 @@ vp check             # format, lint, type check
 vp test              # unit, integration, fidelity and golden replay tests
 vp run golden:update # re-record golden replays (and bump versions) after an intended change
 vp run golden:check  # do the golden replays still match? (the pre-commit hook runs it)
+vp run test:regression # core contracts and fixed bugs, ~0.4 s (the pre-commit hook runs it)
 ```
 
 ## Screen
@@ -107,6 +108,8 @@ questions.
 - **Debug overlay (F1).** Layers for the grid, occupied tiles, ghost targets and decisions,
   no-up and tunnel zones, intersections, Pac-Man's turn window, a speed readout, the
   scatter/chase timeline and the ghost house counters.
+- **Regression suite.** `tests/regression/`: the core contracts every subsystem stands on, and
+  one test per bug fixed. Every commit runs it; every new bug fix adds a test.
 - **Fidelity suite.** `tests/fidelity/dossier.test.ts`, one test per Dossier claim.
 - **Diagnostics console.** Runtime invariants, checked in dev builds or while the console is open.
 
