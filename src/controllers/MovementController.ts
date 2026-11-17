@@ -27,7 +27,7 @@ interface GhostMoveContext {
   blinky: Ghost;
   pacman: Pacman;
   /** Indexes the 16-frame speed masks. */
-  currLevelFrame: number;
+  lifeFrame: number;
   speedPct: number;
   turboMultiplier: number;
   maze: MazeData;
@@ -49,7 +49,7 @@ export class MovementController {
    */
   public updatePacmanMovement(
     pacman: Pacman,
-    currLevelFrame: number,
+    lifeFrame: number,
     speedPct: number,
     turboMultiplier: number,
     maze: MazeData
@@ -61,7 +61,7 @@ export class MovementController {
       return;
     }
 
-    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
+    const steps = getPixelStepsThisFrame(lifeFrame, speedPct, turboMultiplier);
     pacman.speed = steps;
 
     if (steps <= 0) return;
@@ -76,7 +76,7 @@ export class MovementController {
 
   /** Moves a ghost outside the house for one frame. */
   public updateGhostMovement(ghost: Ghost, ctx: GhostMoveContext): void {
-    const { blinky, pacman, currLevelFrame, speedPct, turboMultiplier, maze, ghostAi } = ctx;
+    const { blinky, pacman, lifeFrame, speedPct, turboMultiplier, maze, ghostAi } = ctx;
     if (ghost.inHouse || ghost.dir === "NONE") return;
 
     // Eaten house descent logic
@@ -91,7 +91,7 @@ export class MovementController {
         ghost.enteringHousePhase = "APPROACH_SEAM";
       }
 
-      const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
+      const steps = getPixelStepsThisFrame(lifeFrame, speedPct, turboMultiplier);
       ghost.speed = steps;
 
       if (steps > 0) {
@@ -100,7 +100,7 @@ export class MovementController {
       return;
     }
 
-    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
+    const steps = getPixelStepsThisFrame(lifeFrame, speedPct, turboMultiplier);
     ghost.speed = steps;
     if (steps <= 0) return;
 
@@ -181,11 +181,11 @@ export class MovementController {
    */
   public updateHouseGhost(
     ghost: Ghost,
-    currLevelFrame: number,
+    lifeFrame: number,
     speedPct: number,
     turboMultiplier: number
   ): void {
-    const steps = getPixelStepsThisFrame(currLevelFrame, speedPct, turboMultiplier);
+    const steps = getPixelStepsThisFrame(lifeFrame, speedPct, turboMultiplier);
     ghost.speed = steps;
 
     for (let step = 0; step < steps && ghost.inHouse; step++) {
@@ -310,7 +310,6 @@ export class MovementController {
     ghost.enteringHousePhase = "NONE";
     ghost.dir = "UP";
     ghost.nextDir = "UP";
-    ghost.flashState = false;
     ghost.reversalPrimed = false;
     ghost.lastOccupiedTile = { col: Math.floor(ghost.x / TILE_SIZE), row: 17 };
   }

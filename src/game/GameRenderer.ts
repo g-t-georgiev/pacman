@@ -1,3 +1,6 @@
+import type { ScorePopups } from "./scorePopups";
+import { feetPhase, frightenedFlashWhite } from "./ghostLooks";
+import { clydeFlees, inkyPivot } from "../controllers/GhostAiController";
 import type { LatencyMeter } from "./latencyMeter";
 import type { PracticeTools } from "./practiceTools";
 import {
@@ -38,6 +41,8 @@ export default class GameRenderer {
 
   /** Practice overlays (pattern trail, first-death heatmap), owned by the runner. */
   public practice: PracticeTools | null = null;
+  /** The floating fruit points (plan P2), owned by the runner. */
+  public popups: ScorePopups | null = null;
   /** Input latency readout for the debug overlay (Phase 5), owned by the runner. */
   public latency: LatencyMeter | null = null;
 
@@ -99,7 +104,7 @@ export default class GameRenderer {
     if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine, this.latency?.stats ?? null);
 
     // Render Floating Score Popups
-    this.renderScorePopups(engine);
+    this.popups?.render(ctx, px);
 
     // Render State Messages ("READY!", "GAME OVER", "LEVEL CLEAR")
     this.renderStateBanners(engine);
@@ -340,7 +345,7 @@ export default class GameRenderer {
       // Frightened: blue, flashing white near the end; with reduced flashing it stays blue and
       // gets a steady white outline for the last stretch instead
       const fright = frightenedColors(engine.settings);
-      const flashWhite = g.flashState && !engine.settings.reducedFlash;
+      const flashWhite = frightenedFlashWhite(engine) && !engine.settings.reducedFlash;
       let bodyColor = ghostBodyColor(type, engine.settings);
       if (g.mode === "FRIGHTENED") bodyColor = flashWhite ? fright.flashBody : fright.body;
 
@@ -352,7 +357,7 @@ export default class GameRenderer {
       ctx.lineTo(radius, radius);
 
       // Wavy bottom skirt (3 scallops)
-      const wave = Math.sin(g.feetAnimation * Math.PI * 2) * 2;
+      const wave = Math.sin(feetPhase(engine) * Math.PI * 2) * 2;
       ctx.lineTo(radius * 0.5, radius - 2 + wave);
       ctx.lineTo(0, radius);
       ctx.lineTo(-radius * 0.5, radius - 2 - wave);
@@ -491,9 +496,14 @@ export default class GameRenderer {
       ctx.restore();
 
       // Inky Pincer Vector Visualization
-      if (type === "INKY" && g.intermediateTarget && showCues) {
-        const pivotX = g.intermediateTarget.col * TILE_SIZE + TILE_SIZE / 2;
-        const pivotY = g.intermediateTarget.row * TILE_SIZE + TILE_SIZE / 2;
+      // (only while he chases: that's when the pivot shapes his target)
+      const pivot =
+        type === "INKY" && g.mode === "CHASE"
+          ? inkyPivot(engine.pacman, engine.rules.emulateRomQuirks)
+          : null;
+      if (pivot && showCues) {
+        const pivotX = pivot.col * TILE_SIZE + TILE_SIZE / 2;
+        const pivotY = pivot.row * TILE_SIZE + TILE_SIZE / 2;
         const blinky = engine.ghosts.BLINKY;
 
         // Draw line from Blinky to Intermediate Pivot
@@ -532,7 +542,7 @@ export default class GameRenderer {
         let modeStr = g.mode as string;
         if (g.mode === "CHASE") {
           if (type === "CLYDE") {
-            modeStr = g.clydeWanderState === "CHASE" ? "CHASE" : "FLEE";
+            modeStr = clydeFlees(g, engine.pacman) ? "FLEE" : "CHASE";
           } else {
             modeStr = "CHASE";
           }
@@ -813,21 +823,6 @@ export default class GameRenderer {
 
       ctx.restore();
     });
-  }
-
-  private renderScorePopups(engine: GameEngine) {
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.font = arcadeFont(12);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    engine.scorePopups.forEach((popup) => {
-      ctx.fillStyle = popup.color;
-      ctx.fillText(popup.text, px(popup.x), px(popup.y));
-    });
-
-    ctx.restore();
   }
 
   private renderStateBanners(engine: GameEngine) {

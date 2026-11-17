@@ -104,29 +104,8 @@ export class GhostAiController {
       }
 
       case "INKY": {
-        // Bashful: Pincer flanker using Pac-Man & Blinky's coordinates.
-        let pivotCol = pacCol;
-        let pivotRow = pacRow;
-        switch (pacman.dir) {
-          case "UP":
-            pivotRow -= 2;
-            // 1980 Z80 register overflow bug: facing UP also shifted 2 tiles LEFT
-            if (this.emulateRomQuirks) {
-              pivotCol -= 2;
-            }
-            break;
-          case "DOWN":
-            pivotRow += 2;
-            break;
-          case "LEFT":
-            pivotCol -= 2;
-            break;
-          case "RIGHT":
-            pivotCol += 2;
-            break;
-        }
-
-        ghost.intermediateTarget = { col: pivotCol, row: pivotRow };
+        // Bashful: the vector from Blinky to a pivot 2 tiles ahead of Pac-Man, doubled
+        const { col: pivotCol, row: pivotRow } = inkyPivot(pacman, this.emulateRomQuirks);
 
         const blinkyCol = Math.floor(blinky.x / TILE_SIZE);
         const blinkyRow = Math.floor(blinky.y / TILE_SIZE);
@@ -138,11 +117,8 @@ export class GhostAiController {
       }
 
       case "CLYDE": {
-        // Pokey: Chases when distance >= 8 tiles; flees to scatter corner when < 8 tiles.
-        const distSq = (pacCol - ghostCol) ** 2 + (pacRow - ghostRow) ** 2;
-        const flee = distSq < 64; // closer than 8 tiles (8 * 8 = 64)
-        ghost.clydeWanderState = flee ? "FLEE" : "CHASE"; // shown by the Learn overlay
-        return flee ? maze.scatterTargets.CLYDE : { col: pacCol, row: pacRow };
+        // Pokey: chases from 8 tiles or more, heads for his corner when closer
+        return clydeFlees(ghost, pacman) ? maze.scatterTargets.CLYDE : { col: pacCol, row: pacRow };
       }
     }
   }
@@ -198,4 +174,36 @@ export function getElroyStage(
   if (dotsRemaining <= elroy2) return 2;
   if (dotsRemaining <= elroy1) return 1;
   return 0;
+}
+
+/**
+ * Inky's pivot: 2 tiles ahead of Pac-Man (with the arcade overflow, facing up is also 2 left).
+ * His target is this pivot's vector from Blinky, doubled. Also drawn by the Learn overlay.
+ */
+export function inkyPivot(pacman: Pacman, overflow: boolean): TileCoord {
+  let col = Math.floor(pacman.x / TILE_SIZE);
+  let row = Math.floor(pacman.y / TILE_SIZE);
+  switch (pacman.dir) {
+    case "UP":
+      row -= 2;
+      if (overflow) col -= 2; // 1980 Z80 overflow: facing up also shifts left
+      break;
+    case "DOWN":
+      row += 2;
+      break;
+    case "LEFT":
+      col -= 2;
+      break;
+    case "RIGHT":
+      col += 2;
+      break;
+  }
+  return { col, row };
+}
+
+/** Clyde is closer than 8 tiles to Pac-Man, so he heads for his corner instead of chasing. */
+export function clydeFlees(clyde: Ghost, pacman: Pacman): boolean {
+  const dc = Math.floor(pacman.x / TILE_SIZE) - Math.floor(clyde.x / TILE_SIZE);
+  const dr = Math.floor(pacman.y / TILE_SIZE) - Math.floor(clyde.y / TILE_SIZE);
+  return dc * dc + dr * dr < 64;
 }

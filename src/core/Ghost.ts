@@ -46,14 +46,6 @@ export class Ghost extends Actor {
    * takes `plannedDir`. "NONE" means "plan from where you are" (after spawning or leaving home).
    */
   public plannedDir: Direction = "NONE";
-  public intermediateTarget?: TileCoord;
-
-  // Frightened visuals
-  public flashState: boolean = false;
-  public feetAnimation: number = 0;
-
-  /** Clyde's last targeting choice (set by calculateTarget), shown by the Learn overlay. */
-  public clydeWanderState?: "CHASE" | "FLEE" = "CHASE";
 
   // Tile-to-tile lookahead and reversal latch
   public reversalPrimed: boolean = false;
@@ -107,13 +99,6 @@ export class Ghost extends Actor {
   }
 
   /**
-   * Advances wavy scallop bottom skirt animation.
-   */
-  public updateFeetAnimation(): void {
-    this.feetAnimation = (this.feetAnimation + 0.15) % 1;
-  }
-
-  /**
    * Converts actor to plain serializable state representation.
    */
   public toState(): GhostState {
@@ -132,10 +117,6 @@ export class Ghost extends Actor {
       inHouse: this.inHouse,
       speed: this.speed,
       target: this.target,
-      flashState: this.flashState,
-      feetAnimation: this.feetAnimation,
-      clydeWanderState: this.clydeWanderState,
-      intermediateTarget: this.intermediateTarget,
       reversalPrimed: this.reversalPrimed,
       lastDecisionTile: this.lastDecisionTile,
       lastOccupiedTile: this.lastOccupiedTile,
@@ -158,10 +139,6 @@ export class Ghost extends Actor {
     this.elroyStage = state.elroyStage;
     this.speed = state.speed;
     this.target = state.target;
-    this.flashState = state.flashState;
-    this.feetAnimation = state.feetAnimation;
-    this.clydeWanderState = state.clydeWanderState;
-    this.intermediateTarget = state.intermediateTarget;
     this.reversalPrimed = state.reversalPrimed ?? false;
     this.lastDecisionTile = state.lastDecisionTile;
     this.lastOccupiedTile = state.lastOccupiedTile;

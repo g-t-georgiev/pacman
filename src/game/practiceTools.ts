@@ -11,7 +11,7 @@ import { loadPreference, savePreference } from "../utils/preferences";
  *   player can follow a pattern (arcade patterns work because the game is deterministic).
  * - First-death heatmap: where Pac-Man first died on each level, over many attempts.
  *
- * The route is keyed by `currLevelFrame` (restarts with each level and each life), so a rewind
+ * The route is keyed by `lifeFrame` (restarts with each level and each life), so a rewind
  * simply overwrites the frames it replays.
  */
 
@@ -39,11 +39,11 @@ export class PracticeTools {
   public afterTick(engine: GameEngine): void {
     if (engine.watchingReplay || engine.rewindIndex !== -1) return;
     const id = `${engine.mode}.${engine.level}`;
-    if (id !== this.routeOf || engine.currLevelFrame === 0) {
+    if (id !== this.routeOf || engine.lifeFrame === 0) {
       this.route = [];
       this.routeOf = id;
     }
-    const i = engine.currLevelFrame * 2;
+    const i = engine.lifeFrame * 2;
     while (this.route.length < i) this.route.push(NaN);
     this.route[i] = engine.pacman.x;
     this.route[i + 1] = engine.pacman.y;
@@ -165,7 +165,7 @@ export class PracticeTools {
     }
     ctx.stroke();
     // Where the pattern was at this frame: follow the marker
-    const i = engine.currLevelFrame * 2;
+    const i = engine.lifeFrame * 2;
     if (i + 1 < route.length && !Number.isNaN(route[i])) {
       ctx.fillStyle = "rgba(255, 255, 0, 0.45)";
       ctx.beginPath();

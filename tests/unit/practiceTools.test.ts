@@ -24,7 +24,7 @@ describe("Practice tools (Phase 5)", () => {
   it("saves this life's route as the level's pattern, one point per level frame", () => {
     const { engine, runner } = live(2);
     for (let i = 0; i < 90; i++) runner.tick();
-    const frame = engine.currLevelFrame;
+    const frame = engine.lifeFrame;
     const at = { x: engine.pacman.x, y: engine.pacman.y };
     expect(runner.practice.savePattern(engine)).toBe(frame + 1);
     const route = runner.practice.pattern(engine)!;
@@ -42,7 +42,7 @@ describe("Practice tools (Phase 5)", () => {
     engine.rewindSeconds(1);
     engine.resumeFromScrub();
     runner.tick();
-    expect(runner.practice.savePattern(engine)).toBe(engine.currLevelFrame + 1);
+    expect(runner.practice.savePattern(engine)).toBe(engine.lifeFrame + 1);
   });
 
   it("records only the first death on a level in the heatmap", () => {

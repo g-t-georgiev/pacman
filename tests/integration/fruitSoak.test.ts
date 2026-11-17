@@ -34,7 +34,7 @@ describe("Bonus fruit in long play", () => {
       if (visible && visible !== last) {
         appearances++;
         const where = `level ${engine.level}, tick ${engine.tick}`;
-        expect([70, 170], where).toContain(engine.dotsEatenThisRound);
+        expect([70, 170], where).toContain(engine.dotsEatenThisLevel);
         expect(visible.duration, where).toBeGreaterThanOrEqual(FRUIT_MIN_FRAMES - 1);
         expect(visible.duration, where).toBeLessThan(FRUIT_MIN_FRAMES + FRUIT_EXTRA_FRAMES);
         perLevel.set(engine.level, (perLevel.get(engine.level) ?? 0) + 1);

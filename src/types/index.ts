@@ -130,10 +130,6 @@ export interface GhostState {
   speed: number;
   /** Target tile; null while frightened (turns come from the PRNG). */
   target: TileCoord | null;
-  flashState: boolean; // white or blue when frightened ending
-  feetAnimation: number;
-  clydeWanderState?: "CHASE" | "FLEE";
-  intermediateTarget?: TileCoord;
   reversalPrimed?: boolean;
   lastDecisionTile?: TileCoord;
   lastOccupiedTile?: TileCoord;
@@ -152,15 +148,6 @@ export interface FruitItem {
   bouncing?: boolean;
   bounceY?: number;
   bounceDir?: number;
-}
-
-export interface ScorePopup {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  life: number; // frames
-  color: string;
 }
 
 /**

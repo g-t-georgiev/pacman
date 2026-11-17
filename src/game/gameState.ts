@@ -1,12 +1,4 @@
-import type {
-  FruitItem,
-  GameMode,
-  GhostState,
-  GhostType,
-  PacmanState,
-  ScorePopup,
-  TileType,
-} from "../types";
+import type { FruitItem, GameMode, GhostState, GhostType, PacmanState, TileType } from "../types";
 import type { SequenceState } from "./RoundSequencer";
 import type { HouseState } from "../controllers/HouseController";
 
@@ -19,7 +11,7 @@ import type { HouseState } from "../controllers/HouseController";
  * Only the tiles that change (dots and energizers) are, as one character per tile.
  */
 /** The shape of GameState. Bump it when fields are added, removed or change meaning. */
-export const GAME_STATE_VERSION = 5;
+export const GAME_STATE_VERSION = 6;
 
 export interface GameState {
   version: typeof GAME_STATE_VERSION;
@@ -32,9 +24,9 @@ export interface GameState {
   lives: number;
   dotsRemaining: number;
   totalDots: number;
-  dotsEatenThisRound: number;
+  dotsEatenThisLevel: number;
   eatenGhostsInEnergizer: number;
-  currLevelFrame: number;
+  lifeFrame: number;
   /** Sim frames since the game started; replays key their inputs on it. */
   tick: number;
   timers: {
@@ -53,7 +45,6 @@ export interface GameState {
   ghosts: Record<GhostType, GhostState>;
   house: HouseState;
   fruit: FruitItem | null;
-  scorePopups: ScorePopup[];
 }
 
 const TILE_CODES: Record<TileType, string> = {

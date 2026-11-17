@@ -49,7 +49,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     movement.updateGhostMovement(blinky, {
       blinky: blinky,
       pacman,
-      currLevelFrame: 0,
+      lifeFrame: 0,
       speedPct: 80,
       turboMultiplier: 1,
       maze,
@@ -63,7 +63,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     movement.updateGhostMovement(blinky, {
       blinky: blinky,
       pacman,
-      currLevelFrame: 1,
+      lifeFrame: 1,
       speedPct: 80,
       turboMultiplier: 1,
       maze,
@@ -77,7 +77,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
     movement.updateGhostMovement(blinky, {
       blinky: blinky,
       pacman,
-      currLevelFrame: 2,
+      lifeFrame: 2,
       speedPct: 80,
       turboMultiplier: 1,
       maze,
@@ -104,7 +104,7 @@ describe("Layer 1 Unit Tests: Tile-Aligned Movement & Asymmetric Reversals", () 
       movement.updateGhostMovement(inky, {
         blinky: blinky,
         pacman,
-        currLevelFrame: f,
+        lifeFrame: f,
         speedPct: 80,
         turboMultiplier: 1,
         maze,

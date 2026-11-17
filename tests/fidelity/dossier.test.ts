@@ -54,7 +54,7 @@ describe("Dossier · The Basics", () => {
   it("bonus fruit appears after 70 and 170 dots eaten", () => {
     const agent = playing();
     const e = agent.engine;
-    e.dotsEatenThisRound = 69;
+    e.dotsEatenThisLevel = 69;
     agent.scenario({ pacman: { col: 1, row: 8, dir: "RIGHT" } });
     e.maze.tiles[8][2] = "DOT";
     agent.runUntil((v) => v.pacman.col === 2, 30);
@@ -62,7 +62,7 @@ describe("Dossier · The Basics", () => {
 
     e.spawnFruit(); // reset to a fresh, unrelated fruit object...
     e.fruit!.active = false; // ...that is not showing
-    e.dotsEatenThisRound = 169;
+    e.dotsEatenThisLevel = 169;
     e.maze.tiles[8][3] = "DOT";
     agent.runUntil((v) => v.pacman.col === 3, 30);
     expect(e.fruit?.active).toBe(true);

@@ -18,7 +18,7 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     // Single step
     runner.loop.stepOnce();
     expect(preUpdateCalled).toBe(true);
-    expect(engine.currLevelFrame).toBe(1);
+    expect(engine.lifeFrame).toBe(1);
 
     // Start & Stop
     runner.start();

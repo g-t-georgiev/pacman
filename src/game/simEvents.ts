@@ -15,7 +15,8 @@ export type SimEvent =
   | { type: "DOT_EATEN" }
   | { type: "ENERGIZER_EATEN"; level: number }
   | { type: "GHOST_EATEN"; ghost: GhostType; points: number }
-  | { type: "FRUIT_EATEN"; points: number }
+  /** The fruit was eaten: its points and where it was (for the floating score). */
+  | { type: "FRUIT_EATEN"; points: number; x: number; y: number }
   | { type: "EXTRA_LIFE"; lives: number }
   /** The death animation starts (after the freeze), with its sound. */
   | { type: "PACMAN_DIED" }

@@ -293,6 +293,7 @@ export const ArcadeCabinet: React.FC = () => {
         runner.renderer = renderer;
         renderer.practice = runner.practice;
         renderer.latency = runner.latency;
+        renderer.popups = runner.popups;
       }
     }
 

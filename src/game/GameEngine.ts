@@ -9,7 +9,6 @@ import type {
   LevelSpeedConfig,
   MazeData,
   PlayState,
-  ScorePopup,
 } from "../types";
 import { getFrightenedDuration, getFruitDataPerLevel, getSpeedConfigForLevel } from "./levelTable";
 import { EXTRA_LIFE_SCORE, FRUIT_EXTRA_FRAMES, FRUIT_MIN_FRAMES, TILE_SIZE } from "./constants";
@@ -26,7 +25,6 @@ import {
   RoundSequencer,
 } from "./RoundSequencer";
 import { TimerController } from "../controllers/TimerController";
-import { AnimationController } from "../controllers/AnimationController";
 import { GhostAiController, getElroyStage } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { HouseController } from "../controllers/HouseController";
@@ -43,7 +41,6 @@ function copyGhostState(g: GhostState): GhostState {
   return {
     ...g,
     target: g.target && { ...g.target },
-    intermediateTarget: g.intermediateTarget && { ...g.intermediateTarget },
     lastDecisionTile: g.lastDecisionTile && { ...g.lastDecisionTile },
     lastOccupiedTile: g.lastOccupiedTile && { ...g.lastOccupiedTile },
   };
@@ -139,16 +136,15 @@ export default class GameEngine {
   public lives: number = 3;
   public dotsRemaining: number = 0;
   public totalDots: number = 0;
-  public dotsEatenThisRound: number = 0;
+  public dotsEatenThisLevel: number = 0;
   /** The one bonus life of a game has been given. */
   public extraLifeAwarded: boolean = false;
 
   public fruit: FruitItem | null = null;
-  public scorePopups: ScorePopup[] = [];
   public eatenGhostsInEnergizer: number = 0;
 
   /** Frames since the level (or the current life) started. Indexes the 16-frame speed masks. */
-  public currLevelFrame: number = 0;
+  public lifeFrame: number = 0;
   /** Sim frames since the game started (never reset mid-game). Replays key inputs on it. */
   public tick: number = 0;
 
@@ -164,7 +160,6 @@ export default class GameEngine {
 
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
-  public animationController: AnimationController = new AnimationController();
   public ghostAiController: GhostAiController = new GhostAiController(this.rules, this.prng);
   public movementController: MovementController = new MovementController();
   public houseController: HouseController = new HouseController();
@@ -337,7 +332,7 @@ export default class GameEngine {
         eatingFreezeFrames: this.pacman ? this.pacman.eatingFreezeFrames : 0,
       },
       level: this.level,
-      frame: this.currLevelFrame,
+      frame: this.lifeFrame,
       wave: currentMode,
       waveTimer: this.waveTimer,
       frightenedTimer: this.frightenedGlobalTimer,
@@ -390,11 +385,10 @@ export default class GameEngine {
     this.maze = this.ruleset.maze(this.level);
     this.timerController.resetTimers();
     this.houseController.onLevelStart();
-    this.currLevelFrame = 0;
+    this.lifeFrame = 0;
     this.prng.reset();
-    this.scorePopups = [];
     this.dotsRemaining = 0;
-    this.dotsEatenThisRound = 0;
+    this.dotsEatenThisLevel = 0;
     this.fruit = null;
 
     // Count dots and energizers
@@ -499,7 +493,7 @@ export default class GameEngine {
     if (this.paused || this.rewindIndex !== -1) {
       return;
     }
-    this.currLevelFrame++;
+    this.lifeFrame++;
     this.tick++;
     this.runFrame();
     if (!this.resimulating) this.replayLog.afterTick(this);
@@ -570,10 +564,9 @@ export default class GameEngine {
 
     this.timerController.resetTimers();
     this.houseController.onLifeLost();
-    this.currLevelFrame = 0;
+    this.lifeFrame = 0;
     this.prng.reset();
     this.resetActorPositions();
-    this.scorePopups = []; // a score still floating when Pac-Man died does not carry over (F26)
     this.enterPhase("READY");
   }
 
@@ -597,7 +590,6 @@ export default class GameEngine {
         (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
           const g = this.ghosts[type];
           g.frightened = false;
-          g.flashState = false;
         });
       }
     );
@@ -609,20 +601,12 @@ export default class GameEngine {
     this.updateGhostsMovement(speedConfig);
 
     // Update Visual Animations via AnimationController (Pac-Man's mouth follows his position)
-    this.animationController.updateGhostVisuals(
-      this.ghosts,
-      this.level,
-      this.frightenedGlobalTimer
-    );
 
     // Check Collisions
     this.checkCollisions();
 
     // Update Fruit
     this.updateFruit();
-
-    // Update Score Popups
-    this.updateScorePopups();
   }
 
   private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
@@ -633,7 +617,7 @@ export default class GameEngine {
     const { x, y } = this.pacman;
     this.movementController.updatePacmanMovement(
       this.pacman,
-      this.currLevelFrame,
+      this.lifeFrame,
       speedPct,
       turboMult,
       this.maze
@@ -657,7 +641,7 @@ export default class GameEngine {
       // Waiting in the house, or on the way out
       if (g.inHouse) {
         const pct = g.getSpeedPercentage(this.maze, speedConfig);
-        this.movementController.updateHouseGhost(g, this.currLevelFrame, pct, turboMult);
+        this.movementController.updateHouseGhost(g, this.lifeFrame, pct, turboMult);
       } else {
         this.updateActiveGhost(g, speedConfig);
       }
@@ -678,7 +662,7 @@ export default class GameEngine {
     this.movementController.updateGhostMovement(g, {
       blinky,
       pacman: this.pacman,
-      currLevelFrame: this.currLevelFrame,
+      lifeFrame: this.lifeFrame,
       speedPct,
       turboMultiplier: turboMult,
       maze: this.maze,
@@ -699,7 +683,7 @@ export default class GameEngine {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.addScore(10);
         this.dotsRemaining--;
-        this.dotsEatenThisRound++;
+        this.dotsEatenThisLevel++;
         this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
         this.houseController.onDotEaten(this.ghosts);
         this.emit({ type: "DOT_EATEN" });
@@ -709,7 +693,7 @@ export default class GameEngine {
         this.maze.tiles[pacRow][pacCol] = "EMPTY";
         this.addScore(50);
         this.dotsRemaining--;
-        this.dotsEatenThisRound++;
+        this.dotsEatenThisLevel++;
         this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
         this.houseController.onDotEaten(this.ghosts);
         this.eatenGhostsInEnergizer = 0;
@@ -734,7 +718,6 @@ export default class GameEngine {
       if (g.frightened) {
         g.location = "EYES";
         g.frightened = false;
-        g.flashState = false;
         g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
         g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
         g.target = this.ghostAiController.calculateTarget(
@@ -776,16 +759,7 @@ export default class GameEngine {
         const fruitX = fruitCol * TILE_SIZE + halfTile;
         const fruitY = fruitRow * TILE_SIZE + halfTile;
 
-        this.scorePopups.push({
-          id: `fruit_${this.currLevelFrame}`,
-          text: `${this.fruit.points}`,
-          x: fruitX,
-          y: fruitY,
-          life: 50,
-          color: "#ffcc00",
-        });
-
-        this.emit({ type: "FRUIT_EATEN", points: this.fruit.points });
+        this.emit({ type: "FRUIT_EATEN", points: this.fruit.points, x: fruitX, y: fruitY });
       }
     }
   }
@@ -805,13 +779,12 @@ export default class GameEngine {
 
       if (duration <= 0) return;
       g.frightened = true;
-      g.flashState = false;
     });
   }
 
   private checkFruitSpawn() {
     // Spawns fruit at 70 and 170 dots eaten
-    if (this.dotsEatenThisRound === 70 || this.dotsEatenThisRound === 170) {
+    if (this.dotsEatenThisLevel === 70 || this.dotsEatenThisLevel === 170) {
       this.spawnFruit();
     }
   }
@@ -846,18 +819,6 @@ export default class GameEngine {
     }
   }
 
-  private updateScorePopups() {
-    for (let i = this.scorePopups.length - 1; i >= 0; i--) {
-      const popup = this.scorePopups[i];
-      popup.life--;
-      popup.y -= 0.15; // float upward
-
-      if (popup.life <= 0) {
-        this.scorePopups.splice(i, 1);
-      }
-    }
-  }
-
   private checkLevelClear() {
     if (this.dotsRemaining <= 0) {
       this.fruit = null;
@@ -885,9 +846,9 @@ export default class GameEngine {
       lives: this.lives,
       dotsRemaining: this.dotsRemaining,
       totalDots: this.totalDots,
-      dotsEatenThisRound: this.dotsEatenThisRound,
+      dotsEatenThisLevel: this.dotsEatenThisLevel,
       eatenGhostsInEnergizer: this.eatenGhostsInEnergizer,
-      currLevelFrame: this.currLevelFrame,
+      lifeFrame: this.lifeFrame,
       tick: this.tick,
       timers: {
         waveIndex: this.timerController.waveIndex,
@@ -905,7 +866,6 @@ export default class GameEngine {
         dotCounters: { ...this.houseController.state.dotCounters },
       },
       fruit: this.fruit ? { ...this.fruit } : null,
-      scorePopups: this.scorePopups.map((p) => ({ ...p })),
     };
   }
 
@@ -932,9 +892,9 @@ export default class GameEngine {
     this.lives = state.lives;
     this.dotsRemaining = state.dotsRemaining;
     this.totalDots = state.totalDots;
-    this.dotsEatenThisRound = state.dotsEatenThisRound;
+    this.dotsEatenThisLevel = state.dotsEatenThisLevel;
     this.eatenGhostsInEnergizer = state.eatenGhostsInEnergizer;
-    this.currLevelFrame = state.currLevelFrame;
+    this.lifeFrame = state.lifeFrame;
     this.tick = state.tick;
     this.timerController.waveIndex = state.timers.waveIndex;
     this.timerController.waveTimer = state.timers.waveTimer;
@@ -949,7 +909,6 @@ export default class GameEngine {
     });
     this.houseController.state = { ...state.house, dotCounters: { ...state.house.dotCounters } };
     this.fruit = state.fruit ? { ...state.fruit } : null;
-    this.scorePopups = state.scorePopups.map((p) => ({ ...p }));
   }
 
   // --- Rewind (T7): keyframes from the replay log plus re-simulation ---

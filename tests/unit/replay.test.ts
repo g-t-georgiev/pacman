@@ -5,7 +5,7 @@ import { SimRandom } from "../../src/core/SimRandom";
 import { hashGameState } from "../../src/game/gameState";
 import { CHECKPOINT_TICKS, KEYFRAME_TICKS } from "../../src/game/replay";
 import type { Direction } from "../../src/types";
-import { playingInvincible as playing } from "../helpers";
+import { playingInvincible as playing, live } from "../helpers";
 import { faceBlinky } from "../helpers";
 
 /** Steps `frames` frames with random input every 20 frames. */
@@ -36,14 +36,13 @@ describe("Pause is invisible to the sim", () => {
 
 describe("Score popups (F26)", () => {
   it("are cleared when a life is lost", () => {
-    const agent = playing();
-    const e = agent.engine;
-    e.rules.invincible = false;
-    e.pacman.invincible = false;
-    e.scorePopups.push({ id: "fruit", text: "100", x: 112, y: 164, life: 50, color: "#fff" });
+    const { engine, runner, agent } = live(1);
+    runner.popups.onEvents([{ type: "FRUIT_EATEN", points: 100, x: 112, y: 164 }]);
+    expect(runner.popups.count).toBe(1);
     faceBlinky(agent);
-    agent.runUntil((v) => v.phase === "READY", 400);
-    expect(e.scorePopups).toEqual([]);
+    for (let i = 0; i < 400 && engine.phase !== "READY"; i++) runner.tick();
+    expect(engine.phase).toBe("READY");
+    expect(runner.popups.count).toBe(0);
   });
 });
 

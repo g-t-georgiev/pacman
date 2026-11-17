@@ -4,6 +4,7 @@ import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
 import { getElroyDotThresholds, getScatterChaseSchedule } from "../game/levelTable";
 import { setSetting, useEngineSettings } from "../hooks/useEngineSettings";
+import { clydeFlees } from "../controllers/GhostAiController";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -321,12 +322,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghosts.CLYDE.clydeWanderState === "CHASE"
+                !clydeFlees(engine.ghosts.CLYDE, engine.pacman)
                   ? "bg-emerald-900 text-emerald-300"
                   : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghosts.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
+              {clydeFlees(engine.ghosts.CLYDE, engine.pacman) ? "FLEEING" : "CHASING"}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">

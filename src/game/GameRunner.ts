@@ -7,6 +7,7 @@ import type { SimEvent } from "./simEvents";
 import { ReplayViewer } from "./ReplayViewer";
 import { PracticeTools } from "./practiceTools";
 import { LatencyMeter } from "./latencyMeter";
+import { ScorePopups } from "./scorePopups";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
@@ -25,6 +26,8 @@ export class GameRunner {
   public readonly practice = new PracticeTools();
   /** Input-to-screen latency readout (Phase 5). */
   public readonly latency = new LatencyMeter();
+  /** The floating fruit points (plan P2). */
+  public readonly popups = new ScorePopups();
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
@@ -130,6 +133,7 @@ export class GameRunner {
     if (this.engine.tick !== before) {
       this.practice.afterTick(this.engine);
       this.latency.afterTick();
+      this.popups.afterTick(this.engine);
     }
     this.onAfterTick?.();
     this.viewer.afterTick();
@@ -139,8 +143,8 @@ export class GameRunner {
     // In CI the same rules run in the soak tests, which require zero failures.
     const consoleOpen = this.engine.settings.showDiagnosticConsole;
     if (this.engine.phase === "PLAYING" && (import.meta.env.DEV || consoleOpen)) {
-      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
-      if (consoleOpen && this.engine.currLevelFrame % 4 === 0) {
+      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.lifeFrame);
+      if (consoleOpen && this.engine.lifeFrame % 4 === 0) {
         GameEvents.emit("DIAGNOSTICS_TICK", this.engine.getActorsDiagnostics());
       }
     }
@@ -152,6 +156,7 @@ export class GameRunner {
     for (const event of events) dispatchSimEvent(event);
     if (events.length > 0) {
       this.practice.onEvents(this.engine, events);
+      this.popups.onEvents(events);
       this.onEvents?.(events);
     }
     this.syncSiren();
@@ -163,6 +168,7 @@ export class GameRunner {
    * re-render on `UI_SYNC`.
    */
   public syncUi(): void {
+    this.popups.clear(); // the state changed from outside: no points float over it
     this.flush();
     const e = this.engine;
     GameEvents.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });

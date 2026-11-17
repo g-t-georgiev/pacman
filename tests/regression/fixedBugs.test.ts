@@ -115,10 +115,10 @@ describe("Fixed bugs (regression)", () => {
   it("2026-11-09: paused frames advanced the frame counter and shifted the speed masks", () => {
     const agent = playing(1);
     const e = agent.engine;
-    const frame = e.currLevelFrame;
+    const frame = e.lifeFrame;
     e.paused = true;
     for (let i = 0; i < 10; i++) e.update();
-    expect(e.currLevelFrame).toBe(frame);
+    expect(e.lifeFrame).toBe(frame);
   });
 
   it("2026-11-12: the eyes siren played over the eat-ghost sound during the eat pause", () => {

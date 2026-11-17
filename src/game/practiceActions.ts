@@ -27,7 +27,6 @@ export function sendGhostsHome(engine: GameEngine): void {
     g.nextDir = spawns[type].initialDir;
     g.location = spawns[type].inHouse ? "HOUSE" : "ACTIVE";
     g.frightened = false;
-    g.flashState = false;
     g.reversalPrimed = false;
     g.enteringHousePhase = "NONE";
     g.lastDecisionTile = undefined;

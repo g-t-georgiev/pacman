@@ -462,7 +462,7 @@ export class AgentDriver {
     }
     const pacTile = p.tileCoord;
     return {
-      frame: e.currLevelFrame,
+      frame: e.lifeFrame,
       playState: e.playState,
       pausedBy: this.runner?.pausedBy ?? (e.paused ? ["user"] : []),
       phase: e.phase,
@@ -522,7 +522,7 @@ export class AgentDriver {
       this.speedRecorder?.before();
       this.engine.update();
       this.speedRecorder?.after();
-      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
+      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.lifeFrame);
       this.collectHeadless();
     }
   }
@@ -543,7 +543,7 @@ export class AgentDriver {
           if (row[col] !== kind) continue;
           row[col] = "EMPTY";
           e.dotsRemaining--;
-          e.dotsEatenThisRound++;
+          e.dotsEatenThisLevel++;
         }
       }
     }
