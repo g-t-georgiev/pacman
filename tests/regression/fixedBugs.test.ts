@@ -3,6 +3,7 @@ import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
 import { AgentDriver } from "../../src/agent/AgentDriver";
 import { HouseController } from "../../src/controllers/HouseController";
+import { sendGhostsHome } from "../../src/game/practiceActions";
 import { faceBlinky, playing, randomInput } from "../helpers";
 
 /**
@@ -153,6 +154,15 @@ describe("Fixed bugs (regression)", () => {
     faceBlinky(agent);
     const { events } = agent.runUntil((v) => v.phase === "READY", 600);
     expect(events.map((ev) => ev.type)).not.toContain("INTRO");
+  });
+
+  it("2026-11-17: 'send ghosts home' edited the game without restarting the recording", () => {
+    const agent = playing(1);
+    agent.advance(240);
+    sendGhostsHome(agent.engine);
+    agent.advance(120);
+    // A clip across the edit would replay from before it: the recording must start at the edit
+    expect(agent.verifyReplay(agent.saveReplay()).matched).toBe(true);
   });
 
   it("2026-11-11: ghosts inside the house didn't turn blue on an energizer (F8)", () => {

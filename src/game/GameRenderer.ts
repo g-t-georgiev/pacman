@@ -207,7 +207,7 @@ export default class GameRenderer {
 
   private renderPlayer(engine: GameEngine) {
     const ctx = this.ctx;
-    const p = engine.pacmanState;
+    const p = engine.pacman;
     if (!p || !engine.pacmanVisible) return;
 
     ctx.save();
@@ -308,8 +308,8 @@ export default class GameRenderer {
     if (!engine.ghostsVisible) return;
     const { eatenGhost, eatenPoints } = engine.sequencer.state;
 
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+      const g = engine.ghosts[type];
 
       // While the action is paused after eating a ghost, its score shows in its place.
       if (type === eatenGhost) {
@@ -438,11 +438,11 @@ export default class GameRenderer {
     };
     const showCues = engine.settings.learnVisualsEnabled;
 
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
       // Check if visual cues are enabled for this specific ghost
       if (activeVisuals[type] === false) return;
 
-      const g = engine.ghostStates[type];
+      const g = engine.ghosts[type];
       const target = g.target;
       if (g.inHouse || !target) return; // frightened ghosts have no target
 
@@ -494,7 +494,7 @@ export default class GameRenderer {
       if (type === "INKY" && g.intermediateTarget && showCues) {
         const pivotX = g.intermediateTarget.col * TILE_SIZE + TILE_SIZE / 2;
         const pivotY = g.intermediateTarget.row * TILE_SIZE + TILE_SIZE / 2;
-        const blinky = engine.ghostStates.BLINKY;
+        const blinky = engine.ghosts.BLINKY;
 
         // Draw line from Blinky to Intermediate Pivot
         ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
@@ -639,8 +639,8 @@ export default class GameRenderer {
     const ctx = this.ctx;
     const maze = engine.maze;
 
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+      const g = engine.ghosts[type];
       const target = g.target;
       if (g.inHouse || !target) return; // a frightened ghost's path is random
 
@@ -722,10 +722,10 @@ export default class GameRenderer {
    */
   private renderPracticeTargetLines(engine: GameEngine) {
     const ctx = this.ctx;
-    const pacman = engine.pacmanState;
+    const pacman = engine.pacman;
 
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
+    (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
+      const g = engine.ghosts[type];
       const target = g.target;
       if (g.inHouse || !target) return;
 

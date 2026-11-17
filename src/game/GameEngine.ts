@@ -7,7 +7,6 @@ import type {
   GhostType,
   LevelSpeedConfig,
   MazeData,
-  PacmanState,
   PlayState,
   ScorePopup,
 } from "../types";
@@ -174,34 +173,6 @@ export default class GameEngine {
   // Actors
   public pacman!: Pacman;
   public ghosts!: Record<GhostType, Ghost>;
-
-  // Legacy/Adapter Getters and Setters for complete backward compatibility
-  public get pacmanState(): PacmanState {
-    return this.pacman.toState();
-  }
-  public set pacmanState(val: PacmanState) {
-    if (this.pacman && val) {
-      this.pacman.restoreFromState(val);
-    }
-  }
-
-  public get ghostStates(): Record<GhostType, GhostState> {
-    return {
-      BLINKY: this.ghosts.BLINKY.toState(),
-      PINKY: this.ghosts.PINKY.toState(),
-      INKY: this.ghosts.INKY.toState(),
-      CLYDE: this.ghosts.CLYDE.toState(),
-    };
-  }
-  public set ghostStates(val: Record<GhostType, GhostState>) {
-    if (this.ghosts && val) {
-      (Object.keys(val) as GhostType[]).forEach((type) => {
-        if (this.ghosts[type] && val[type]) {
-          this.ghosts[type].restoreFromState(val[type]);
-        }
-      });
-    }
-  }
 
   public get waveIndex(): number {
     return this.timerController.waveIndex;
@@ -1059,30 +1030,5 @@ export default class GameEngine {
     // high-score table is only written at game over).
     this.rewindIndex = tick - this.replayLog.oldestTick;
     this.emit({ type: "REWOUND", playState: PHASE_PLAY_STATE[this.sequencer.phase] });
-  }
-
-  public resetGhostsToHouse() {
-    const gSpawns = this.maze.ghostSpawns;
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      const g = this.ghosts[type];
-      const pos = seamPx(gSpawns[type].candidates);
-      g.x = pos.x;
-      g.y = pos.y;
-      g.dir = gSpawns[type].initialDir;
-      g.nextDir = gSpawns[type].initialDir;
-      g.location = gSpawns[type].inHouse ? "HOUSE" : "ACTIVE";
-      g.frightened = false;
-      g.flashState = false;
-      g.reversalPrimed = false;
-      g.enteringHousePhase = "NONE";
-      g.lastDecisionTile = undefined;
-    });
-  }
-
-  public toggleInvincible() {
-    this.settings.invincible = !this.settings.invincible;
-    if (this.pacman) {
-      this.pacman.invincible = this.settings.invincible;
-    }
   }
 }

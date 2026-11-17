@@ -713,7 +713,7 @@ export const ArcadeCabinet: React.FC = () => {
           <div className="mt-3">
             <VirtualDpad
               onDirection={(dir: Direction) => engineRef.current?.setInputDirection(dir)}
-              currentDir={engineRef.current.pacmanState.dir}
+              currentDir={engineRef.current.pacman.dir}
             />
           </div>
         )}

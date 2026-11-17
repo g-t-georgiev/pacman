@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type GameEngine from "../game/GameEngine";
+import { sendGhostsHome, setInvincible as applyInvincible } from "../game/practiceActions";
 import type { PracticeTools } from "../game/practiceTools";
 
 interface PracticePanelProps {
@@ -51,7 +52,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   };
 
   const handleToggleInvincible = () => {
-    engine.toggleInvincible();
+    applyInvincible(engine, !engine.settings.invincible);
     setInvincible(engine.settings.invincible);
     onUpdate();
   };
@@ -539,7 +540,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
 
         <button
           onClick={() => {
-            engine.resetGhostsToHouse();
+            sendGhostsHome(engine);
             onUpdate();
           }}
           className="flex-1 px-2 py-1.5 rounded bg-red-900/60 border border-red-700/60 hover:bg-red-800/80 text-red-200 font-semibold text-center"

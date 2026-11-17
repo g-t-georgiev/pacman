@@ -290,7 +290,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
           </p>
           <div className="text-[10px] text-red-300">
-            Target: {formatTarget(engine.ghostStates.BLINKY.target)}
+            Target: {formatTarget(engine.ghosts.BLINKY.target)}
           </div>
         </div>
 
@@ -309,7 +309,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             (arcade overflow bug)!
           </p>
           <div className="text-[10px] text-pink-300">
-            Target: {formatTarget(engine.ghostStates.PINKY.target)}
+            Target: {formatTarget(engine.ghosts.PINKY.target)}
           </div>
         </div>
 
@@ -328,7 +328,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             to trap player!
           </p>
           <div className="text-[10px] text-cyan-300">
-            Target: {formatTarget(engine.ghostStates.INKY.target)}
+            Target: {formatTarget(engine.ghosts.INKY.target)}
           </div>
         </div>
 
@@ -342,12 +342,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghostStates.CLYDE.clydeWanderState === "CHASE"
+                engine.ghosts.CLYDE.clydeWanderState === "CHASE"
                   ? "bg-emerald-900 text-emerald-300"
                   : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghostStates.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
+              {engine.ghosts.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 leading-tight">
@@ -355,7 +355,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             always retreats to bottom-left!
           </p>
           <div className="text-[10px] text-amber-300">
-            Target: {formatTarget(engine.ghostStates.CLYDE.target)}
+            Target: {formatTarget(engine.ghosts.CLYDE.target)}
           </div>
         </div>
       </div>
