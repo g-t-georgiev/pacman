@@ -14,6 +14,7 @@
     "test": "vp test",
     "golden:update": "vpx ./scripts/update-golden.ts",
     "golden:check": "vpx ./scripts/check-golden.ts",
+    "golden:trace": "vpx ./scripts/play-trace.ts",
     "test:regression": "vp test tests/regression",
     "prepare": "vp config"
   },
