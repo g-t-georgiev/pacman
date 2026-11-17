@@ -5,6 +5,7 @@ import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { type Replay, playReplay } from "../../src/game/replay";
 import { GOLDEN_SCENARIOS } from "../golden/scenarios";
+import { coverageOf } from "../golden/coverage";
 
 /**
  * Every stored golden replay, by file name without the extension. Read from disk at run time,
@@ -40,5 +41,13 @@ describe("Golden replays", () => {
         " (if intended: vp run golden:update)"
     ).toBeNull();
     expect(result.ticks).toBe(replay.endTick - replay.start.tick);
+  });
+
+  // T1: a golden must keep exercising what it claims (re-recording could quietly lose it)
+  it.each(GOLDEN_SCENARIOS.map((s) => [s.name, s.covers.join(", ")]))("%s covers %s", (name) => {
+    const scenario = GOLDEN_SCENARIOS.find((s) => s.name === name)!;
+    const seen = coverageOf(goldens.get(name)!);
+    const missing = scenario.covers.filter((c) => !seen.has(c));
+    expect(missing, `${name} no longer reaches: ${missing.join(", ")}`).toEqual([]);
   });
 });
