@@ -163,21 +163,35 @@ export interface ScorePopup {
   color: string;
 }
 
-export interface GameSettings {
+/**
+ * The rules a tick follows (plan P1): everything here changes what the simulation does, so
+ * replays record these (and only these). Kept in `engine.rules`.
+ */
+export interface RuleSettings {
+  /** The arcade's targeting overflow for Pinky and Inky when Pac-Man faces up (F15). */
+  emulateRomQuirks: boolean;
+  /** Pac-Man can't be caught (practice). */
+  invincible: boolean;
+  /** Turbo (practice): actors move faster. */
   turbo: boolean;
-  turboSpeedMultiplier: number; // e.g. 1.6
+  turboSpeedMultiplier: number;
+}
+
+/**
+ * Everything that doesn't change what a tick does: display, sound, timing of the real-time loop,
+ * input feel, Learn/Practice/debug views. Kept in `engine.settings`; never recorded in replays.
+ */
+export interface GameSettings {
   learnVisualsEnabled: boolean; // persist visual cues on map even when Learn panel is closed
   activeGhostVisuals: Record<GhostType, boolean>; // individual ghost visual cue toggles
   showGrid: boolean;
   showGhostPaths: boolean;
   showTargetLines: boolean;
-  invincible: boolean;
   gameSpeed: number; // 0.1 to 2.0
   /** Run the real-time loop at the arcade's 60.606 Hz instead of 60 (F5). */
   arcadeRefreshRate: boolean;
   soundEnabled: boolean;
   crtFilter: boolean;
-  emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
   /**
    * Joystick feel: releasing a direction forgets a turn queued with it that hasn't been taken
    * yet (keyboard and gamepad). Off: a queued turn waits until the next junction (Decision 5).

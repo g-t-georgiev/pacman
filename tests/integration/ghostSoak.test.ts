@@ -15,7 +15,7 @@ describe("Ghost movement soak", () => {
   it.each([1, 5])("level %i: 20k frames of random play", (level) => {
     const engine = new GameEngine("PACMAN", 0);
     const agent = new AgentDriver(engine);
-    engine.settings.invincible = true;
+    engine.rules.invincible = true;
     agent.scenario({ level, playState: "PLAYING" });
     engine.pacman.invincible = true;
 

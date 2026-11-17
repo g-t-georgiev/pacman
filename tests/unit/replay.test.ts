@@ -38,7 +38,7 @@ describe("Score popups (F26)", () => {
   it("are cleared when a life is lost", () => {
     const agent = playing();
     const e = agent.engine;
-    e.settings.invincible = false;
+    e.rules.invincible = false;
     e.pacman.invincible = false;
     e.scorePopups.push({ id: "fruit", text: "100", x: 112, y: 164, life: 50, color: "#fff" });
     faceBlinky(agent);
@@ -110,7 +110,7 @@ describe("Replay log (T4)", () => {
   it("starts over when a sim setting changes, so the recording stays replayable", () => {
     const agent = playing();
     playRandomly(agent, 700);
-    agent.engine.settings.emulateRomQuirks = false;
+    agent.engine.rules.emulateRomQuirks = false;
     agent.advance(1);
     const changedAt = agent.engine.tick;
     playRandomly(agent, 300);

@@ -20,7 +20,7 @@ export function playing(level = 1, mode: GameMode = "PACMAN"): AgentDriver {
 /** Like `playing`, with invincibility on and the recording restarted with it (replay tests). */
 export function playingInvincible(level = 1): AgentDriver {
   const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.engine.settings.invincible = true;
+  agent.engine.rules.invincible = true;
   agent.scenario({ level, playState: "PLAYING" });
   agent.engine.pacman.invincible = true;
   agent.scenario({}); // restart the recording with invincibility in place

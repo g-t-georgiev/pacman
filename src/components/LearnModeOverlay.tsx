@@ -347,12 +347,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
           </span>
           <span
             className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-              engine.settings.emulateRomQuirks
+              engine.rules.emulateRomQuirks
                 ? "bg-purple-900 text-purple-200 border border-purple-700"
                 : "bg-neutral-800 text-neutral-400"
             }`}
           >
-            {engine.settings.emulateRomQuirks ? "ON (ARCADE RULES)" : "OFF (MODERN RULES)"}
+            {engine.rules.emulateRomQuirks ? "ON (ARCADE RULES)" : "OFF (MODERN RULES)"}
           </span>
         </div>
         <p className="text-[10px] text-neutral-400 leading-tight">

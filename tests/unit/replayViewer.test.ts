@@ -18,7 +18,7 @@ function played(frames: number) {
   const engine = new GameEngine("PACMAN", 0);
   const runner = new GameRunner(engine);
   const agent = new AgentDriver(engine, runner);
-  engine.settings.invincible = true;
+  engine.rules.invincible = true;
   agent.scenario({ level: 2, playState: "PLAYING" });
   engine.pacman.invincible = true;
   agent.scenario({});

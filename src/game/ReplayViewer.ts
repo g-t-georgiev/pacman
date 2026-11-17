@@ -1,4 +1,4 @@
-import type { Direction, GameSettings } from "../types";
+import type { Direction, GameSettings, RuleSettings } from "../types";
 import { type GameState, hashGameState } from "./gameState";
 import {
   type Replay,
@@ -38,6 +38,7 @@ export class ReplayViewer {
     state: GameState;
     log: ReplayLog;
     settings: GameSettings;
+    rules: RuleSettings;
   } | null = null;
   private divergedAt: number | null = null;
 
@@ -66,6 +67,7 @@ export class ReplayViewer {
         state: engine.getState(),
         log: engine.replayLog,
         settings: { ...engine.settings },
+        rules: { ...engine.rules },
       };
     }
     this.replay = replay;
@@ -135,9 +137,10 @@ export class ReplayViewer {
     this.saved = null;
     engine.watchingReplay = false;
     Object.assign(engine.settings, saved.settings);
+    Object.assign(engine.rules, saved.rules);
     engine.setState(saved.state);
     engine.replayLog = saved.log; // setState started a new recording: keep the old one
-    engine.pacman.invincible = saved.settings.invincible;
+    engine.pacman.invincible = saved.rules.invincible;
     this.runner.setPaused("replay", false);
     this.runner.setPaused("user", true); // nothing hits the player the moment they return
     engine.drainEvents();

@@ -139,7 +139,7 @@ describe("Frightened ghosts have no target (F18)", () => {
 describe("ROM quirks (F15)", () => {
   it("are on by default, as in the arcade", () => {
     const engine = new GameEngine("PACMAN", 0);
-    expect(engine.settings.emulateRomQuirks).toBe(true);
+    expect(engine.rules.emulateRomQuirks).toBe(true);
     expect(engine.ghostAiController.emulateRomQuirks).toBe(true);
   });
 });

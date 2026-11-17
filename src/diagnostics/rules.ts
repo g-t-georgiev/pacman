@@ -128,7 +128,7 @@ export function createDefaultDiagnosticRules(): DiagnosticRule[] {
           };
           if (
             (g.mode === "CHASE" || g.mode === "SCATTER") &&
-            !engine.settings.invincible &&
+            !engine.rules.invincible &&
             !engine.pacman.invincible
           ) {
             if (pacTile.col === gTile.col && pacTile.row === gTile.row) {

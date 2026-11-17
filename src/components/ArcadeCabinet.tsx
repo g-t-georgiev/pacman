@@ -557,8 +557,8 @@ export const ArcadeCabinet: React.FC = () => {
 
   const handleToggleTurbo = () => {
     if (!engineRef.current) return;
-    const nextTurbo = !engineRef.current.settings.turbo;
-    engineRef.current.settings.turbo = nextTurbo;
+    const nextTurbo = !engineRef.current.rules.turbo;
+    engineRef.current.rules.turbo = nextTurbo;
     setTurbo(nextTurbo);
   };
 

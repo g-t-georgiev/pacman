@@ -188,7 +188,7 @@ describe("Dossier · Maze Logic 101", () => {
   it("in scatter mode Blinky ends up circling the block below his top-right target", () => {
     const agent = playing();
     const e = agent.engine;
-    e.settings.invincible = true;
+    e.rules.invincible = true;
     e.pacman.invincible = true;
     const visited = new Set<string>();
     for (let f = 0; f < 1500; f++) {
@@ -228,7 +228,7 @@ describe("Dossier · Meet the Ghosts", () => {
     // Pac-Man stays still against the wall in the top-left corner (not Clyde's lower-left one).
     const agent = playing();
     const e = agent.engine;
-    e.settings.invincible = true;
+    e.rules.invincible = true;
     e.pacman.invincible = true;
     agent.scenario({
       waveIndex: 1,
@@ -260,7 +260,7 @@ describe("Dossier · Home Sweet Home", () => {
     const agent = playing();
     const e = agent.engine;
     const house = e.houseController;
-    e.settings.invincible = true; // no ghost may end the round while we wait
+    e.rules.invincible = true; // no ghost may end the round while we wait
     e.pacman.invincible = true;
     // After a life was lost: the global counter runs, and has passed 32 with Clyde outside
     house.state.globalCounterActive = true;

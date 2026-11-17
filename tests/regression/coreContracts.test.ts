@@ -57,6 +57,15 @@ describe("Regression: determinism and saved state", () => {
     expect(agent.hash()).toBe(byTick.get(e.tick));
   });
 
+  it("replays record every rule and nothing else; no setting is both (P1)", () => {
+    const agent = playing(1);
+    agent.advance(10);
+    const recorded = Object.keys(agent.saveReplay().settings).sort();
+    expect(recorded).toEqual(Object.keys(agent.engine.rules).sort());
+    const both = Object.keys(agent.engine.settings).filter((k) => k in agent.engine.rules);
+    expect(both).toEqual([]);
+  });
+
   it("a held game changes nothing, not even its frame counters", () => {
     const agent = playing(1);
     const e = agent.engine;

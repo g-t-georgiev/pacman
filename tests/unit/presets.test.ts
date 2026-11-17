@@ -7,10 +7,12 @@ import { RULES_PRESETS, applyRulesPreset } from "../../src/game/presets";
 describe("Rules presets (Phase 5)", () => {
   it("Arcade is the default; Modern drops the quirk and runs at 60 Hz", () => {
     const e = new GameEngine("PACMAN", 0);
-    const { emulateRomQuirks, arcadeRefreshRate } = e.settings;
-    expect({ emulateRomQuirks, arcadeRefreshRate }).toEqual(RULES_PRESETS.ARCADE.settings);
+    expect(e.rules.emulateRomQuirks).toBe(RULES_PRESETS.ARCADE.settings.rules.emulateRomQuirks);
+    expect(e.settings.arcadeRefreshRate).toBe(
+      RULES_PRESETS.ARCADE.settings.settings.arcadeRefreshRate
+    );
     applyRulesPreset(e, "MODERN");
-    expect(e.settings.emulateRomQuirks).toBe(false);
+    expect(e.rules.emulateRomQuirks).toBe(false);
     expect(e.ghostAiController.emulateRomQuirks).toBe(false);
     expect(new GameRunner(e).ticksPerSecond).toBe(60);
     applyRulesPreset(e, "ARCADE");

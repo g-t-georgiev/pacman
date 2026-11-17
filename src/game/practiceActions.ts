@@ -10,7 +10,7 @@ import { seamPx } from "./mazes";
 
 /** Pac-Man can't be caught (a rule setting: recorded in replays). */
 export function setInvincible(engine: GameEngine, on: boolean): void {
-  engine.settings.invincible = on;
+  engine.rules.invincible = on;
   engine.pacman.invincible = on;
   engine.replayLog.reset(engine);
 }

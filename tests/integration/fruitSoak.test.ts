@@ -17,7 +17,7 @@ describe("Bonus fruit in long play", () => {
   ])("invincible=%s seed=%i", (invincible, seed) => {
     const engine = new GameEngine("PACMAN", 0);
     const agent = new AgentDriver(engine);
-    engine.settings.invincible = invincible;
+    engine.rules.invincible = invincible;
     agent.scenario({ level: 1, playState: "PLAYING" });
     engine.pacman.invincible = invincible;
     const rng = new SimRandom();

@@ -3,6 +3,7 @@ import type {
   FruitItem,
   GameMode,
   GameSettings,
+  RuleSettings,
   GhostState,
   GhostType,
   LevelSpeedConfig,
@@ -89,9 +90,16 @@ export default class GameEngine {
     }
   }
 
-  public readonly settings: GameSettings = {
+  /** The rules a tick follows (plan P1); recorded in replays. */
+  public readonly rules: RuleSettings = {
+    emulateRomQuirks: true,
+    invincible: false,
     turbo: false,
     turboSpeedMultiplier: 1.6,
+  };
+
+  /** Display, sound, loop timing, input feel and views (plan P1); never recorded. */
+  public readonly settings: GameSettings = {
     learnVisualsEnabled: false,
     activeGhostVisuals: {
       BLINKY: true,
@@ -102,7 +110,6 @@ export default class GameEngine {
     showGrid: false,
     showGhostPaths: false,
     showTargetLines: false,
-    invincible: false,
     gameSpeed: 1.0,
     arcadeRefreshRate: true,
     releaseClearsBuffer: false,
@@ -110,8 +117,6 @@ export default class GameEngine {
     colorblindPalette: false,
     soundEnabled: true,
     crtFilter: false,
-    /** The arcade's targeting overflow for Pinky and Inky when Pac-Man faces up (F15). Off = "fixed AI". */
-    emulateRomQuirks: true,
     showDiagnosticConsole: false, // In-game testing & diagnostics console
     debugOverlay: false,
     debugLayers: {
@@ -160,7 +165,7 @@ export default class GameEngine {
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
   public animationController: AnimationController = new AnimationController();
-  public ghostAiController: GhostAiController = new GhostAiController(this.settings, this.prng);
+  public ghostAiController: GhostAiController = new GhostAiController(this.rules, this.prng);
   public movementController: MovementController = new MovementController();
   public houseController: HouseController = new HouseController();
   public diagnosticController: DiagnosticController = new DiagnosticController();
@@ -421,7 +426,7 @@ export default class GameEngine {
     const pacPos = seamPx(this.maze.pacmanSpawn.candidates);
     this.pacman = new Pacman(pacPos.x, pacPos.y, this.maze.pacmanSpawn.dir);
     this.pacman.speed = speedConfig.pacmanNormal;
-    this.pacman.invincible = this.settings.invincible;
+    this.pacman.invincible = this.rules.invincible;
 
     // Ghosts initial spawn on designated candidate integer tiles
     const gSpawns = this.maze.ghostSpawns;
@@ -623,7 +628,7 @@ export default class GameEngine {
   private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
     const isFrightened = this.frightenedGlobalTimer > 0;
     const speedPct = this.pacman.getSpeedPercentage(this.level, isFrightened, speedConfig);
-    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
+    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
 
     const { x, y } = this.pacman;
     this.movementController.updatePacmanMovement(
@@ -638,7 +643,7 @@ export default class GameEngine {
 
   private updateGhostsMovement(speedConfig: LevelSpeedConfig) {
     const blinky = this.ghosts.BLINKY;
-    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
+    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
 
     // Release ghosts from the house (dot counters, global counter, idle timer)
     this.houseController.update(this.ghosts, this.level);
@@ -662,7 +667,7 @@ export default class GameEngine {
   /** Targeting and movement for a ghost outside the house (eyes included). */
   private updateActiveGhost(g: Ghost, speedConfig: LevelSpeedConfig): void {
     const blinky = this.ghosts.BLINKY;
-    const turboMult = this.settings.turbo ? this.settings.turboSpeedMultiplier : 1.0;
+    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
 
     // Target tile (with the optional 1980 ROM quirks)
     g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
@@ -746,7 +751,7 @@ export default class GameEngine {
         this.sequencer.state.eatenGhost = g.type;
         this.sequencer.state.eatenPoints = points;
         this.emit({ type: "GHOST_EATEN", ghost: g.type, points });
-      } else if (!this.settings.invincible && !this.pacman.invincible) {
+      } else if (!this.rules.invincible && !this.pacman.invincible) {
         // Everything freezes with the ghosts visible, then the death animation starts (F21).
         this.enterPhase("DEATH_FREEZE");
         if (this.fruit) {

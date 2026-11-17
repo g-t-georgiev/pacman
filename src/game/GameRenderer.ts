@@ -227,7 +227,7 @@ export default class GameRenderer {
     }
 
     // Invincibility shield effect
-    if (engine.settings.invincible) {
+    if (engine.rules.invincible) {
       ctx.strokeStyle = `hsl(${(Date.now() / 5) % 360}, 100%, 70%)`;
       ctx.lineWidth = 2;
       ctx.beginPath();

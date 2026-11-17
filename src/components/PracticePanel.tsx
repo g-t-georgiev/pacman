@@ -35,12 +35,12 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const settings = useEngineSettings(engine);
   const {
     gameSpeed: speed,
-    invincible,
     showGhostPaths,
     showTargetLines,
     showGrid,
     showDiagnosticConsole,
   } = settings;
+  const invincible = engine.rules.invincible;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
 
@@ -53,7 +53,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   };
 
   const handleToggleInvincible = () => {
-    applyInvincible(engine, !engine.settings.invincible);
+    applyInvincible(engine, !engine.rules.invincible);
     settingsChanged();
     onUpdate();
   };

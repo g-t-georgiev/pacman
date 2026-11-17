@@ -12,7 +12,7 @@ import type { Direction } from "../../src/types";
 function play(level: number, frames: number): AgentDriver {
   const engine = new GameEngine("PACMAN", 0);
   const agent = new AgentDriver(engine);
-  engine.settings.invincible = true;
+  engine.rules.invincible = true;
   agent.scenario({ level, playState: "PLAYING" });
   engine.pacman.invincible = true;
   agent.recordSpeeds();

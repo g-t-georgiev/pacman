@@ -33,7 +33,7 @@ function randomInput(seed: number, every: number): (tick: number) => Direction |
 function newGame(level: number, invincible: boolean): GameEngine {
   const engine = new GameEngine("PACMAN", 0);
   engine.initGame("PACMAN", level);
-  engine.settings.invincible = invincible;
+  engine.rules.invincible = invincible;
   engine.pacman.invincible = invincible;
   return engine;
 }
