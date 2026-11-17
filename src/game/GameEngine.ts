@@ -1,3 +1,4 @@
+import { Timeline } from "./timeline";
 import type {
   Direction,
   FruitItem,
@@ -157,6 +158,8 @@ export default class GameEngine {
   public simRandom: SimRandom = new SimRandom();
   /** Rolling input recording (keyframes, inputs, hashes) for replays and bug reports (T4). */
   public replayLog: ReplayLog = new ReplayLog();
+  /** Rewinding and scrubbing through the recording (plan P4). */
+  public readonly timeline: Timeline = new Timeline(this);
 
   // Modular Controllers
   public timerController: TimerController = new TimerController(1);
@@ -914,46 +917,8 @@ export default class GameEngine {
   // --- Rewind (T7): keyframes from the replay log plus re-simulation ---
 
   /** How many frames rewind can reach: the oldest keyframe up to the newest recorded frame. */
-  public getRewindBufferLength(): number {
-    return this.replayLog.headTick - this.replayLog.oldestTick + 1;
-  }
-
-  /** Shows frame `frameIndex` of the rewindable range (0 = oldest) and holds there. */
-  public scrubToFrame(frameIndex: number) {
-    const length = this.getRewindBufferLength();
-    if (frameIndex < 0 || frameIndex >= length) return;
-    this.seekTick(this.replayLog.oldestTick + frameIndex);
-  }
-
-  /** Steps back `seconds` from the frame shown now (the live frame, or the scrubbed one). */
-  public rewindSeconds(seconds: number) {
-    const from = this.rewindIndex !== -1 ? this.tick : this.replayLog.headTick;
-    const target = Math.max(this.replayLog.oldestTick, from - Math.round(seconds * 60));
-    this.seekTick(target);
-  }
-
-  /**
-   * Steps back to `seconds` before Pac-Man last died: past the death sequence (freeze, animation,
-   * game over) to the last frame he was alive, then `seconds` more. For a quick retry after a
-   * death or a game over, where a plain 2 s rewind would land inside the death animation.
-   */
-  public rewindBeforeDeath(seconds: number) {
-    const oldest = this.replayLog.oldestTick;
-    let target = this.rewindIndex !== -1 ? this.tick : this.replayLog.headTick;
-    this.seekTick(target);
-    const alive = () => {
-      const phase = this.sequencer.phase;
-      return phase === "PLAYING" || phase === "GHOST_EATEN_PAUSE" || phase === "READY";
-    };
-    while (!alive() && target > oldest) {
-      target = Math.max(oldest, target - 30);
-      this.seekTick(target);
-    }
-    this.seekTick(Math.max(oldest, target - Math.round(seconds * 60)));
-  }
-
-  /** Plays on from the scrubbed frame. Everything recorded after it is forgotten. */
-  public resumeFromScrub() {
+  /** Plays on from the frame shown (scrubbing): everything recorded after it is forgotten. */
+  public leaveScrub() {
     if (this.rewindIndex !== -1) {
       this.replayLog.truncate(this.tick);
       this.rewindIndex = -1;
@@ -963,10 +928,11 @@ export default class GameEngine {
   }
 
   /**
-   * Rebuilds frame `tick`: loads the newest keyframe at or before it and re-runs the recorded
-   * inputs up to it (at most a second of frames). The result is exact: the sim is deterministic.
+   * Shows recorded frame `tick` and holds there (scrubbing): loads the newest keyframe at or
+   * before it and re-runs the recorded inputs up to it (at most a second of frames), silently.
+   * The result is exact: the sim is deterministic. Which frame to show is `timeline`'s job.
    */
-  private seekTick(tick: number): void {
+  public showRecordedFrame(tick: number): void {
     const { start, inputs } = this.replayLog.pathTo(tick);
     const outbox = this.outbox;
 

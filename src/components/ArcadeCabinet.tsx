@@ -110,7 +110,7 @@ export const ArcadeCabinet: React.FC = () => {
 
   /** Closes the Lab. A rewound game plays on from the frame shown, never stays held. */
   const closeLab = () => {
-    engineRef.current?.resumeFromScrub();
+    engineRef.current?.timeline.resume();
     setLab(null);
   };
 
@@ -429,18 +429,18 @@ export const ArcadeCabinet: React.FC = () => {
         case "R":
           if (labRef.current !== null) {
             // In the Lab: scrub back 2 s; "Resume from Here" (or closing the Lab) plays on
-            engine.rewindSeconds(2);
+            engine.timeline.rewindSeconds(2);
             setUiTick((t) => t + 1);
           } else if (anyPanelOpenRef.current) {
             // E.g. the Restart panel after a game over: back to 2 s before the fatal collision,
             // then hold there (your pause) with the board in view; press Space when ready
             // The round phase, not playState: an open panel makes playState read "PAUSED"
             if (engine.phase === "GAME_OVER" || engine.phase.startsWith("DEATH_")) {
-              engine.rewindBeforeDeath(2);
+              engine.timeline.rewindBeforeDeath(2);
             } else {
-              engine.rewindSeconds(2);
+              engine.timeline.rewindSeconds(2);
             }
-            engine.resumeFromScrub();
+            engine.timeline.resume();
             runnerRef.current?.setPaused("user", true);
             setUiTick((t) => t + 1);
           }

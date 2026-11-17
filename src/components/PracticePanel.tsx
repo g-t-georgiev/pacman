@@ -44,7 +44,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
 
-  const bufferLen = engine.getRewindBufferLength();
+  const bufferLen = engine.timeline.length;
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
 
   const handleSpeedChange = (val: number) => {
@@ -79,17 +79,17 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   };
 
   const handleRewindSeconds = (secs: number) => {
-    engine.rewindSeconds(secs);
+    engine.timeline.rewindSeconds(secs);
     onUpdate();
   };
 
   const handleScrub = (idx: number) => {
-    engine.scrubToFrame(idx);
+    engine.timeline.scrubTo(idx);
     onUpdate();
   };
 
   const handleResume = () => {
-    engine.resumeFromScrub();
+    engine.timeline.resume();
     onUpdate();
   };
 

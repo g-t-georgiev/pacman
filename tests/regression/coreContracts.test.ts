@@ -53,7 +53,7 @@ describe("Regression: determinism and saved state", () => {
       e.update();
       byTick.set(e.tick, agent.hash());
     }
-    e.rewindSeconds(3);
+    e.timeline.rewindSeconds(3);
     expect(agent.hash()).toBe(byTick.get(e.tick));
   });
 

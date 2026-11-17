@@ -39,8 +39,8 @@ describe("Practice tools (Phase 5)", () => {
   it("a rewind forgets the frames that no longer happened", () => {
     const { engine, runner } = live(4);
     for (let i = 0; i < 180; i++) runner.tick();
-    engine.rewindSeconds(1);
-    engine.resumeFromScrub();
+    engine.timeline.rewindSeconds(1);
+    engine.timeline.resume();
     runner.tick();
     expect(runner.practice.savePattern(engine)).toBe(engine.lifeFrame + 1);
   });

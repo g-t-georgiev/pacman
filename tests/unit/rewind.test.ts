@@ -33,17 +33,17 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     const agent = playingInvincible(2);
     const e = agent.engine;
     const hashes = playRecording(agent, 900, true);
-    const oldest = e.tick - e.getRewindBufferLength() + 1;
+    const oldest = e.tick - e.timeline.length + 1;
 
     for (const back of [1, 59, 60, 61, 333, 899]) {
       const tick = e.replayLog.headTick - back;
-      e.scrubToFrame(tick - oldest);
+      e.timeline.scrubTo(tick - oldest);
       expect(e.tick).toBe(tick);
       expect(agent.hash(), `${back} frames back`).toBe(hashes.get(tick));
     }
 
     // ...and forward again, all the way to the live frame
-    e.scrubToFrame(e.getRewindBufferLength() - 1);
+    e.timeline.scrubTo(e.timeline.length - 1);
     expect(agent.hash()).toBe(hashes.get(e.replayLog.headTick));
   });
 
@@ -51,12 +51,12 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     const agent = playingInvincible(2);
     const e = agent.engine;
     playRecording(agent, 600);
-    e.rewindSeconds(3);
+    e.timeline.rewindSeconds(3);
     const scrubbed = e.tick;
     agent.step(20);
     expect(e.tick).toBe(scrubbed); // held
 
-    e.resumeFromScrub();
+    e.timeline.resume();
     agent.step(20);
     expect(e.tick).toBe(scrubbed + 20);
     // The recording continues from there and still replays exactly
@@ -68,8 +68,8 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     const e = agent.engine;
     playRecording(agent, 600);
     const head = e.tick;
-    e.rewindSeconds(2);
-    e.rewindSeconds(2);
+    e.timeline.rewindSeconds(2);
+    e.timeline.rewindSeconds(2);
     expect(e.tick).toBe(head - 240);
   });
 
@@ -78,7 +78,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     const e = agent.engine;
     playRecording(agent, 600);
     agent.events();
-    e.rewindSeconds(5);
+    e.timeline.rewindSeconds(5);
     // Only the rewind itself is announced, so the UI can follow (e.g. leave a game over)
     expect(e.drainEvents()).toEqual([{ type: "REWOUND", playState: "PLAYING" }]);
   });
@@ -99,7 +99,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     }
     expect(e.phase).toBe("GAME_OVER");
 
-    e.rewindBeforeDeath(2);
+    e.timeline.rewindBeforeDeath(2);
     expect(e.phase).toBe("PLAYING");
     expect(deathTick - e.tick).toBeGreaterThanOrEqual(120);
     expect(deathTick - e.tick).toBeLessThan(120 + 31);
@@ -117,10 +117,10 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     expect(e.playState).toBe("GAME_OVER");
 
     agent.events();
-    e.rewindSeconds(6);
+    e.timeline.rewindSeconds(6);
     const rewound = e.drainEvents().find((ev) => ev.type === "REWOUND");
     expect(rewound).toEqual({ type: "REWOUND", playState: "PLAYING" });
-    e.resumeFromScrub();
+    e.timeline.resume();
     agent.advance(1);
     expect(e.lives).toBe(1);
     expect(e.phase).toBe("PLAYING");
@@ -129,7 +129,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   it("reaches back about two minutes", () => {
     const agent = playingInvincible(2);
     playRecording(agent, 3 * 60 * 60);
-    const reach = agent.engine.getRewindBufferLength();
+    const reach = agent.engine.timeline.length;
     expect(reach).toBeGreaterThan((MAX_KEYFRAMES - 1) * KEYFRAME_TICKS);
     expect(reach).toBeLessThanOrEqual(MAX_KEYFRAMES * KEYFRAME_TICKS + 1);
   });

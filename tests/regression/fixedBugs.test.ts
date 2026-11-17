@@ -60,7 +60,7 @@ describe("Fixed bugs (regression)", () => {
     const agent = playing(1);
     const deathTick = playToGameOver(agent);
     const e = agent.engine;
-    e.rewindBeforeDeath(2);
+    e.timeline.rewindBeforeDeath(2);
     expect(e.phase).toBe("PLAYING");
     expect(e.tick).toBeLessThan(deathTick);
   });
@@ -69,7 +69,7 @@ describe("Fixed bugs (regression)", () => {
     const agent = playing(1);
     playToGameOver(agent);
     agent.events();
-    agent.engine.rewindSeconds(6);
+    agent.engine.timeline.rewindSeconds(6);
     const rewound = agent.engine.drainEvents().find((ev) => ev.type === "REWOUND");
     expect(rewound).toMatchObject({ type: "REWOUND" });
   });
