@@ -172,10 +172,8 @@ export interface ScorePopup {
 export interface GameSettings {
   turbo: boolean;
   turboSpeedMultiplier: number; // e.g. 1.6
-  learnMode: boolean; // show ghost targets & target lines
   learnVisualsEnabled: boolean; // persist visual cues on map even when Learn panel is closed
   activeGhostVisuals: Record<GhostType, boolean>; // individual ghost visual cue toggles
-  practiceMode: boolean; // enables rewind, pause, slowmo, invincibility
   showGrid: boolean;
   showGhostPaths: boolean;
   showTargetLines: boolean;
@@ -184,9 +182,7 @@ export interface GameSettings {
   /** Run the real-time loop at the arcade's 60.606 Hz instead of 60 (F5). */
   arcadeRefreshRate: boolean;
   soundEnabled: boolean;
-  soundVolume: number; // 0 to 1
   crtFilter: boolean;
-  touchControls: boolean;
   emulateRomQuirks: boolean; // Toggle authentic 1980 ROM hardware targeting bugs
   /**
    * Joystick feel: releasing a direction forgets a turn queued with it that hasn't been taken

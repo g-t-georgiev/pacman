@@ -49,7 +49,7 @@ export default class GameRenderer {
     ctx.fillStyle = engine.maze.bgColor || "#000000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    const { showGrid, showGhostPaths, showTargetLines, learnMode, learnVisualsEnabled, crtFilter } =
+    const { showGrid, showGhostPaths, showTargetLines, learnVisualsEnabled, crtFilter } =
       engine.settings;
 
     if (showGrid) {
@@ -72,7 +72,7 @@ export default class GameRenderer {
     this.renderFruit(engine);
 
     // Render Learn Mode Overlays (Target reticles, Inky vector, Clyde 8-tile radius)
-    if (learnMode || learnVisualsEnabled) {
+    if (learnVisualsEnabled) {
       this.renderLearnMode(engine);
     }
 
@@ -436,7 +436,7 @@ export default class GameRenderer {
       INKY: true,
       CLYDE: true,
     };
-    const showCues = engine.settings.learnMode || engine.settings.learnVisualsEnabled;
+    const showCues = engine.settings.learnVisualsEnabled;
 
     (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
       // Check if visual cues are enabled for this specific ghost

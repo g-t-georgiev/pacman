@@ -98,7 +98,6 @@ export default class GameEngine {
   public settings: GameSettings = {
     turbo: false,
     turboSpeedMultiplier: 1.6,
-    learnMode: false,
     learnVisualsEnabled: false,
     activeGhostVisuals: {
       BLINKY: true,
@@ -106,7 +105,6 @@ export default class GameEngine {
       INKY: true,
       CLYDE: true,
     },
-    practiceMode: false,
     showGrid: false,
     showGhostPaths: false,
     showTargetLines: false,
@@ -117,9 +115,7 @@ export default class GameEngine {
     reducedFlash: false,
     colorblindPalette: false,
     soundEnabled: true,
-    soundVolume: 0.5,
     crtFilter: false,
-    touchControls: false,
     /** The arcade's targeting overflow for Pinky and Inky when Pac-Man faces up (F15). Off = "fixed AI". */
     emulateRomQuirks: true,
     showDiagnosticConsole: false, // In-game testing & diagnostics console
