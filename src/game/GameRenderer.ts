@@ -30,6 +30,11 @@ import { renderArcadeHud } from "./arcadeHud";
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
 
+/** One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). */
+const ENERGIZER_PULSE_FRAMES = 45;
+/** The invincibility shield's hue turns 200 degrees a second. */
+const SHIELD_HUE_PER_FRAME = 200 / 60;
+
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
   /** Cached wall layers (A6): the current maze in its normal and flash colors. */
@@ -179,8 +184,11 @@ export default class GameRenderer {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
-          // Pulsing energizer (steady with reduced flashing)
-          const pulse = engine.settings.reducedFlash ? 0.5 : (Math.sin(Date.now() / 120) + 1) * 0.5;
+          // Pulsing energizer on game frames (P3: it holds still while paused and slows with the
+          // practice speed); steady with reduced flashing. Its final look waits on footage.
+          const pulse = engine.settings.reducedFlash
+            ? 0.5
+            : (Math.sin((engine.tick * 2 * Math.PI) / ENERGIZER_PULSE_FRAMES) + 1) * 0.5;
           const radius = 5 + pulse * 2.5;
 
           ctx.fillStyle = maze.dotColor;
@@ -233,7 +241,7 @@ export default class GameRenderer {
 
     // Invincibility shield effect
     if (engine.rules.invincible) {
-      ctx.strokeStyle = `hsl(${(Date.now() / 5) % 360}, 100%, 70%)`;
+      ctx.strokeStyle = `hsl(${(engine.tick * SHIELD_HUE_PER_FRAME) % 360}, 100%, 70%)`; // game frames (P3)
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, TILE_SIZE / 2 + 4, 0, Math.PI * 2);
