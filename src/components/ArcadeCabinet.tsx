@@ -17,7 +17,7 @@ import { ReplayBar } from "./ReplayBar";
 import type { Replay } from "../game/replay";
 import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShare";
 import { RULESETS } from "../game/rulesets";
-import { type RulesPreset, applyRulesPreset, rulesPresetOf } from "../game/presets";
+import { type RulesPreset, applyRulesPreset } from "../game/presets";
 import {
   PREF_COLORBLIND,
   PREF_PRESET,
@@ -61,7 +61,7 @@ export const ArcadeCabinet: React.FC = () => {
   // UI state for reactive modals and controls
   const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
   const [turbo, setTurbo] = useState<boolean>(false);
-  const [rulesPreset, setRulesPreset] = useState<RulesPreset | "CUSTOM">(
+  const [rulesPreset, setRulesPreset] = useState<RulesPreset>(
     () => loadPreference<RulesPreset>(PREF_PRESET) ?? "ARCADE"
   );
   const [releaseClears, setReleaseClears] = useState<boolean>(
@@ -778,9 +778,7 @@ export const ArcadeCabinet: React.FC = () => {
       >
         <div className="relative">
           <ModeSelector
-            rulesPreset={
-              engineRef.current ? rulesPresetOf(engineRef.current.settings) : rulesPreset
-            }
+            rulesPreset={rulesPreset}
             onSelectPreset={handleSelectPreset}
             releaseClears={releaseClears}
             onToggleReleaseClears={handleToggleReleaseClears}

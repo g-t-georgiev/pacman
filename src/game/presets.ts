@@ -31,17 +31,3 @@ export function applyRulesPreset(engine: GameEngine, preset: RulesPreset): void 
   Object.assign(engine.settings, RULES_PRESETS[preset].settings);
   engine.ghostAiController.emulateRomQuirks = engine.settings.emulateRomQuirks;
 }
-
-/** Which preset the settings match, or CUSTOM after a toggle in the Lab changed one of them. */
-export function rulesPresetOf(settings: GameSettings): RulesPreset | "CUSTOM" {
-  for (const preset of Object.keys(RULES_PRESETS) as RulesPreset[]) {
-    const want = RULES_PRESETS[preset].settings;
-    if (
-      settings.emulateRomQuirks === want.emulateRomQuirks &&
-      settings.arcadeRefreshRate === want.arcadeRefreshRate
-    ) {
-      return preset;
-    }
-  }
-  return "CUSTOM";
-}

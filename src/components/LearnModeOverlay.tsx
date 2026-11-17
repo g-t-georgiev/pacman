@@ -56,9 +56,6 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
     engine.settings.learnVisualsEnabled ?? true
   );
-  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
-    engine.settings.emulateRomQuirks ?? false
-  );
   const [ghostFilters, setGhostFilters] = useState<Record<GhostType, boolean>>({
     BLINKY: engine.settings.activeGhostVisuals?.BLINKY ?? true,
     PINKY: engine.settings.activeGhostVisuals?.PINKY ?? true,
@@ -76,14 +73,6 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
     const nextVal = !visualsEnabled;
     setVisualsEnabled(nextVal);
     engine.settings.learnVisualsEnabled = nextVal;
-    if (onVisualSettingsChange) onVisualSettingsChange();
-  };
-
-  const handleToggleRomQuirks = () => {
-    const nextVal = !emulateRomQuirks;
-    setEmulateRomQuirks(nextVal);
-    engine.settings.emulateRomQuirks = nextVal;
-    engine.ghostAiController.emulateRomQuirks = nextVal;
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -360,38 +349,26 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
         </div>
       </div>
 
-      {/* 1980 Z80 ROM Quirks Configuration */}
-      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-white font-bold text-[11px] tracking-wide">
-              👾 1980 Z80 ROM OVERFLOW QUIRKS
-            </span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                emulateRomQuirks
-                  ? "bg-purple-900 text-purple-200 border border-purple-700"
-                  : "bg-neutral-800 text-neutral-400"
-              }`}
-            >
-              {emulateRomQuirks ? "ACTIVE (AUTHENTIC)" : "OFF (NORMALIZED)"}
-            </span>
-          </div>
-          <button
-            onClick={handleToggleRomQuirks}
-            className={`px-2.5 py-1 rounded font-bold text-[10px] transition-colors cursor-pointer ${
-              emulateRomQuirks
-                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-md ring-1 ring-purple-300"
-                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+      {/* The arcade's targeting overflow: set by the rules preset (Game Modes), shown here */}
+      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-white font-bold text-[11px] tracking-wide">
+            👾 THE ARCADE'S TARGETING OVERFLOW
+          </span>
+          <span
+            className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+              engine.settings.emulateRomQuirks
+                ? "bg-purple-900 text-purple-200 border border-purple-700"
+                : "bg-neutral-800 text-neutral-400"
             }`}
           >
-            {emulateRomQuirks ? "Authentic Overflow" : "Normalized Math"}
-          </button>
+            {engine.settings.emulateRomQuirks ? "ON (ARCADE RULES)" : "OFF (MODERN RULES)"}
+          </span>
         </div>
         <p className="text-[10px] text-neutral-400 leading-tight">
-          When Pac-Man faces UP, the authentic 1980 Z80 assembly code shifts Pinky's target 4 tiles
-          UP + 4 tiles LEFT, and Inky's pivot 2 tiles UP + 2 tiles LEFT. Turn OFF for normalized
-          straight forward targeting.
+          When Pac-Man faces up, the original code also shifts Pinky's target 4 tiles left and
+          Inky's pivot 2 tiles left. The Arcade rules keep it, the Modern rules don't: pick them in
+          Game Modes.
         </p>
       </div>
 

@@ -2,12 +2,13 @@ import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
 import { AgentDriver } from "../../src/agent/AgentDriver";
-import { applyRulesPreset, rulesPresetOf } from "../../src/game/presets";
+import { RULES_PRESETS, applyRulesPreset } from "../../src/game/presets";
 
 describe("Rules presets (Phase 5)", () => {
   it("Arcade is the default; Modern drops the quirk and runs at 60 Hz", () => {
     const e = new GameEngine("PACMAN", 0);
-    expect(rulesPresetOf(e.settings)).toBe("ARCADE");
+    const { emulateRomQuirks, arcadeRefreshRate } = e.settings;
+    expect({ emulateRomQuirks, arcadeRefreshRate }).toEqual(RULES_PRESETS.ARCADE.settings);
     applyRulesPreset(e, "MODERN");
     expect(e.settings.emulateRomQuirks).toBe(false);
     expect(e.ghostAiController.emulateRomQuirks).toBe(false);
@@ -15,12 +16,6 @@ describe("Rules presets (Phase 5)", () => {
     applyRulesPreset(e, "ARCADE");
     expect(e.ghostAiController.emulateRomQuirks).toBe(true);
     expect(new GameRunner(e).ticksPerSecond).toBeCloseTo(60.606, 2);
-  });
-
-  it("a Lab toggle that matches neither preset reads as CUSTOM", () => {
-    const e = new GameEngine("PACMAN", 0);
-    e.settings.emulateRomQuirks = false;
-    expect(rulesPresetOf(e.settings)).toBe("CUSTOM");
   });
 });
 

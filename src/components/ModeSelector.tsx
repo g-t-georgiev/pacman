@@ -3,7 +3,7 @@ import type { GameMode } from "../types";
 import { RULES_PRESETS, type RulesPreset } from "../game/presets";
 
 interface ModeSelectorProps {
-  rulesPreset: RulesPreset | "CUSTOM";
+  rulesPreset: RulesPreset;
   onSelectPreset: (preset: RulesPreset) => void;
   releaseClears: boolean;
   onToggleReleaseClears: () => void;
@@ -104,11 +104,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="font-bold text-xs text-cyan-300">RULES</span>
-          {rulesPreset === "CUSTOM" && (
-            <span className="text-[9px] px-1 rounded bg-neutral-800 text-neutral-400">
-              CUSTOM (changed in the Lab)
-            </span>
-          )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(RULES_PRESETS) as RulesPreset[]).map((id) => {

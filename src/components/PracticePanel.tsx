@@ -35,9 +35,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
   const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
   const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
-    engine.settings.emulateRomQuirks ?? false
-  );
   const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
@@ -75,14 +72,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
     const nextVal = !engine.settings.showGrid;
     engine.settings.showGrid = nextVal;
     setShowGrid(nextVal);
-    onUpdate();
-  };
-
-  const handleToggleRomQuirks = () => {
-    const nextVal = !engine.settings.emulateRomQuirks;
-    engine.settings.emulateRomQuirks = nextVal;
-    engine.ghostAiController.emulateRomQuirks = nextVal;
-    setEmulateRomQuirks(nextVal);
     onUpdate();
   };
 
@@ -458,33 +447,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
             className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}
           >
             Maze tile grid & decision intersections
-          </span>
-        </button>
-
-        {/* 1980 ROM Overflow Quirks Toggle */}
-        <button
-          onClick={handleToggleRomQuirks}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            emulateRomQuirks
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>👾</span>
-              <span>1980 Quirks</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${emulateRomQuirks ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {emulateRomQuirks ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${emulateRomQuirks ? "text-purple-100/90" : "text-neutral-400"}`}
-          >
-            Z80 UP bug (Pinky/Inky leftward shift)
           </span>
         </button>
 
