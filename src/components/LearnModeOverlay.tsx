@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { GHOST_COLORS, SIM_FPS } from "../game/constants";
 import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
 import { getElroyDotThresholds, getScatterChaseSchedule } from "../game/levelTable";
+import { setSetting, useEngineSettings } from "../hooks/useEngineSettings";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -53,15 +54,10 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   onVisualSettingsChange,
   embedded = false,
 }) => {
-  const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
-    engine.settings.learnVisualsEnabled ?? true
-  );
-  const [ghostFilters, setGhostFilters] = useState<Record<GhostType, boolean>>({
-    BLINKY: engine.settings.activeGhostVisuals?.BLINKY ?? true,
-    PINKY: engine.settings.activeGhostVisuals?.PINKY ?? true,
-    INKY: engine.settings.activeGhostVisuals?.INKY ?? true,
-    CLYDE: engine.settings.activeGhostVisuals?.CLYDE ?? true,
-  });
+  // Read from the engine on every render (O2): no copies to keep in sync
+  const settings = useEngineSettings(engine);
+  const visualsEnabled = settings.learnVisualsEnabled;
+  const ghostFilters = settings.activeGhostVisuals;
 
   const wave = getScatterChaseSchedule(engine.level)[engine.waveIndex];
   const isFrightened = engine.frightenedGlobalTimer > 0;
@@ -70,17 +66,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const isElroy2 = engine.ghosts.BLINKY.elroyStage === 2;
 
   const handleToggleMasterVisuals = () => {
-    const nextVal = !visualsEnabled;
-    setVisualsEnabled(nextVal);
-    engine.settings.learnVisualsEnabled = nextVal;
+    setSetting(engine, "learnVisualsEnabled", !visualsEnabled);
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
   const handleToggleGhost = (type: GhostType) => {
-    const nextVal = !ghostFilters[type];
-    const nextFilters = { ...ghostFilters, [type]: nextVal };
-    setGhostFilters(nextFilters);
-    engine.settings.activeGhostVisuals = nextFilters;
+    setSetting(engine, "activeGhostVisuals", { ...ghostFilters, [type]: !ghostFilters[type] });
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -91,8 +82,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
       INKY: enabled,
       CLYDE: enabled,
     };
-    setGhostFilters(nextFilters);
-    engine.settings.activeGhostVisuals = nextFilters;
+    setSetting(engine, "activeGhostVisuals", nextFilters);
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 

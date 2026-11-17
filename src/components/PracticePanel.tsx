@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type GameEngine from "../game/GameEngine";
 import { sendGhostsHome, setInvincible as applyInvincible } from "../game/practiceActions";
+import { setSetting, settingsChanged, useEngineSettings } from "../hooks/useEngineSettings";
 import type { PracticeTools } from "../game/practiceTools";
 
 interface PracticePanelProps {
@@ -30,12 +31,16 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const [, refreshPractice] = useState(0);
   const [patternStatus, setPatternStatus] = useState<string>("");
   const [clipStatus, setClipStatus] = useState<string>("");
-  const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
-  const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
-  const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
-  const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
-  const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
+  // Read from the engine on every render (O2): no copies to keep in sync
+  const settings = useEngineSettings(engine);
+  const {
+    gameSpeed: speed,
+    invincible,
+    showGhostPaths,
+    showTargetLines,
+    showGrid,
+    showDiagnosticConsole,
+  } = settings;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
 
@@ -43,41 +48,33 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
 
   const handleSpeedChange = (val: number) => {
-    setSpeed(val);
-    engine.settings.gameSpeed = val;
+    setSetting(engine, "gameSpeed", val);
     onUpdate();
   };
 
   const handleToggleInvincible = () => {
     applyInvincible(engine, !engine.settings.invincible);
-    setInvincible(engine.settings.invincible);
+    settingsChanged();
     onUpdate();
   };
 
   const handleToggleGhostPaths = () => {
-    const nextVal = !engine.settings.showGhostPaths;
-    engine.settings.showGhostPaths = nextVal;
-    setShowGhostPaths(nextVal);
+    setSetting(engine, "showGhostPaths", !showGhostPaths);
     onUpdate();
   };
 
   const handleToggleTargetLines = () => {
-    const nextVal = !engine.settings.showTargetLines;
-    engine.settings.showTargetLines = nextVal;
-    setShowTargetLines(nextVal);
+    setSetting(engine, "showTargetLines", !showTargetLines);
     onUpdate();
   };
 
   const handleToggleGrid = () => {
-    const nextVal = !engine.settings.showGrid;
-    engine.settings.showGrid = nextVal;
-    setShowGrid(nextVal);
+    setSetting(engine, "showGrid", !showGrid);
     onUpdate();
   };
 
   const handleToggleDiagnosticConsole = () => {
-    const nextVal = !engine.settings.showDiagnosticConsole;
-    engine.settings.showDiagnosticConsole = nextVal;
+    setSetting(engine, "showDiagnosticConsole", !showDiagnosticConsole);
     onUpdate();
   };
 
