@@ -157,6 +157,21 @@ describe("Fixed bugs (regression)", () => {
     expect(agent.verifyReplay(agent.saveReplay()).matched).toBe(true);
   });
 
+  it("2026-11-17: the fruit's floating points vanished at once when the agent stepped", () => {
+    const { engine, runner, agent } = live(3);
+    agent.scenario({ pacman: { col: 11, row: 20, dir: "RIGHT" } });
+    engine.spawnFruit();
+    agent.pause();
+    let eaten = false;
+    for (let i = 0; i < 60 && !eaten; i++) {
+      const score = engine.score;
+      agent.step(1); // steps and refreshes the UI, as the console tools do
+      eaten = engine.score > score;
+    }
+    expect(eaten).toBe(true);
+    expect(runner.popups.count).toBe(1);
+  });
+
   it("2026-11-11: ghosts inside the house didn't turn blue on an energizer (F8)", () => {
     const agent = playing(1);
     agent.scenario({ frightened: true });

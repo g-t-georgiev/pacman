@@ -125,6 +125,7 @@ export class ReplayViewer {
     engine.drainEvents(); // no burst of sounds for the frames skipped
     engine.paused = this.runner.pausedBy.length > 0; // playReplay cleared it
     this.runner.renderer?.render(engine);
+    this.runner.popups.clear(); // the game jumped: no points float over it
     this.runner.syncUi();
   }
 
@@ -145,6 +146,7 @@ export class ReplayViewer {
     this.runner.setPaused("user", true); // nothing hits the player the moment they return
     engine.drainEvents();
     this.runner.renderer?.render(engine);
+    this.runner.popups.clear(); // the game jumped: no points float over it
     this.runner.syncUi();
   }
 }

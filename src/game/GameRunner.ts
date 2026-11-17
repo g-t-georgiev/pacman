@@ -168,7 +168,6 @@ export class GameRunner {
    * re-render on `UI_SYNC`.
    */
   public syncUi(): void {
-    this.popups.clear(); // the state changed from outside: no points float over it
     this.flush();
     const e = this.engine;
     GameEvents.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });
