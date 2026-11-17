@@ -1,17 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
-import GameEngine from "../../src/game/GameEngine";
-import { GameRunner } from "../../src/game/GameRunner";
-import { AgentDriver } from "../../src/agent/AgentDriver";
 import GameEvents from "../../src/core/EventBus";
 import type { PlayState } from "../../src/types";
-
-function live(): { runner: GameRunner; agent: AgentDriver; engine: GameEngine } {
-  const engine = new GameEngine("PACMAN", 0);
-  engine.playState = "PLAYING";
-  const runner = new GameRunner(engine);
-  const agent = new AgentDriver(engine, runner);
-  return { runner, agent, engine };
-}
+import { live } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 describe("One pause owner (T11)", () => {
   it("the game runs only when nobody holds it", () => {
@@ -61,8 +52,7 @@ describe("One pause owner (T11)", () => {
       expect(seen).toEqual([]);
 
       // Walk Pac-Man into Blinky: a death is a round change
-      const b = agent.view().ghosts.BLINKY;
-      agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+      faceBlinky(agent);
       agent.runUntil((v) => v.playState === "DYING", 30);
       expect(seen).toContain("DYING");
     } finally {

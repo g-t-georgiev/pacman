@@ -4,6 +4,8 @@ import { AgentDriver } from "../../src/agent/AgentDriver";
 import { SimRandom } from "../../src/core/SimRandom";
 import { KEYFRAME_TICKS, MAX_KEYFRAMES } from "../../src/game/replay";
 import type { Direction } from "../../src/types";
+import { playingInvincible } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 /**
  * Plays `frames` frames with random input. With `withHashes`, returns each frame's tick and
@@ -26,18 +28,9 @@ function playRecording(
   return hashes;
 }
 
-function playing(): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.engine.settings.invincible = true;
-  agent.scenario({ level: 2, playState: "PLAYING" });
-  agent.engine.pacman.invincible = true;
-  agent.scenario({});
-  return agent;
-}
-
 describe("Rewind from keyframes plus re-simulation (T7)", () => {
   it("every scrubbed frame is exactly the frame that was played", () => {
-    const agent = playing();
+    const agent = playingInvincible(2);
     const e = agent.engine;
     const hashes = playRecording(agent, 900, true);
     const oldest = e.tick - e.getRewindBufferLength() + 1;
@@ -55,7 +48,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   });
 
   it("the sim holds while scrubbing, and plays on from the scrubbed frame", () => {
-    const agent = playing();
+    const agent = playingInvincible(2);
     const e = agent.engine;
     playRecording(agent, 600);
     e.rewindSeconds(3);
@@ -71,7 +64,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   });
 
   it("rewindSeconds steps back from the frame shown now", () => {
-    const agent = playing();
+    const agent = playingInvincible(2);
     const e = agent.engine;
     playRecording(agent, 600);
     const head = e.tick;
@@ -81,7 +74,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   });
 
   it("re-simulated frames send no events (no sounds while scrubbing)", () => {
-    const agent = playing();
+    const agent = playingInvincible(2);
     const e = agent.engine;
     playRecording(agent, 600);
     agent.events();
@@ -119,8 +112,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
     e.lives = 1;
     agent.scenario({}); // record from here
     agent.advance(200);
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(agent);
     agent.runUntil((v) => v.playState === "GAME_OVER", 600);
     expect(e.playState).toBe("GAME_OVER");
 
@@ -135,7 +127,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
   });
 
   it("reaches back about two minutes", () => {
-    const agent = playing();
+    const agent = playingInvincible(2);
     playRecording(agent, 3 * 60 * 60);
     const reach = agent.engine.getRewindBufferLength();
     expect(reach).toBeGreaterThan((MAX_KEYFRAMES - 1) * KEYFRAME_TICKS);

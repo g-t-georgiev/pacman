@@ -2,13 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { AgentDriver } from "../../src/agent/AgentDriver";
 import { sirenStage } from "../../src/game/siren";
-
-function playing(): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.scenario({ level: 1, playState: "PLAYING" });
-  agent.events();
-  return agent;
-}
+import { playing } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 describe("Siren (S1)", () => {
   it("steps through five stages as the maze empties", () => {
@@ -71,8 +66,7 @@ describe("Start tune (S2)", () => {
 
     const agent = new AgentDriver(e);
     agent.scenario({ playState: "PLAYING" });
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(agent);
     const { events } = agent.runUntil((v) => v.phase === "READY", 600);
     expect(events.map((ev) => ev.type)).not.toContain("INTRO");
   });

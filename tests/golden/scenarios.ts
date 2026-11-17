@@ -2,9 +2,9 @@ import GameEngine from "../../src/game/GameEngine";
 import { SimRandom } from "../../src/core/SimRandom";
 import { type Replay, recordReplay } from "../../src/game/replay";
 import type { Direction, GameMode } from "../../src/types";
-import { AgentDriver } from "../../src/agent/AgentDriver";
 import { getElroyDotThresholds } from "../../src/game/levelTable";
 import type { Coverage } from "./coverage";
+import { playing } from "../helpers";
 
 /**
  * Golden replay scenarios (plan T5, coverage T1). Each one is recorded into
@@ -36,13 +36,6 @@ function newGame(level: number, invincible: boolean): GameEngine {
   engine.settings.invincible = invincible;
   engine.pacman.invincible = invincible;
   return engine;
-}
-
-/** A game in play on `level` (no READY), driven by the agent's scenario builder. */
-function playing(level: number, mode: GameMode = "PACMAN"): AgentDriver {
-  const agent = new AgentDriver(new GameEngine(mode, 0));
-  agent.scenario({ level, playState: "PLAYING" });
-  return agent;
 }
 
 /**

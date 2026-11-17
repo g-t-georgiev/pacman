@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import GameEngine from "../../src/game/GameEngine";
-import { AgentDriver } from "../../src/agent/AgentDriver";
 import { SIM_FPS } from "../../src/game/constants";
 import {
   getFrightenedDuration,
@@ -10,6 +8,7 @@ import {
 } from "../../src/game/levelTable";
 import { ghostSpeed, pacmanSpeed } from "../../src/game/speedSource";
 import { getOppositeDirection } from "../../src/game/ghostAiUtils";
+import { playing } from "../helpers";
 
 /**
  * Fidelity checklist (plan T9): one test per claim from "The Pac-Man Dossier", grouped by its
@@ -27,14 +26,6 @@ import { getOppositeDirection } from "../../src/game/ghostAiUtils";
  * - Targeting (Pinky/Inky up-quirk, Clyde's 8 tiles): tests/unit/targetingQuirks.test.ts
  * - Extra life at 10,000, freezes when eating a ghost, death sequence: tests/unit/roundSequencer.test.ts
  */
-
-/** A headless game on `level`, already playing. */
-function playing(level = 1): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.scenario({ level, playState: "PLAYING" });
-  agent.events();
-  return agent;
-}
 
 describe("Dossier · The Basics", () => {
   it("each maze has 240 dots and 4 energizers", () => {

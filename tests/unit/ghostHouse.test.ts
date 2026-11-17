@@ -11,6 +11,7 @@ import { HOUSE_CENTER_Y, HOUSE_EXIT_Y } from "../../src/controllers/MovementCont
 import type { GhostType } from "../../src/types";
 import { AgentDriver } from "../../src/agent/AgentDriver";
 import { hashGameState } from "../../src/game/gameState";
+import { faceBlinky } from "../helpers";
 
 /** Blinky outside, the other three waiting inside (on the house's center row). */
 function houseGhosts(): Record<GhostType, Ghost> {
@@ -309,8 +310,7 @@ describe("Restart level (fresh start at the current level)", () => {
     restarted.scenario({ level: 3, playState: "PLAYING" });
     const e = restarted.engine;
     restarted.advance(400); // some dots, ghosts out
-    const b = restarted.view().ghosts.BLINKY;
-    restarted.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(restarted);
     restarted.runUntil((v) => v.phase === "READY", 600); // lost a life mid-level
     expect(e.houseController.state.globalCounterActive).toBe(true);
     expect(e.houseController.state.elroySuspended).toBe(true);

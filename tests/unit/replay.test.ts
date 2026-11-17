@@ -5,16 +5,8 @@ import { SimRandom } from "../../src/core/SimRandom";
 import { hashGameState } from "../../src/game/gameState";
 import { CHECKPOINT_TICKS, KEYFRAME_TICKS } from "../../src/game/replay";
 import type { Direction } from "../../src/types";
-
-/** Headless driver on level `level`, playing, Pac-Man invincible so runs stay long. */
-function playing(level = 1): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.engine.settings.invincible = true;
-  agent.scenario({ level, playState: "PLAYING" });
-  agent.engine.pacman.invincible = true;
-  agent.scenario({}); // restart the recording with invincibility in place
-  return agent;
-}
+import { playingInvincible as playing } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 /** Steps `frames` frames with random input every 20 frames. */
 function playRandomly(agent: AgentDriver, frames: number, seed = 7): void {
@@ -49,8 +41,7 @@ describe("Score popups (F26)", () => {
     e.settings.invincible = false;
     e.pacman.invincible = false;
     e.scorePopups.push({ id: "fruit", text: "100", x: 112, y: 164, life: 50, color: "#fff" });
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(agent);
     agent.runUntil((v) => v.phase === "READY", 400);
     expect(e.scorePopups).toEqual([]);
   });

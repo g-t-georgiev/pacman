@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import GameEngine from "../../src/game/GameEngine";
-import { GameRunner } from "../../src/game/GameRunner";
-import { AgentDriver } from "../../src/agent/AgentDriver";
+import { live } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 /** An in-memory localStorage for these tests (restored afterwards). */
 const original = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
@@ -20,14 +19,6 @@ afterAll(() => {
   if (original) Object.defineProperty(globalThis, "localStorage", original);
   else delete (globalThis as { localStorage?: unknown }).localStorage;
 });
-
-function live(level = 2) {
-  const engine = new GameEngine("PACMAN", 0);
-  const runner = new GameRunner(engine);
-  const agent = new AgentDriver(engine, runner);
-  agent.scenario({ level, playState: "PLAYING" });
-  return { engine, runner, agent };
-}
 
 describe("Practice tools (Phase 5)", () => {
   it("saves this life's route as the level's pattern, one point per level frame", () => {
@@ -58,8 +49,7 @@ describe("Practice tools (Phase 5)", () => {
     const { engine, runner, agent } = live(5);
     runner.practice.clearDeaths(engine);
     const die = () => {
-      const b = agent.view().ghosts.BLINKY;
-      agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+      faceBlinky(agent);
       for (let i = 0; i < 400 && engine.phase !== "READY"; i++) runner.tick();
       for (let i = 0; i < 400 && engine.phase === "READY"; i++) runner.tick();
     };

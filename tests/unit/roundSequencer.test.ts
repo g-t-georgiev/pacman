@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import { AgentDriver } from "../../src/agent/AgentDriver";
 import { PHASE_FRAMES, READY_FRAMES_GAME_START } from "../../src/game/RoundSequencer";
 import { EXTRA_LIFE_SCORE, FRUIT_EXTRA_FRAMES, FRUIT_MIN_FRAMES } from "../../src/game/constants";
 import type { RoundPhase } from "../../src/game/RoundSequencer";
-
-function playing(level = 1): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.scenario({ level, playState: "PLAYING" });
-  agent.events();
-  return agent;
-}
+import { playing } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 /** Steps until the phase changes; returns how many frames the phase lasted. */
 function phaseLength(engine: GameEngine): { frames: number; next: RoundPhase } {
@@ -66,8 +60,7 @@ describe("Round sequencer (A2)", () => {
     const agent = playing();
     const e = agent.engine;
     e.lives = 1;
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(agent);
     agent.runUntil((v) => v.phase === "GAME_OVER", 600);
     expect(e.phase).toBe("GAME_OVER");
     expect(e.ghostsVisible).toBe(false);

@@ -1,23 +1,15 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import { GameRunner } from "../../src/game/GameRunner";
-import { AgentDriver } from "../../src/agent/AgentDriver";
+import type { AgentDriver } from "../../src/agent/AgentDriver";
 import { HouseController } from "../../src/controllers/HouseController";
 import { sendGhostsHome } from "../../src/game/practiceActions";
 import { faceBlinky, playing, randomInput } from "../helpers";
+import { live } from "../helpers";
 
 /**
  * Regression suite (plan T6), part 2: one test per bug fixed so far, named after what went
  * wrong, so it can't come back unnoticed. Every new bug fix adds its test here.
  */
-
-function live(): { engine: GameEngine; runner: GameRunner; agent: AgentDriver } {
-  const engine = new GameEngine("PACMAN", 0);
-  const runner = new GameRunner(engine);
-  const agent = new AgentDriver(engine, runner);
-  agent.scenario({ playState: "PLAYING" });
-  return { engine, runner, agent };
-}
 
 /** Random play with one life until game over; returns the tick of the fatal collision. */
 function playToGameOver(agent: AgentDriver): number {

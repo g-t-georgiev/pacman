@@ -1,5 +1,6 @@
 import GameEngine from "../src/game/GameEngine";
 import { AgentDriver } from "../src/agent/AgentDriver";
+import { GameRunner } from "../src/game/GameRunner";
 import { SimRandom } from "../src/core/SimRandom";
 import type { Direction, GameMode } from "../src/types";
 
@@ -14,6 +15,25 @@ export function playing(level = 1, mode: GameMode = "PACMAN"): AgentDriver {
   agent.scenario({ level, playState: "PLAYING" });
   agent.events();
   return agent;
+}
+
+/** Like `playing`, with invincibility on and the recording restarted with it (replay tests). */
+export function playingInvincible(level = 1): AgentDriver {
+  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
+  agent.engine.settings.invincible = true;
+  agent.scenario({ level, playState: "PLAYING" });
+  agent.engine.pacman.invincible = true;
+  agent.scenario({}); // restart the recording with invincibility in place
+  return agent;
+}
+
+/** A game in play with its real-time shell (pause owner, runner observers), not started. */
+export function live(level = 1): { engine: GameEngine; runner: GameRunner; agent: AgentDriver } {
+  const engine = new GameEngine("PACMAN", 0);
+  const runner = new GameRunner(engine);
+  const agent = new AgentDriver(engine, runner);
+  agent.scenario({ level, playState: "PLAYING" });
+  return { engine, runner, agent };
 }
 
 /** Puts Pac-Man one tile left of Blinky, facing him: they meet on the next frame. */

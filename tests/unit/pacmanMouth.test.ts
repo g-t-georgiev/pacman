@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { AgentDriver } from "../../src/agent/AgentDriver";
+import { faceBlinky } from "../helpers";
 
 describe("Pac-Man's mouth (sprite frames)", () => {
   it("is a closed circle through READY and until he first moves", () => {
@@ -55,8 +56,7 @@ describe("Pac-Man's mouth (sprite frames)", () => {
   it("is closed again after a death, until he moves", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     agent.scenario({ playState: "PLAYING" });
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    faceBlinky(agent);
     agent.runUntil((v) => v.phase === "READY", 600);
     expect(agent.engine.pacman.mouthFrame).toBe(0);
   });
