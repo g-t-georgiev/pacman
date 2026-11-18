@@ -26,7 +26,7 @@ Like the arcade, the score texts live in the maze's blank rows: `1UP` and `HIGH 
 their scores above the maze, spare lives and the recent levels' fruit below it, in the Emulogic
 pixel font (exact columns in
 `HUD_LAYOUT`, `src/game/arcadeHud.ts`). The bar above the canvas holds the buttons: Restart,
-Turbo, Lab, diagnostics, CRT, a pause button in dev builds, and sound.
+Turbo, Lab (whose Debug tab has every debugging tool), CRT, a pause button in dev builds, and sound.
 
 Actors are drawn at the arcade's sprite size, two tiles across, so they overlap the walls beside a
 corridor; which tile an actor is in (and so every collision) depends only on its center point.
@@ -117,35 +117,40 @@ questions.
 
 ```
 src/
-├── agent/          AgentDriver (runtime test driver), SpeedRecorder
+├── agent/          AgentDriver (window.pacmanAgent), SpeedRecorder
 ├── audio/          SoundEngine (procedural Web Audio)
-├── components/     React UI: cabinet, button bar, Lab panel (Learn / Practice / Debug tabs),
-│                   replay bar, Restart / Game Modes / Scores panels
+├── components/     React UI: the cabinet, HUD bar, Lab panel (Learn / Practice / Debug tabs),
+│   │               replay bar, Restart / Game Modes / Options / Scores panels
+│   ├── ui/         ToggleCard
+│   └── learn/      GhostCard
 ├── config/         ui.config.ts (UI timings and panel transitions)
-├── controllers/    Game loop, timers, ghost AI, movement, ghost house, animation
-├── core/           Actor, Pacman, Ghost, PRNG, SimRandom, EventBus
-├── diagnostics/    Runtime invariant rules and the diagnostics console
+├── controllers/    Timers, ghost AI (targeting, Elroy), movement, ghost house, game loop
+├── core/           Actor, Pacman, Ghost (its state machine), PRNG, SimRandom, EventBus
+├── diagnostics/    Runtime invariant rules, the live console, actorData
 ├── game/
-│   ├── GameEngine.ts      The pure simulation (no audio, UI or clock)
-│   ├── GameRunner.ts      Real-time shell: loop, renderer, audio, events
+│   ├── GameEngine.ts      The tick and the round flow (no audio, UI or clock)
+│   ├── sim/               Collisions and scoring, fruit, spawning, movement
+│   ├── GameRunner.ts      Real-time shell: loop, renderer, audio, events, measurements
 │   ├── RoundSequencer.ts  READY, play, eat pause, death and level-clear phases
-│   ├── levelTable.ts      Per-level values (Table A.1)
+│   ├── levelTable.ts      Per-level values (Table A.1) and their lookups
 │   ├── speedMasks.ts      16-frame speed step masks
-│   ├── replay.ts          Recording, replay, rewind keyframes
+│   ├── settings.ts        Default rules (recorded in replays) and settings
+│   ├── gameState.ts       The saved state: format, hash, capture and restore
+│   ├── replay.ts          Recording, replay, versions; timeline.ts: rewind and scrubbing
 │   ├── ReplayViewer.ts    Watching a replay in the game; replayShare.ts: share links
-│   ├── arcadeHud.ts       Score, high score, lives and fruit in the maze's blank rows
-│   ├── mazeAnalysis.ts    Corridors, intersections, tunnel zones, maze validator
-│   ├── rulesets.ts        What differs per mode (maze, fruit, looks)
-│   ├── gameState.ts       Serializable state and its hash
+│   ├── GameRenderer.ts    Composes the frame; render/: actors, player overlay, shared drawing
 │   ├── debugOverlay.ts    Debug overlay layers
-│   ├── mazes.ts           Maze data and spawn points
-│   └── ...                Renderer, constants, events, AI helpers
-├── hooks/          useGameEvent
+│   ├── arcadeHud.ts       Score, high score, lives and fruit in the maze's blank rows
+│   ├── measurements.ts    Speed recorder and tick rate (Debug panel and agent)
+│   ├── mazeAnalysis.ts    Corridors, intersections, tunnel zones, maze validator
+│   ├── rulesets.ts        What differs per mode; presets.ts: Arcade / Modern
+│   └── ...                Constants, mazes, siren, accessibility, practice tools, popups
+├── hooks/          usePanels, useGameOver, useReplays, useGameInput, useEngineSettings
 ├── types/          Shared types
-└── utils/          Per-level helpers and speed steps
-tests/              unit, integration, fidelity and golden replay tests
-scripts/            update-golden.ts
-docs/               REFACTOR_PLAN.md, AGENT_DRIVER.md
+└── utils/          Browser preferences and key bindings
+tests/              unit, integration, fidelity, regression and golden replay tests
+scripts/            golden update / check / trace
+docs/               REFACTOR_PLAN.md, CLEANUP_PLAN.md, AGENT_DRIVER.md
 ```
 
 ## Credits
