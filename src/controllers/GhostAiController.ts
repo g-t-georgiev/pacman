@@ -1,0 +1,209 @@
+import type { Ghost } from "../core/Ghost";
+import type { Pacman } from "../core/Pacman";
+import type { Direction, ElroyStage, MazeData, TileCoord } from "../types";
+import { getElroyDotThresholds } from "../game/levelTable";
+import { TILE_SIZE } from "../game/constants";
+import {
+  chooseNextGhostDirection,
+  getDirectionVector,
+  isTileWalkableForGhost,
+  pickFrightenedDirection,
+} from "../game/ghostAiUtils";
+import { PRNG } from "../core/PRNG";
+
+/**
+ * Controller encapsulating all Ghost AI personality routines, Cruise Elroy states,
+ * house emergence, and 1-tile advance intersection lookahead.
+ */
+export class GhostAiController {
+  /**
+   * The rules this AI follows. In the engine it is the engine's own settings object, so the
+   * Arcade/Modern preset reaches the AI with no copy to keep in sync (plan O1). Tests may pass a
+   * plain flag.
+   */
+  private readonly rules: { readonly emulateRomQuirks: boolean };
+  /** The sim's PRNG, shared with (and reset by) the engine. Advanced only by frightened decisions. */
+  public prng: PRNG;
+
+  constructor(
+    rules: { readonly emulateRomQuirks: boolean } | boolean = true,
+    prng: PRNG = new PRNG()
+  ) {
+    this.rules = typeof rules === "boolean" ? { emulateRomQuirks: rules } : rules;
+    this.prng = prng;
+  }
+
+  /** The arcade's targeting overflow when Pac-Man faces up (F15): on in the Arcade rules. */
+  public get emulateRomQuirks(): boolean {
+    return this.rules.emulateRomQuirks;
+  }
+
+  /**
+   * Calculates the authentic target tile for a ghost, with optional 1980 ROM quirk emulation.
+   */
+  public calculateTarget(
+    ghost: Ghost,
+    pacman: Pacman,
+    blinky: Ghost,
+    maze: MazeData
+  ): TileCoord | null {
+    const pacCol = Math.floor(pacman.x / TILE_SIZE);
+    const pacRow = Math.floor(pacman.y / TILE_SIZE);
+    const ghostCol = Math.floor(ghost.x / TILE_SIZE);
+    const ghostRow = Math.floor(ghost.y / TILE_SIZE);
+
+    // 1. EATEN Mode: Route to house doorstep (col 13, row 14), then inside pen to designated respawn slot
+    if (ghost.mode === "EATEN") {
+      if ((ghostCol === 13 || ghostCol === 14) && ghostRow >= 14 && ghostRow <= 17) {
+        if (ghost.type === "INKY") return { col: 11, row: 17 };
+        if (ghost.type === "CLYDE") return { col: 15, row: 17 };
+        return { col: 13, row: 17 };
+      }
+      return { col: 13, row: 14 };
+    }
+
+    // 2. SCATTER Mode: Home corner (unless Blinky is in Cruise Elroy)
+    if (ghost.mode === "SCATTER") {
+      // Cruise Elroy Blinky keeps targeting Pac-Man during scatter (he still reverses)
+      if (ghost.elroyStage === 0) return maze.scatterTargets[ghost.type];
+    }
+
+    // 3. FRIGHTENED: no target at all. Turns come from the PRNG (see planNextTile).
+    if (ghost.mode === "FRIGHTENED") return null;
+
+    // 4. CHASE Mode: Individual Ghost Personalities
+    switch (ghost.type) {
+      case "BLINKY": {
+        // Shadow: Direct pursuer. Targets Pac-Man's exact tile
+        return { col: pacCol, row: pacRow };
+      }
+
+      case "PINKY": {
+        // Speedy: Ambush pursuer. Targets 4 tiles ahead of Pac-Man.
+        let targetCol = pacCol;
+        let targetRow = pacRow;
+        switch (pacman.dir) {
+          case "UP":
+            targetRow -= 4;
+            // 1980 Z80 register overflow bug: facing UP also shifted 4 tiles LEFT
+            if (this.emulateRomQuirks) {
+              targetCol -= 4;
+            }
+            break;
+          case "DOWN":
+            targetRow += 4;
+            break;
+          case "LEFT":
+            targetCol -= 4;
+            break;
+          case "RIGHT":
+            targetCol += 4;
+            break;
+        }
+        return { col: targetCol, row: targetRow };
+      }
+
+      case "INKY": {
+        // Bashful: the vector from Blinky to a pivot 2 tiles ahead of Pac-Man, doubled
+        const { col: pivotCol, row: pivotRow } = inkyPivot(pacman, this.emulateRomQuirks);
+
+        const blinkyCol = Math.floor(blinky.x / TILE_SIZE);
+        const blinkyRow = Math.floor(blinky.y / TILE_SIZE);
+
+        // Vector doubling: Target = Pivot + (Pivot - Blinky) = 2 * Pivot - Blinky
+        const targetCol = pivotCol + (pivotCol - blinkyCol);
+        const targetRow = pivotRow + (pivotRow - blinkyRow);
+        return { col: targetCol, row: targetRow };
+      }
+
+      case "CLYDE": {
+        // Pokey: chases from 8 tiles or more, heads for his corner when closer
+        return clydeFlees(ghost, pacman) ? maze.scatterTargets.CLYDE : { col: pacCol, row: pacRow };
+      }
+    }
+  }
+
+  /**
+   * Looks one tile ahead (Dossier "Looking Ahead"; RGME: on every tile entry). The ghost is in
+   * tile (col, row) and will leave it heading `heading`; this decides which way it will turn when
+   * it reaches the center of the next tile along that heading.
+   *
+   * It runs for corridors and corners too, as the arcade does, so the frightened PRNG advances
+   * exactly once per tile. The target is refreshed here (null while frightened).
+   */
+  public planNextTile(
+    ghost: Ghost,
+    pacman: Pacman,
+    blinky: Ghost,
+    maze: MazeData,
+    col: number,
+    row: number,
+    heading: Direction
+  ): Direction {
+    const { dx, dy } = getDirectionVector(heading);
+    const nextCol = col + dx;
+    const nextRow = row + dy;
+    ghost.lastDecisionTile = { col: nextCol, row: nextRow };
+
+    ghost.target = this.calculateTarget(ghost, pacman, blinky, maze);
+
+    // Frightened: a PRNG direction with a clockwise fallback. No-up zones are ignored.
+    if (ghost.target === null) {
+      const state = ghost.toState();
+      return pickFrightenedDirection(this.prng.next(), heading, (candidate) => {
+        const v = getDirectionVector(candidate);
+        return isTileWalkableForGhost(nextCol + v.dx, nextRow + v.dy, state, maze);
+      });
+    }
+
+    return chooseNextGhostDirection(ghost.toState(), ghost.target, maze, nextCol, nextRow, heading);
+  }
+}
+
+/**
+ * Blinky's Cruise Elroy stage. After a life is lost, Elroy is suspended (stage 0) until Clyde
+ * starts leaving the house (Dossier, Blinky).
+ */
+export function getElroyStage(
+  level: number,
+  dotsRemaining: number,
+  suspended: boolean
+): ElroyStage {
+  if (suspended) return 0;
+  const { elroy1, elroy2 } = getElroyDotThresholds(level);
+  if (dotsRemaining <= elroy2) return 2;
+  if (dotsRemaining <= elroy1) return 1;
+  return 0;
+}
+
+/**
+ * Inky's pivot: 2 tiles ahead of Pac-Man (with the arcade overflow, facing up is also 2 left).
+ * His target is this pivot's vector from Blinky, doubled. Also drawn by the Learn overlay.
+ */
+export function inkyPivot(pacman: Pacman, overflow: boolean): TileCoord {
+  let col = Math.floor(pacman.x / TILE_SIZE);
+  let row = Math.floor(pacman.y / TILE_SIZE);
+  switch (pacman.dir) {
+    case "UP":
+      row -= 2;
+      if (overflow) col -= 2; // 1980 Z80 overflow: facing up also shifts left
+      break;
+    case "DOWN":
+      row += 2;
+      break;
+    case "LEFT":
+      col -= 2;
+      break;
+    case "RIGHT":
+      col += 2;
+      break;
+  }
+  return { col, row };
+}
+
+/** Clyde is closer than 8 tiles to Pac-Man, so he heads for his corner instead of chasing. */
+export function clydeFlees(clyde: Ghost, pacman: Pacman): boolean {
+  const dc = Math.floor(pacman.x / TILE_SIZE) - Math.floor(clyde.x / TILE_SIZE);
+  const dr = Math.floor(pacman.y / TILE_SIZE) - Math.floor(clyde.y / TILE_SIZE);
+  return dc * dc + dr * dr < 64;
+}

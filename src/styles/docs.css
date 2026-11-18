@@ -1,0 +1,264 @@
+/* The manual's page (plan DOC1): Markdown styled to the game's look. */
+
+.docs-article {
+  color: #d4d4d4;
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 46rem;
+  overflow-wrap: anywhere;
+}
+
+.docs-article h1,
+.docs-article h2,
+.docs-article h3,
+.docs-article h4 {
+  color: #fde047;
+  font-family: "Emulogic", ui-monospace, monospace;
+  line-height: 1.5;
+  position: relative;
+  scroll-margin-top: 5rem;
+}
+.docs-article h1 {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+  letter-spacing: 0.05em;
+}
+.docs-article h2 {
+  font-size: 0.85rem;
+  margin: 2.25rem 0 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #262626;
+  color: #22d3ee;
+}
+.docs-article h3 {
+  font-size: 0.72rem;
+  margin: 1.75rem 0 0.5rem;
+  color: #f9a8d4;
+}
+.docs-article h4 {
+  font-size: 0.65rem;
+  margin: 1.25rem 0 0.4rem;
+  color: #fdba74;
+}
+
+.docs-anchor {
+  position: absolute;
+  left: -1.1em;
+  opacity: 0;
+  color: #737373;
+  text-decoration: none;
+}
+.docs-article :is(h2, h3, h4):hover .docs-anchor {
+  opacity: 1;
+}
+
+.docs-article p,
+.docs-article ul,
+.docs-article ol,
+.docs-article table,
+.docs-article pre,
+.docs-article blockquote {
+  margin: 0 0 1rem;
+}
+.docs-article ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+.docs-article ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.docs-article li {
+  margin: 0.25rem 0;
+}
+.docs-article li > ul,
+.docs-article li > ol {
+  margin: 0.25rem 0 0;
+}
+
+.docs-article a {
+  color: #67e8f9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.docs-article a:hover {
+  color: #a5f3fc;
+}
+.docs-article strong {
+  color: #fafafa;
+}
+
+.docs-article code {
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  /* Code shows exactly what to type: no => or === ligatures */
+  font-variant-ligatures: none;
+  font-feature-settings:
+    "liga" 0,
+    "calt" 0;
+  font-size: 0.86em;
+  background: #171717;
+  border: 1px solid #262626;
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  color: #fde68a;
+}
+.docs-article pre {
+  background: #0d1117;
+  border: 1px solid #262626;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.docs-article pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 13px;
+  color: #e6edf3;
+}
+
+/* Code blocks with a copy button in the top right corner (it stays put while the code scrolls) */
+.docs-code {
+  position: relative;
+  margin: 0 0 1rem;
+}
+.docs-article .docs-code pre {
+  margin: 0;
+  padding-right: 3rem; /* the first line runs under the button */
+}
+.docs-copy {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #a3a3a3;
+  cursor: pointer;
+  /* Above the code, which scrolls sideways under it on narrow screens */
+  z-index: 1;
+  box-shadow: 0 0 0 4px #0d1117;
+  /* Faded until you point at it (or reach it with the keyboard, or it has just copied) */
+  opacity: 0.5;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.docs-copy:hover,
+.docs-copy:focus-visible,
+.docs-copy.copied {
+  opacity: 1;
+}
+.docs-copy:hover {
+  color: #fafafa;
+  border-color: #525252;
+}
+.docs-copy:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 1px;
+}
+.docs-check-icon {
+  display: none;
+}
+.docs-copy.copied {
+  color: #4ade80;
+  border-color: #166534;
+}
+.docs-copy.copied .docs-copy-icon {
+  display: none;
+}
+.docs-copy.copied .docs-check-icon {
+  display: block;
+}
+/* A path in the repository (no file browser here): shown as code, the path on hover */
+.docs-src {
+  border-bottom: 1px dotted #737373;
+  cursor: help;
+}
+
+.docs-article blockquote {
+  border-left: 3px solid #22d3ee;
+  background: #0f1d22;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0 6px 6px 0;
+  color: #cbd5e1;
+}
+.docs-article blockquote p:last-child {
+  margin: 0;
+}
+
+.docs-article table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.docs-article th,
+.docs-article td {
+  border: 1px solid #262626;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  /* Wrap at spaces only: a narrow screen scrolls the table instead of splitting words */
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.docs-article th {
+  background: #171717;
+  color: #fafafa;
+}
+.docs-article tr:nth-child(even) td {
+  background: #0c0c0c;
+}
+
+.docs-article hr {
+  border: 0;
+  border-top: 1px solid #262626;
+  margin: 2rem 0;
+}
+
+/* Search matches */
+.docs-hit mark {
+  background: #854d0e;
+  color: #fef9c3;
+  border-radius: 2px;
+}
+
+/* highlight.js tokens, in the game's colors */
+.hljs-keyword,
+.hljs-built_in,
+.hljs-literal {
+  color: #f9a8d4;
+}
+.hljs-string,
+.hljs-regexp {
+  color: #a5f3fc;
+}
+.hljs-number {
+  color: #fdba74;
+}
+.hljs-comment {
+  color: #737373;
+  font-style: italic;
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_ {
+  color: #fde047;
+}
+.hljs-attr,
+.hljs-property,
+.hljs-variable {
+  color: #93c5fd;
+}
+.hljs-type,
+.hljs-meta {
+  color: #86efac;
+}

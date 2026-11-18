@@ -1,0 +1,255 @@
+import { defineConfig } from "vite-plus";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { lanQrPluginInit } from "./lanQrPlugin.ts";
+import { lazyPlugins } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export default defineConfig({
+  staged: {
+    "*": "vp check --fix",
+  },
+  fmt: {
+    semi: true,
+    singleQuote: false,
+    tabWidth: 2,
+    trailingComma: "es5",
+    printWidth: 100,
+    sortPackageJson: false,
+    ignorePatterns: [
+      "node_modules",
+      "pnpm-lock.yaml",
+      "dist",
+      ".turbo",
+      ".cache",
+      "coverage",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.svg",
+      "*.ico",
+      "*.webp",
+    ],
+  },
+  lint: {
+    plugins: ["oxc", "typescript", "unicorn"],
+    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
+    rules: {
+      "constructor-super": "error",
+      "for-direction": "error",
+      "getter-return": "error",
+      "no-async-promise-executor": "error",
+      "no-case-declarations": "error",
+      "no-class-assign": "error",
+      "no-compare-neg-zero": "error",
+      "no-cond-assign": "error",
+      "no-const-assign": "error",
+      "no-constant-binary-expression": "error",
+      "no-constant-condition": "error",
+      "no-control-regex": "error",
+      "no-debugger": "error",
+      "no-delete-var": "error",
+      "no-dupe-class-members": "error",
+      "no-dupe-else-if": "error",
+      "no-dupe-keys": "error",
+      "no-duplicate-case": "error",
+      "no-empty": "error",
+      "no-empty-character-class": "error",
+      "no-empty-pattern": "error",
+      "no-empty-static-block": "error",
+      "no-ex-assign": "error",
+      "no-extra-boolean-cast": "error",
+      "no-fallthrough": "error",
+      "no-func-assign": "error",
+      "no-global-assign": "error",
+      "no-import-assign": "error",
+      "no-invalid-regexp": "error",
+      "no-irregular-whitespace": "error",
+      "no-loss-of-precision": "error",
+      "no-misleading-character-class": "error",
+      "no-new-native-nonconstructor": "error",
+      "no-nonoctal-decimal-escape": "error",
+      "no-obj-calls": "error",
+      "no-prototype-builtins": "error",
+      "no-redeclare": "error",
+      "no-regex-spaces": "error",
+      "no-self-assign": "error",
+      "no-setter-return": "error",
+      "no-shadow-restricted-names": "error",
+      "no-sparse-arrays": "error",
+      "no-this-before-super": "error",
+      "no-unassigned-vars": "error",
+      "no-undef": "error",
+      "no-unexpected-multiline": "error",
+      "no-unreachable": "error",
+      "no-unsafe-finally": "error",
+      "no-unsafe-negation": "error",
+      "no-unsafe-optional-chaining": "error",
+      "no-unused-labels": "error",
+      "no-unused-private-class-members": "error",
+      "no-unused-vars": "error",
+      "no-useless-assignment": "error",
+      "no-useless-backreference": "error",
+      "no-useless-catch": "error",
+      "no-useless-escape": "error",
+      "no-with": "error",
+      "preserve-caught-error": "error",
+      "require-yield": "error",
+      "use-isnan": "error",
+      "valid-typeof": "error",
+      "no-array-constructor": "error",
+      "no-unused-expressions": "error",
+      "typescript/await-thenable": "error",
+      "typescript/ban-ts-comment": "error",
+      "typescript/no-array-delete": "error",
+      "typescript/no-base-to-string": "error",
+      "typescript/no-duplicate-enum-values": "error",
+      "typescript/no-duplicate-type-constituents": "error",
+      "typescript/no-empty-object-type": "error",
+      "typescript/no-explicit-any": "error",
+      "typescript/no-extra-non-null-assertion": "error",
+      "typescript/no-floating-promises": "error",
+      "typescript/no-for-in-array": "error",
+      "typescript/no-implied-eval": "error",
+      "typescript/no-misused-new": "error",
+      "typescript/no-misused-promises": "error",
+      "typescript/no-namespace": "error",
+      "typescript/no-non-null-asserted-optional-chain": "error",
+      "typescript/no-redundant-type-constituents": "error",
+      "typescript/no-require-imports": "error",
+      "typescript/no-this-alias": "error",
+      "typescript/no-unnecessary-type-assertion": "error",
+      "typescript/no-unnecessary-type-constraint": "error",
+      "typescript/no-unsafe-argument": "error",
+      "typescript/no-unsafe-assignment": "error",
+      "typescript/no-unsafe-call": "error",
+      "typescript/no-unsafe-declaration-merging": "error",
+      "typescript/no-unsafe-enum-comparison": "error",
+      "typescript/no-unsafe-function-type": "error",
+      "typescript/no-unsafe-member-access": "error",
+      "typescript/no-unsafe-return": "error",
+      "typescript/no-unsafe-unary-minus": "error",
+      "typescript/no-wrapper-object-types": "error",
+      "typescript/only-throw-error": "error",
+      "typescript/prefer-as-const": "error",
+      "typescript/prefer-namespace-keyword": "error",
+      "typescript/prefer-promise-reject-errors": "error",
+      "typescript/require-await": "error",
+      "typescript/restrict-plus-operands": "error",
+      "typescript/restrict-template-expressions": "error",
+      "typescript/triple-slash-reference": "error",
+      "typescript/unbound-method": "error",
+      "vite-plus/prefer-vite-plus-imports": "error",
+    },
+    categories: {
+      correctness: "warn",
+    },
+    options: {
+      typeAware: true,
+      typeCheck: true,
+    },
+    env: {
+      builtin: true,
+      browser: true,
+      es2022: true,
+      node: true,
+    },
+    ignorePatterns: ["**/dist/**", "**/node_modules/**", "**/.cache/**"],
+    overrides: [
+      {
+        files: ["**/*.{ts,tsx,mjs}"],
+        rules: {
+          "constructor-super": "error",
+          "getter-return": "error",
+          "no-class-assign": "error",
+          "no-const-assign": "error",
+          "no-dupe-class-members": "error",
+          "no-dupe-keys": "error",
+          "no-func-assign": "error",
+          "no-import-assign": "error",
+          "no-new-native-nonconstructor": "error",
+          "no-obj-calls": "error",
+          "no-redeclare": "error",
+          "no-setter-return": "error",
+          "no-this-before-super": "error",
+          "no-undef": "error",
+          "no-unreachable": "error",
+          "no-unsafe-negation": "error",
+          "no-with": "error",
+          "no-unused-vars": [
+            "warn",
+            {
+              argsIgnorePattern: "^_",
+              varsIgnorePattern: "^_",
+            },
+          ],
+          "typescript/no-explicit-any": "warn",
+          "typescript/consistent-type-imports": [
+            "error",
+            {
+              prefer: "type-imports",
+            },
+          ],
+          "typescript/unbound-method": "off",
+        },
+      },
+    ],
+  },
+  test: {
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["tests/**/*.test.ts"],
+          exclude: ["tests/e2e/**"],
+          // Reuse workers across test files instead of one fresh worker per file (plan T14).
+          // Files then share loaded modules, so tests must clean up shared singletons (e.g.
+          // GameEvents listeners). Run `vp test --sequence.shuffle` to check nothing leaks.
+          isolate: false,
+        },
+      },
+      {
+        // The whole app in a real browser (plan T5): `vp test --project e2e`. Needs Chromium
+        // once: `vp exec playwright install chromium`.
+        extends: true,
+        // Pre-bundled up front: found mid-run, it would reload the test page
+        optimizeDeps: { include: ["vite-plus/test/browser/context", "react-dom/client"] },
+        test: {
+          name: "e2e",
+          include: ["tests/e2e/**/*.test.{ts,tsx}"],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
+    ],
+  },
+  // No LAN QR code for the browser tests' own server
+  plugins: lazyPlugins(() => [
+    react(),
+    tailwindcss(),
+    ...(process.env.VITEST ? [] : [lanQrPluginInit()]),
+  ]),
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "."),
+    },
+  },
+  server: {
+    // HMR is disabled in AI Studio via DISABLE_HMR env var.
+    // Do not modify—file watching is disabled to prevent flickering during agent edits.
+    hmr: process.env.DISABLE_HMR !== "true",
+    // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
+    watch: process.env.DISABLE_HMR === "true" ? null : {},
+  },
+});

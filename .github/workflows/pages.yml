@@ -1,0 +1,45 @@
+# Publishes the game on GitHub Pages (https://g-t-georgiev.github.io/pacman/) after every push
+# to main: the production build, made for the /pacman/ path. Needs the repository's Pages
+# source set to "GitHub Actions" (Settings → Pages → Build and deployment).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push replaces a waiting one, never a running one
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "26"
+          cache: true
+      - uses: actions/configure-pages@v6.0.0
+      # The game is served from /pacman/, not the site's root
+      - run: vp run build:pages
+      - uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5.0.1

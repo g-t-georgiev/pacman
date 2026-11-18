@@ -1,0 +1,1 @@
+vpx ./scripts/check-commit-msg.ts "$1"

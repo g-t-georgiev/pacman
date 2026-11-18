@@ -1,0 +1,77 @@
+import { describe, expect, it } from "vite-plus/test";
+import GameEvents from "../../src/core/EventBus";
+import type { PlayState } from "../../src/types";
+import { live } from "../helpers";
+import { faceBlinky } from "../helpers";
+
+describe("One pause owner (T11)", () => {
+  it("the game runs only when nobody holds it", () => {
+    const { runner, engine } = live();
+    runner.setPaused("user", true);
+    runner.setPaused("panel", true);
+    expect(engine.playState).toBe("PAUSED");
+
+    runner.setPaused("panel", false); // closing a panel...
+    expect(engine.playState).toBe("PAUSED"); // ...does not resume a game the player paused
+    expect(runner.pausedBy).toEqual(["user"]);
+
+    runner.setPaused("user", false);
+    expect(engine.playState).toBe("PLAYING");
+    expect(runner.pausedBy).toEqual([]);
+  });
+
+  it("the agent's pause is its own: resume() leaves the player's pause alone", () => {
+    const { runner, agent, engine } = live();
+    runner.setPaused("user", true);
+    agent.pause();
+    expect(agent.view().pausedBy.sort()).toEqual(["agent", "user"]);
+    agent.resume();
+    expect(engine.paused).toBe(true);
+    expect(agent.view().pausedBy).toEqual(["user"]);
+  });
+
+  it("the agent steps a held game frame by frame, and it stays held", () => {
+    const { runner, agent, engine } = live();
+    runner.setPaused("panel", true);
+    const tick = engine.tick;
+    agent.step(10);
+    expect(engine.tick).toBe(tick + 10);
+    expect(engine.paused).toBe(true);
+    runner.tick(); // the real-time loop still sees a held game
+    expect(engine.tick).toBe(tick + 10);
+  });
+
+  it("round changes reach the UI as ROUND_STATE_CHANGED; pauses do not", () => {
+    const { runner, agent } = live();
+    const seen: PlayState[] = [];
+    const listener = (e: CustomEvent<PlayState>) => seen.push(e.detail);
+    GameEvents.on("ROUND_STATE_CHANGED", listener);
+    try {
+      runner.setPaused("user", true);
+      runner.setPaused("user", false);
+      expect(seen).toEqual([]);
+
+      // Walk Pac-Man into Blinky: a death is a round change
+      faceBlinky(agent);
+      agent.runUntil((v) => v.playState === "DYING", 30);
+      expect(seen).toContain("DYING");
+    } finally {
+      GameEvents.off("ROUND_STATE_CHANGED", listener);
+    }
+  });
+});
+
+describe("The runner's holds win over engine calls (T11)", () => {
+  it("setting playState or starting a new game does not release a hold", () => {
+    const { runner, agent, engine } = live();
+    agent.pause();
+    agent.scenario({ phase: "PLAYING" }); // clears the engine's own flag...
+    engine.initGame("PACMAN", 1); // ...and so does a new game
+    const tick = engine.tick;
+    for (let i = 0; i < 30; i++) runner.tick(); // the real-time loop
+    expect(engine.tick).toBe(tick); // still held by the agent
+    agent.resume();
+    runner.tick();
+    expect(engine.tick).toBe(tick + 1);
+  });
+});
