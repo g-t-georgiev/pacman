@@ -4,6 +4,7 @@ import type { GhostType } from "@/src/types";
 import GameEvents from "@/src/core/EventBus";
 import { useGameEvent } from "@/src/hooks/useGameEvent";
 import { SIM_FPS } from "@/src/game/constants";
+import { actorsDiagnostics } from "../actorData";
 
 interface DiagnosticConsoleProps {
   engine: GameEngine;
@@ -23,9 +24,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ engine, on
   });
 
   // Subscribe to live DIAGNOSTICS_TICK game events instead of polling
-  const ghostStats = useGameEvent(GameEvents, "DIAGNOSTICS_TICK", () =>
-    engine.getActorsDiagnostics()
-  );
+  const ghostStats = useGameEvent(GameEvents, "DIAGNOSTICS_TICK", () => actorsDiagnostics(engine));
 
   // Mouse dragging handlers
   const handleMouseDown = (e: React.MouseEvent) => {

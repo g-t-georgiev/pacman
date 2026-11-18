@@ -5,16 +5,14 @@ import type {
   GameMode,
   GameSettings,
   RuleSettings,
-  GhostState,
   GhostType,
-  LevelSpeedConfig,
   MazeData,
   PlayState,
 } from "../types";
-import { getFrightenedDuration, getFruitDataPerLevel, getSpeedConfigForLevel } from "./levelTable";
-import { EXTRA_LIFE_SCORE, FRUIT_EXTRA_FRAMES, FRUIT_MIN_FRAMES, TILE_SIZE } from "./constants";
-import { Pacman } from "../core/Pacman";
-import { Ghost } from "../core/Ghost";
+import { getSpeedConfigForLevel } from "./levelTable";
+import { EXTRA_LIFE_SCORE } from "./constants";
+import type { Pacman } from "../core/Pacman";
+import type { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
 import { SimRandom } from "../core/SimRandom";
 import {
@@ -26,26 +24,20 @@ import {
   RoundSequencer,
 } from "./RoundSequencer";
 import { TimerController } from "../controllers/TimerController";
-import { GhostAiController, getElroyStage } from "../controllers/GhostAiController";
+import { GhostAiController } from "../controllers/GhostAiController";
 import { MovementController } from "../controllers/MovementController";
 import { HouseController } from "../controllers/HouseController";
-import { DiagnosticController, type DiagnosticData } from "../diagnostics/DiagnosticController";
-import { seamPx } from "./mazes";
+import { DiagnosticController } from "../diagnostics/DiagnosticController";
 import { RULESETS, type Ruleset } from "./rulesets";
 import type { SimEvent, SirenState } from "./simEvents";
-import { sirenStage } from "./siren";
-import { type GameState, decodeTilesInto, encodeTiles, GAME_STATE_VERSION } from "./gameState";
+import { sirenStateOf } from "./siren";
+import { checkCollisions, triggerFrightenedMode } from "./sim/collisions";
+import { spawnFruit, updateFruit } from "./sim/fruit";
+import { spawnActors } from "./sim/spawn";
+import { moveActiveGhost, moveGhosts, movePacman } from "./sim/movement";
+import { defaultRules, defaultSettings } from "./settings";
+import { type GameState, applyState, captureState } from "./gameState";
 import { ReplayLog } from "./replay";
-
-/** Copies a ghost state, including its nested tile objects. */
-function copyGhostState(g: GhostState): GhostState {
-  return {
-    ...g,
-    target: g.target && { ...g.target },
-    lastDecisionTile: g.lastDecisionTile && { ...g.lastDecisionTile },
-    lastOccupiedTile: g.lastOccupiedTile && { ...g.lastOccupiedTile },
-  };
-}
 
 /**
  * The simulation. It only updates state and queues SimEvents; it never plays audio, touches the
@@ -89,46 +81,10 @@ export default class GameEngine {
   }
 
   /** The rules a tick follows (plan P1); recorded in replays. */
-  public readonly rules: RuleSettings = {
-    emulateRomQuirks: true,
-    invincible: false,
-    turbo: false,
-    turboSpeedMultiplier: 1.6,
-  };
+  public readonly rules: RuleSettings = defaultRules();
 
   /** Display, sound, loop timing, input feel and views (plan P1); never recorded. */
-  public readonly settings: GameSettings = {
-    learnVisualsEnabled: false,
-    activeGhostVisuals: {
-      BLINKY: true,
-      PINKY: true,
-      INKY: true,
-      CLYDE: true,
-    },
-    showGrid: false,
-    showGhostPaths: false,
-    showTargetLines: false,
-    gameSpeed: 1.0,
-    arcadeRefreshRate: true,
-    releaseClearsBuffer: false,
-    reducedFlash: false,
-    colorblindPalette: false,
-    soundEnabled: true,
-    crtFilter: false,
-    showDiagnosticConsole: false, // In-game testing & diagnostics console
-    debugOverlay: false,
-    debugLayers: {
-      grid: true,
-      occupiedTiles: true,
-      targets: true,
-      decisions: true,
-      zones: false,
-      intersections: false,
-      cornerWindow: true,
-      readout: false,
-      timeline: true,
-    },
-  };
+  public readonly settings: GameSettings = defaultSettings();
 
   public maze!: MazeData;
   public score: number = 0;
@@ -247,16 +203,17 @@ export default class GameEngine {
     return events;
   }
 
-  private emit(event: SimEvent): void {
+  /** Queues an event for the shell. For the sim's own modules (`src/game/sim`), not the shell. */
+  public emit(event: SimEvent): void {
     this.outbox.push(event);
   }
 
-  private emitScore(): void {
+  public emitScore(): void {
     this.emit({ type: "SCORE_CHANGED", score: this.score, highScore: this.highScore });
   }
 
-  /** Starts a round phase, telling the UI when the coarse play state changes. */
-  private enterPhase(phase: RoundPhase, frames?: number): void {
+  /** Starts a round phase, telling the UI when the coarse play state changes. For sim modules. */
+  public enterPhase(phase: RoundPhase, frames?: number): void {
     const before = this.playState;
     this.sequencer.enter(phase, frames);
     if (this.playState !== before) {
@@ -264,8 +221,8 @@ export default class GameEngine {
     }
   }
 
-  /** Adds points, awards the one bonus life, and tracks the high score. */
-  private addScore(points: number): void {
+  /** Adds points, awards the one bonus life, and tracks the high score. For sim modules. */
+  public addScore(points: number): void {
     this.score += points;
     if (!this.extraLifeAwarded && this.score >= EXTRA_LIFE_SCORE) {
       this.extraLifeAwarded = true;
@@ -277,72 +234,9 @@ export default class GameEngine {
     this.emitScore();
   }
 
-  /**
-   * The background siren for the current state (the shell plays it). Only during play: silent
-   * through READY, the ghost-eaten pause, deaths, level clears and while paused. Eyes going home
-   * win over frightened, which wins over the normal siren (the arcade's "Return to Home",
-   * "Turn to Blue" and "Normal Move" / "Spurt Move" sounds).
-   */
+  /** The background siren for the current state (see `sirenStateOf`). */
   public getSirenState(): SirenState {
-    if (this.paused || this.sequencer.phase !== "PLAYING") return { kind: "OFF" };
-    const ghosts = Object.values(this.ghosts);
-    if (ghosts.some((g) => g.mode === "EATEN")) return { kind: "EYES" };
-    if (ghosts.some((g) => g.mode === "FRIGHTENED")) return { kind: "FRIGHTENED" };
-    return {
-      kind: "NORMAL",
-      stage: sirenStage(this.totalDots - this.dotsRemaining, this.totalDots),
-    };
-  }
-
-  public buildGhostDiagnosticsData(type: GhostType) {
-    const g = this.ghosts?.[type];
-    const gx = g ? g.x : 0;
-    const gy = g ? g.y : 0;
-
-    return {
-      aiMode: g ? g.mode : "SCATTER",
-      targetTile: g ? g.target : { col: 0, row: 0 },
-      x: gx,
-      y: gy,
-      tileCol: Math.floor(gx / TILE_SIZE),
-      tileRow: Math.floor(gy / TILE_SIZE),
-      dir: g ? g.dir : "NONE",
-      speed: g ? g.speed : 0,
-      inHouse: g ? g.inHouse : false,
-      enteringHousePhase: g?.enteringHousePhase ?? "NONE",
-    };
-  }
-
-  public getActorsDiagnostics(): DiagnosticData {
-    const currentWave = this.timerController.currentWave;
-    const currentMode = currentWave?.mode ?? "CHASE";
-
-    const px = this.pacman ? this.pacman.x : 0;
-    const py = this.pacman ? this.pacman.y : 0;
-
-    return {
-      blinky: this.buildGhostDiagnosticsData("BLINKY"),
-      pinky: this.buildGhostDiagnosticsData("PINKY"),
-      inky: this.buildGhostDiagnosticsData("INKY"),
-      clyde: this.buildGhostDiagnosticsData("CLYDE"),
-      pacman: {
-        x: px,
-        y: py,
-        tileCol: Math.floor(px / TILE_SIZE),
-        tileRow: Math.floor(py / TILE_SIZE),
-        dir: this.pacman ? this.pacman.dir : "NONE",
-        speed: this.pacman ? this.pacman.speed : 0,
-        eatingFreezeFrames: this.pacman ? this.pacman.eatingFreezeFrames : 0,
-      },
-      level: this.level,
-      frame: this.lifeFrame,
-      wave: currentMode,
-      waveTimer: this.waveTimer,
-      frightenedTimer: this.frightenedGlobalTimer,
-      score: this.score,
-      highScore: this.highScore,
-      lives: this.lives,
-    };
+    return sirenStateOf(this);
   }
 
   /** A new game: score 0 and the bonus life available again, then a fresh start at `level`. */
@@ -409,63 +303,9 @@ export default class GameEngine {
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
   }
 
-  public resetActorPositions() {
-    // In arcade Pac-Man: if a bonus fruit was currently active when Pac-Man died,
-    // it immediately disappears and does NOT reappear after respawning (treated as already consummated).
-    if (this.fruit) {
-      this.fruit.active = false;
-      this.fruit = null;
-    }
-
-    const speedConfig = getSpeedConfigForLevel(this.level);
-
-    // Every actor starts on the seam between its two spawn tiles (F9)
-    const pacPos = seamPx(this.maze.pacmanSpawn.candidates);
-    this.pacman = new Pacman(pacPos.x, pacPos.y, this.maze.pacmanSpawn.dir);
-    this.pacman.speed = speedConfig.pacmanNormal;
-    this.pacman.invincible = this.rules.invincible;
-
-    // Ghosts initial spawn on designated candidate integer tiles
-    const gSpawns = this.maze.ghostSpawns;
-    const getSpawnPos = (type: GhostType) => seamPx(gSpawns[type].candidates);
-
-    const blinkyPos = getSpawnPos("BLINKY");
-    const pinkyPos = getSpawnPos("PINKY");
-    const inkyPos = getSpawnPos("INKY");
-    const clydePos = getSpawnPos("CLYDE");
-
-    this.ghosts = {
-      BLINKY: new Ghost(
-        "BLINKY",
-        blinkyPos.x,
-        blinkyPos.y,
-        gSpawns.BLINKY.initialDir,
-        gSpawns.BLINKY.inHouse
-      ),
-      PINKY: new Ghost(
-        "PINKY",
-        pinkyPos.x,
-        pinkyPos.y,
-        gSpawns.PINKY.initialDir,
-        gSpawns.PINKY.inHouse
-      ),
-      INKY: new Ghost("INKY", inkyPos.x, inkyPos.y, gSpawns.INKY.initialDir, gSpawns.INKY.inHouse),
-      CLYDE: new Ghost(
-        "CLYDE",
-        clydePos.x,
-        clydePos.y,
-        gSpawns.CLYDE.initialDir,
-        gSpawns.CLYDE.inHouse
-      ),
-    };
-
-    const wave = this.timerController.currentWave?.mode ?? "CHASE";
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      const g = this.ghosts[type];
-      g.wave = wave;
-      g.target = this.maze.scatterTargets[type];
-      g.speed = speedConfig.ghostNormal;
-    });
+  /** New actors on their spawn points (a level start or a new life). */
+  private resetActorPositions(): void {
+    spawnActors(this);
   }
 
   /**
@@ -515,7 +355,7 @@ export default class GameEngine {
       const shown = this.sequencer.state.eatenGhost;
       const speedConfig = getSpeedConfigForLevel(this.level);
       for (const g of Object.values(this.ghosts)) {
-        if (g.isEyes && g.type !== shown) this.updateActiveGhost(g, speedConfig);
+        if (g.isEyes && g.type !== shown) moveActiveGhost(this, g, speedConfig);
       }
     }
 
@@ -599,277 +439,29 @@ export default class GameEngine {
 
     const speedConfig = getSpeedConfigForLevel(this.level);
     // Update Pac-Man physical movement via MovementController
-    this.updatePacmanMovement(speedConfig);
+    movePacman(this, speedConfig);
     // Update Ghosts physical movement via MovementController & GhostAiController
-    this.updateGhostsMovement(speedConfig);
+    moveGhosts(this, speedConfig);
 
-    // Update Visual Animations via AnimationController (Pac-Man's mouth follows his position)
-
-    // Check Collisions
-    this.checkCollisions();
-
-    // Update Fruit
-    this.updateFruit();
+    checkCollisions(this);
+    updateFruit(this);
   }
 
-  private updatePacmanMovement(speedConfig: LevelSpeedConfig) {
-    const isFrightened = this.frightenedGlobalTimer > 0;
-    const speedPct = this.pacman.getSpeedPercentage(this.level, isFrightened, speedConfig);
-    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
-
-    const { x, y } = this.pacman;
-    this.movementController.updatePacmanMovement(
-      this.pacman,
-      this.lifeFrame,
-      speedPct,
-      turboMult,
-      this.maze
-    );
-    if (this.pacman.x !== x || this.pacman.y !== y) this.pacman.hasMoved = true;
+  /** An energizer's effect, from outside a play frame too (scenarios, tests, the Practice tab). */
+  public triggerFrightenedMode(): void {
+    triggerFrightenedMode(this);
   }
 
-  private updateGhostsMovement(speedConfig: LevelSpeedConfig) {
-    const blinky = this.ghosts.BLINKY;
-    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
-
-    // Release ghosts from the house (dot counters, global counter, idle timer)
-    this.houseController.update(this.ghosts, this.level);
-    blinky.elroyStage = getElroyStage(
-      this.level,
-      this.dotsRemaining,
-      this.houseController.state.elroySuspended
-    );
-
-    for (const g of Object.values(this.ghosts)) {
-      // Waiting in the house, or on the way out
-      if (g.inHouse) {
-        const pct = g.getSpeedPercentage(this.maze, speedConfig);
-        this.movementController.updateHouseGhost(g, this.lifeFrame, pct, turboMult);
-      } else {
-        this.updateActiveGhost(g, speedConfig);
-      }
-    }
+  /** Puts this level's fruit on the board now (scenarios, tests, the Practice tab). */
+  public spawnFruit(): void {
+    spawnFruit(this);
   }
 
-  /** Targeting and movement for a ghost outside the house (eyes included). */
-  private updateActiveGhost(g: Ghost, speedConfig: LevelSpeedConfig): void {
-    const blinky = this.ghosts.BLINKY;
-    const turboMult = this.rules.turbo ? this.rules.turboSpeedMultiplier : 1.0;
-
-    // Target tile (with the optional 1980 ROM quirks)
-    g.target = this.ghostAiController.calculateTarget(g, this.pacman, blinky, this.maze);
-
-    // Discrete 16-frame bitmask speed & tile-to-tile movement
-    const speedPct = g.getSpeedPercentage(this.maze, speedConfig);
-
-    this.movementController.updateGhostMovement(g, {
-      blinky,
-      pacman: this.pacman,
-      lifeFrame: this.lifeFrame,
-      speedPct,
-      turboMultiplier: turboMult,
-      maze: this.maze,
-      ghostAi: this.ghostAiController,
-    });
-  }
-
-  private checkCollisions() {
-    const halfTile = TILE_SIZE / 2;
-    const pacCol = Math.floor(this.pacman.x / TILE_SIZE);
-    const pacRow = Math.floor(this.pacman.y / TILE_SIZE);
-
-    // 1. Check Dot & Energizer Eating
-    if (pacRow >= 0 && pacRow < this.maze.height && pacCol >= 0 && pacCol < this.maze.width) {
-      const tile = this.maze.tiles[pacRow][pacCol];
-
-      if (tile === "DOT") {
-        this.maze.tiles[pacRow][pacCol] = "EMPTY";
-        this.addScore(10);
-        this.dotsRemaining--;
-        this.dotsEatenThisLevel++;
-        this.pacman.eatingFreezeFrames = 1; // Authentic 1-frame eating freeze
-        this.houseController.onDotEaten(this.ghosts);
-        this.emit({ type: "DOT_EATEN" });
-        this.checkFruitSpawn();
-        this.checkLevelClear();
-      } else if (tile === "ENERGIZER") {
-        this.maze.tiles[pacRow][pacCol] = "EMPTY";
-        this.addScore(50);
-        this.dotsRemaining--;
-        this.dotsEatenThisLevel++;
-        this.pacman.eatingFreezeFrames = 3; // Authentic 3-frame energizer freeze
-        this.houseController.onDotEaten(this.ghosts);
-        this.eatenGhostsInEnergizer = 0;
-        this.triggerFrightenedMode();
-        this.checkFruitSpawn();
-        this.checkLevelClear();
-        this.emit({ type: "ENERGIZER_EATEN", level: this.level });
-      }
-    }
-
-    // 2. Ghost collisions (same tile). A cleared level ends the frame first. Only one ghost is
-    // eaten per frame: the pause starts, and a second ghost on the tile is caught after it.
-    const pacTile = this.pacman.tileCoord;
-
-    for (const g of Object.values(this.ghosts)) {
-      if (this.sequencer.phase !== "PLAYING") break;
-      if (g.location !== "ACTIVE") continue;
-
-      const ghostTile = g.tileCoord;
-      if (pacTile.col !== ghostTile.col || pacTile.row !== ghostTile.row) continue;
-
-      if (g.frightened) {
-        g.location = "EYES";
-        g.frightened = false;
-        g.reversalPrimed = false; // Getting eaten does not trigger reversal or preserve primed reversals
-        g.lastDecisionTile = undefined; // Re-evaluate targeting towards house doorstep immediately
-        g.target = this.ghostAiController.calculateTarget(
-          g,
-          this.pacman,
-          this.ghosts.BLINKY,
-          this.maze
-        );
-        this.eatenGhostsInEnergizer++;
-        const points = 200 * Math.pow(2, Math.min(3, this.eatenGhostsInEnergizer - 1));
-        this.addScore(points);
-        // The action stops while the score is shown where the ghost was (F20).
-        this.enterPhase("GHOST_EATEN_PAUSE");
-        this.sequencer.state.eatenGhost = g.type;
-        this.sequencer.state.eatenPoints = points;
-        this.emit({ type: "GHOST_EATEN", ghost: g.type, points });
-      } else if (!this.rules.invincible && !this.pacman.invincible) {
-        // Everything freezes with the ghosts visible, then the death animation starts (F21).
-        this.enterPhase("DEATH_FREEZE");
-        if (this.fruit) {
-          this.fruit.active = false;
-          this.fruit = null;
-        }
-      }
-    }
-
-    // 3. Check Fruit Collision (Pac-Man's center anchor occupies fruit candidate tiles)
-    if (this.fruit && this.fruit.active) {
-      const fruitRow = this.fruit.row;
-      const fruitCol = this.fruit.col;
-      const isFruitTile =
-        pacTile.row === fruitRow &&
-        (pacTile.col === fruitCol || pacTile.col === 13 || pacTile.col === 14);
-
-      if (isFruitTile) {
-        this.addScore(this.fruit.points);
-        this.fruit.active = false;
-
-        const fruitX = fruitCol * TILE_SIZE + halfTile;
-        const fruitY = fruitRow * TILE_SIZE + halfTile;
-
-        this.emit({ type: "FRUIT_EATEN", points: this.fruit.points, x: fruitX, y: fruitY });
-      }
-    }
-  }
-
-  public triggerFrightenedMode() {
-    const duration = getFrightenedDuration(this.level);
-
-    this.timerController.triggerFrightened(duration);
-
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      const g = this.ghosts[type];
-
-      // Eyes on their way home are immune. Every other ghost, inside the house too, latches a
-      // reversal and (unless this level has no frightened time) turns blue.
-      if (g.isEyes) return;
-      g.primeReversal();
-
-      if (duration <= 0) return;
-      g.frightened = true;
-    });
-  }
-
-  private checkFruitSpawn() {
-    // Spawns fruit at 70 and 170 dots eaten
-    if (this.dotsEatenThisLevel === 70 || this.dotsEatenThisLevel === 170) {
-      this.spawnFruit();
-    }
-  }
-
-  public spawnFruit() {
-    const fruitMeta = getFruitDataPerLevel(this.level);
-
-    this.fruit = {
-      name: fruitMeta.name,
-      points: fruitMeta.points,
-      col: 13, // Standardized to absolute integer coordinate to keep pathing calculations clean
-      row: 20,
-      active: true,
-      duration: FRUIT_MIN_FRAMES + this.simRandom.nextInt(FRUIT_EXTRA_FRAMES),
-      color: fruitMeta.color,
-      symbol: fruitMeta.symbol,
-      bouncing: this.ruleset.fruitBounces,
-      bounceY: 0,
-      bounceDir: 1,
-    };
-  }
-
-  private updateFruit() {
-    if (this.fruit && this.fruit.active) {
-      this.fruit.duration--;
-      if (this.fruit.bouncing) {
-        this.fruit.bounceY = Math.sin(this.fruit.duration / 9) * 2;
-      }
-      if (this.fruit.duration <= 0) {
-        this.fruit.active = false;
-      }
-    }
-  }
-
-  private checkLevelClear() {
-    if (this.dotsRemaining <= 0) {
-      this.fruit = null;
-      this.enterPhase("LEVEL_CLEAR_FREEZE");
-      this.emit({ type: "LEVEL_CLEARED", level: this.level });
-    }
-  }
-
-  // --- Rewind Buffer & Practice Sandbox ---
+  // --- Saved state (the format and the copying live in gameState.ts) ---
 
   /** Captures the complete sim state (see GameState). Every object in it is a fresh copy. */
   public getState(): GameState {
-    const ghosts = {} as Record<GhostType, GhostState>;
-    (Object.keys(this.ghosts) as GhostType[]).forEach((type) => {
-      ghosts[type] = copyGhostState(this.ghosts[type].toState());
-    });
-
-    return {
-      version: GAME_STATE_VERSION,
-      mode: this.mode,
-      sequence: { ...this.sequencer.state },
-      level: this.level,
-      score: this.score,
-      highScore: this.highScore,
-      lives: this.lives,
-      dotsRemaining: this.dotsRemaining,
-      totalDots: this.totalDots,
-      dotsEatenThisLevel: this.dotsEatenThisLevel,
-      eatenGhostsInEnergizer: this.eatenGhostsInEnergizer,
-      lifeFrame: this.lifeFrame,
-      tick: this.tick,
-      timers: {
-        waveIndex: this.timerController.waveIndex,
-        waveTimer: this.timerController.waveTimer,
-        frightened: this.timerController.frightenedGlobalTimer,
-      },
-      prng: this.prng.state,
-      simRandom: this.simRandom.state,
-      extraLifeAwarded: this.extraLifeAwarded,
-      tiles: encodeTiles(this.maze.tiles),
-      pacman: this.pacman.toState(),
-      ghosts,
-      house: {
-        ...this.houseController.state,
-        dotCounters: { ...this.houseController.state.dotCounters },
-      },
-      fruit: this.fruit ? { ...this.fruit } : null,
-    };
+    return captureState(this);
   }
 
   /**
@@ -877,46 +469,12 @@ export default class GameEngine {
    * is not kept or mutated.
    */
   public setState(state: GameState): void {
-    this.restoreState(state);
+    applyState(this, state);
     this.replayLog.reset(this); // a loaded state starts a new recording
-  }
-
-  /** Restores a state without touching the recording (rewind). */
-  private restoreState(state: GameState): void {
-    if (state.mode !== this.mode || state.level !== this.level) {
-      this.maze = RULESETS[state.mode].maze(state.level);
-    }
-    this.mode = state.mode;
-    this.sequencer.state = { ...state.sequence };
-    this.level = state.level;
-    this.timerController.level = state.level;
-    this.score = state.score;
-    this.highScore = state.highScore;
-    this.lives = state.lives;
-    this.dotsRemaining = state.dotsRemaining;
-    this.totalDots = state.totalDots;
-    this.dotsEatenThisLevel = state.dotsEatenThisLevel;
-    this.eatenGhostsInEnergizer = state.eatenGhostsInEnergizer;
-    this.lifeFrame = state.lifeFrame;
-    this.tick = state.tick;
-    this.timerController.waveIndex = state.timers.waveIndex;
-    this.timerController.waveTimer = state.timers.waveTimer;
-    this.timerController.frightenedGlobalTimer = state.timers.frightened;
-    this.prng.state = state.prng;
-    this.simRandom.state = state.simRandom;
-    this.extraLifeAwarded = state.extraLifeAwarded;
-    decodeTilesInto(state.tiles, this.maze.tiles);
-    this.pacman.restoreFromState({ ...state.pacman });
-    (Object.keys(state.ghosts) as GhostType[]).forEach((type) => {
-      this.ghosts[type].restoreFromState(copyGhostState(state.ghosts[type]));
-    });
-    this.houseController.state = { ...state.house, dotCounters: { ...state.house.dotCounters } };
-    this.fruit = state.fruit ? { ...state.fruit } : null;
   }
 
   // --- Rewind (T7): keyframes from the replay log plus re-simulation ---
 
-  /** How many frames rewind can reach: the oldest keyframe up to the newest recorded frame. */
   /** Plays on from the frame shown (scrubbing): everything recorded after it is forgotten. */
   public leaveScrub() {
     if (this.rewindIndex !== -1) {
@@ -936,7 +494,7 @@ export default class GameEngine {
     const { start, inputs } = this.replayLog.pathTo(tick);
     const outbox = this.outbox;
 
-    this.restoreState(start);
+    applyState(this, start); // not setState: the recording stays
     this.rewindIndex = -1;
     this.paused = false;
     this.resimulating = true;

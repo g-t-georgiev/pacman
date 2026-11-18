@@ -4,6 +4,7 @@ import { TILE_SIZE } from "../../src/game/constants";
 import { Ghost } from "../../src/core/Ghost";
 import { MovementController } from "../../src/controllers/MovementController";
 import { getMazeData } from "../../src/game/mazes";
+import { actorsDiagnostics } from "../../src/diagnostics/actorData";
 
 describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () => {
   it("should trigger collision only when Pac-Man and Ghost occupy the exact same integer tile", () => {
@@ -250,7 +251,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     engine.initGame("PACMAN", 1);
     engine.playState = "PLAYING";
 
-    const diagData = engine.getActorsDiagnostics();
+    const diagData = actorsDiagnostics(engine);
     // Pac-Man and Blinky start on the 13/14 seam (x = 112), which is in col 14
     expect(diagData.pacman.tileCol).toBe(14);
     expect(diagData.pacman.tileRow).toBe(26);

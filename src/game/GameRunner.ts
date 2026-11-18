@@ -9,6 +9,7 @@ import { PracticeTools } from "./practiceTools";
 import { LatencyMeter } from "./latencyMeter";
 import { ScorePopups } from "./scorePopups";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
+import { actorsDiagnostics } from "../diagnostics/actorData";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
 export type PauseReason = "user" | "panel" | "agent" | "replay";
@@ -145,7 +146,7 @@ export class GameRunner {
     if (this.engine.phase === "PLAYING" && (import.meta.env.DEV || consoleOpen)) {
       this.engine.diagnosticController.evaluateRules(this.engine, this.engine.lifeFrame);
       if (consoleOpen && this.engine.lifeFrame % 4 === 0) {
-        GameEvents.emit("DIAGNOSTICS_TICK", this.engine.getActorsDiagnostics());
+        GameEvents.emit("DIAGNOSTICS_TICK", actorsDiagnostics(this.engine));
       }
     }
   }
