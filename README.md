@@ -6,6 +6,10 @@ deterministic simulation and tooling to study and test it.
 
 Two modes: **Pac-Man** and **Ms. Pac-Man**.
 
+**The manual** is in the game (📖 Manual in the top bar) and in [`docs/manual/`](docs/manual/):
+how to play, the arcade rules with their sources, the architecture, replays and versions,
+testing, debugging tools, the agent driver API, console recipes, and every file and script.
+
 ## Running and checking
 
 This project uses [Vite+](https://viteplus.dev/guide/) (`vp`).
@@ -93,7 +97,7 @@ questions.
 
 ## Debugging and testing tools
 
-- **Agent driver** (`window.pacmanAgent` in dev builds; `docs/AGENT_DRIVER.md`): pause, step,
+- **Agent driver** (`window.pacmanAgent` in dev builds; [manual chapter](docs/manual/08-agent-api.md)): pause, step,
   run until a condition, set up scenarios, inspect state, record speeds, save and verify
   replays. Works headless in tests too.
 - **Replays.** The game keeps a rolling recording (a keyframe every second, inputs, state
@@ -135,6 +139,7 @@ src/
 ├── controllers/    Timers, ghost AI (targeting, Elroy), movement, ghost house, game loop
 ├── core/           Actor, Pacman, Ghost (its state machine), PRNG, SimRandom, EventBus
 ├── diagnostics/    Runtime invariant rules, the live console, actorData
+├── docs/           manual.ts: loads, renders and searches docs/manual/ for the Manual page
 ├── game/
 │   ├── GameEngine.ts      The tick and the round flow (no audio, UI or clock)
 │   ├── sim/               Collisions and scoring, fruit, spawning, movement
@@ -158,7 +163,7 @@ src/
 └── utils/          Browser preferences and key bindings
 tests/              unit, integration, fidelity, regression, golden replay and e2e (browser) tests
 scripts/            golden update / check / trace
-docs/               REFACTOR_PLAN.md, CLEANUP_PLAN.md, AGENT_DRIVER.md
+docs/               manual/ (the in-game manual, one file per chapter), REFACTOR_PLAN.md, CLEANUP_PLAN.md
 ```
 
 ## Credits

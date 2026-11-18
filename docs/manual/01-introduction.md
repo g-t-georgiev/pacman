@@ -16,8 +16,8 @@ The same files are in the repository under `docs/manual/`, so the manual reads o
 
 ## What this game is
 
-- **Two modes.** Pac-Man, and Ms. Pac-Man (her rules on the same maze layout; the maze colors
-  change between levels).
+- **Two modes.** Pac-Man, and Ms. Pac-Man (the same rules, her look and one maze of her own with
+  two tunnels; its colors change between levels).
 - **The arcade's mechanics, measured in the arcade's own units.** 8-pixel tiles, whole-pixel
   positions, one simulation step per arcade frame at 60.606 frames per second. Speeds, turns,
   ghost decisions, the ghost house and the level table follow _The Pac-Man Dossier_ by Jamey

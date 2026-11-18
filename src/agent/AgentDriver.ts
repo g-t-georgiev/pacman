@@ -562,7 +562,7 @@ export class AgentDriver {
 
 declare global {
   interface Window {
-    /** Dev builds only: the agent driver for the running game (see docs/AGENT_DRIVER.md). */
+    /** Dev builds only: the agent driver for the running game (see docs/manual/08-agent-api.md). */
     pacmanAgent?: AgentDriver;
   }
 }
