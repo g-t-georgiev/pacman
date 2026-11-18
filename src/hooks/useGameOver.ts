@@ -36,6 +36,9 @@ export function useGameOver(
 
   useEffect(() => {
     const onGameOver = (e: CustomEvent<number>) => {
+      // A game over inside a replay being watched is part of the clip: no Restart panel (it
+      // would hold the game and freeze the viewer before the end) and no high score offer
+      if (runnerRef.current?.viewer.state.active) return;
       const finalScore = e.detail;
       setIsGameOver(true);
       cancelDelayedPanel();
