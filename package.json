@@ -1,6 +1,6 @@
 {
   "name": "pacman-arcade-lab",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,6 +15,8 @@
     "golden:update": "vpx ./scripts/update-golden.ts",
     "golden:check": "vpx ./scripts/check-golden.ts",
     "golden:trace": "vpx ./scripts/play-trace.ts",
+    "docs:versions": "vpx ./scripts/versions.ts",
+    "docs:check": "vpx ./scripts/versions.ts --check",
     "test:regression": "vp test --project unit tests/regression",
     "test:unit": "vp test --project unit",
     "test:e2e": "vp test --project e2e",

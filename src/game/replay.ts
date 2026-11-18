@@ -23,6 +23,9 @@ export type SimSettings = RuleSettings;
  */
 export const RULES_VERSION = 1;
 
+/** The replay file format this build writes (2 added `made`); format 1 files still load. */
+export const REPLAY_FORMAT_VERSION = 2;
+
 /** File format 2 adds `made`; format 1 files (no versions) still load. */
 export interface Replay {
   format: "pacman-replay";
@@ -160,7 +163,7 @@ export class ReplayLog {
     if (checkpoints[checkpoints.length - 1]?.[0] !== now) checkpoints.push([now, endHash]);
     return {
       format: "pacman-replay",
-      version: 2,
+      version: REPLAY_FORMAT_VERSION,
       made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
       settings: { ...start.settings },
       start: structuredClone(start.state),
@@ -200,7 +203,7 @@ export function recordReplay(
   engine.drainEvents();
   return {
     format: "pacman-replay",
-    version: 2,
+    version: REPLAY_FORMAT_VERSION,
     made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
     settings,
     start,

@@ -5,20 +5,20 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 
 ## Top level
 
-| File                                       | What it is                                                                                            |
-| :----------------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| `index.html`                               | The page: the root element, fonts preload, meta tags                                                  |
-| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                         |
-| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server     |
-| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                 |
-| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone             |
-| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                  |
-| `README.md`                                | The short overview, commands and file map                                                             |
-| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the regression suite             |
-| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build                                |
-| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                               |
-| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing) |
-| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                          |
+| File                                       | What it is                                                                                                    |
+| :----------------------------------------- | :------------------------------------------------------------------------------------------------------------ |
+| `index.html`                               | The page: the root element, fonts preload, meta tags                                                          |
+| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                                 |
+| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server             |
+| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                         |
+| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone                     |
+| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                          |
+| `README.md`                                | The short overview, commands and file map                                                                     |
+| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the versions check, the regression suite |
+| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build                                        |
+| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                       |
+| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)         |
+| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                  |
 
 ## Scripts
 
@@ -36,6 +36,8 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 | `golden:update`    | `scripts/update-golden.ts`                | Re-record the golden replays, bumping versions as needed         |
 | `golden:check`     | `scripts/check-golden.ts`                 | Do the goldens still match this build? (pre-commit, CI)          |
 | `golden:trace`     | `scripts/play-trace.ts`                   | A per-second play trace of every golden, and a comparison of two |
+| `docs:versions`    | `scripts/versions.ts`                     | Rewrite the versions in the README and the manual's introduction |
+| `docs:check`       | `scripts/versions.ts --check`             | Are those versions up to date? (pre-commit, and a test)          |
 | `prepare`          | `vp config`                               | Installs the git hooks after `vp install`                        |
 
 Run them with `vp run <script>` (`vp test`, `vp build` and `vp dev` are also Vite+ built-ins).
@@ -48,18 +50,21 @@ The files in `scripts/`:
 - `play-trace.ts`: the play trace (see [Replays, rewind and versions](./05-replays-and-versions.md)).
 - `goldenVersions.ts`: shared by the two above: where the goldens live, comparing state shapes,
   bumping a version constant in its source file.
+- `versions.ts`: the versions shown in the README and the manual (the game, the rules,
+  the saved state, the replay format, the tools), generated from their sources.
 
 ## src/
 
 ### Entry and app
 
-| File                     | Owns                                          |
-| :----------------------- | :-------------------------------------------- |
-| `main.tsx`               | Mounts the app                                |
-| `App.tsx`                | The root component (the cabinet)              |
-| `index.css`              | Tailwind, the Emulogic font face, base styles |
-| `styles/transitions.css` | Panel open and close animations               |
-| `styles/docs.css`        | The manual's page styles and code colors      |
+| File                     | Owns                                                             |
+| :----------------------- | :--------------------------------------------------------------- |
+| `main.tsx`               | Mounts the app                                                   |
+| `version.ts`             | The game's versions, shown in the footer and the manual's header |
+| `App.tsx`                | The root component (the cabinet)                                 |
+| `index.css`              | Tailwind, the Emulogic font face, base styles                    |
+| `styles/transitions.css` | Panel open and close animations                                  |
+| `styles/docs.css`        | The manual's page styles and code colors                         |
 
 ### agent/
 

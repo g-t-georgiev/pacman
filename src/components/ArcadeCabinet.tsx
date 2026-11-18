@@ -31,6 +31,7 @@ import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
 import { DocsErrorBoundary } from "./DocsErrorBoundary";
+import { APP_VERSION_LABEL, VERSIONS } from "../version";
 import { keepArcadeFont } from "../utils/fontLoader";
 
 // The manual is loaded when it is first opened: the game's bundle doesn't carry it
@@ -558,6 +559,12 @@ export const ArcadeCabinet: React.FC = () => {
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">
         <span>Pac-Man Arcade &copy; 1980 Namco / Midway</span>
+        <span
+          className="ml-2 text-neutral-600"
+          title={`Game ${APP_VERSION_LABEL} · rules version ${VERSIONS.rules} · saved state version ${VERSIONS.state} · replay format ${VERSIONS.replayFormat}`}
+        >
+          · {APP_VERSION_LABEL} · rules {VERSIONS.rules}
+        </span>
       </footer>
     </div>
   );

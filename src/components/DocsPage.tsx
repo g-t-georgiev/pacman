@@ -9,6 +9,7 @@ import {
   searchManual,
 } from "../docs/manual";
 import { type DocsRoute, docsHash } from "../docs/route";
+import { APP_VERSION_LABEL, VERSIONS } from "../version";
 
 interface DocsPageProps {
   route: DocsRoute;
@@ -220,6 +221,12 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
           ☰
         </button>
         <span className="font-bold tracking-wider text-sm text-yellow-300">📖 MANUAL</span>
+        <span
+          className="text-xs text-neutral-500"
+          title={`This manual describes the game ${APP_VERSION_LABEL} (rules version ${VERSIONS.rules})`}
+        >
+          {APP_VERSION_LABEL}
+        </span>
         <div className="relative flex-1 min-w-[10rem] max-w-md order-3 sm:order-none w-full sm:w-auto">
           <input
             ref={searchRef}
