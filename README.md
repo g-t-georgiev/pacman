@@ -14,7 +14,9 @@ This project uses [Vite+](https://viteplus.dev/guide/) (`vp`).
 vp install           # after pulling
 vp dev --port=3000   # dev server (debug overlay, agent driver and diagnostics enabled)
 vp check             # format, lint, type check
-vp test              # unit, integration, fidelity and golden replay tests
+vp test              # everything: the headless tests, then the e2e tests in Chromium
+vp run test:unit     # the headless tests only (unit, integration, fidelity, regression, golden)
+vp run test:e2e      # the app in a real browser (first time: vp exec playwright install chromium)
 vp run golden:update # re-record golden replays (and bump versions) after an intended change
 vp run golden:check  # do the golden replays still match? (the pre-commit hook runs it)
 vp run test:regression # core contracts and fixed bugs, ~0.4 s (the pre-commit hook runs it)
@@ -111,6 +113,12 @@ questions.
 - **Regression suite.** `tests/regression/`: the core contracts every subsystem stands on, and
   one test per bug fixed. Every commit runs it; every new bug fix adds a test.
 - **Fidelity suite.** `tests/fidelity/dossier.test.ts`, one test per Dossier claim.
+- **End-to-end tests.** `tests/e2e/`: the whole app in headless Chromium (Vitest browser mode):
+  loading, keys and remapped keys, pausing, panels holding the game and closing on death, the
+  game over rewind, the siren, options and presets surviving a reload, replay links, and every
+  golden replay run in the browser and in the live game's viewer.
+- **CI.** `.github/workflows/ci.yml` runs `vp check`, `vp test`, the golden check and the build
+  on every push and pull request.
 - **Diagnostics console.** Runtime invariants, checked in dev builds or while the console is open.
 
 ## Project structure
@@ -148,7 +156,7 @@ src/
 ├── hooks/          usePanels, useGameOver, useReplays, useGameInput, useEngineSettings
 ├── types/          Shared types
 └── utils/          Browser preferences and key bindings
-tests/              unit, integration, fidelity, regression and golden replay tests
+tests/              unit, integration, fidelity, regression, golden replay and e2e (browser) tests
 scripts/            golden update / check / trace
 docs/               REFACTOR_PLAN.md, CLEANUP_PLAN.md, AGENT_DRIVER.md
 ```

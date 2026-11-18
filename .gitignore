@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Vitest browser mode: failure screenshots
+.vitest/

@@ -24,7 +24,9 @@ jobs:
           cache: true
       # Format, lint and type check
       - run: vp check
-      # Unit, integration, fidelity, regression and golden replay tests
+      # The e2e tests run the app in Chromium (Vitest browser mode, plan T5)
+      - run: vp exec playwright install --with-deps chromium
+      # Unit, integration, fidelity, regression and golden replay tests, then the e2e tests
       - run: vp test
       # The golden replays still match this build (versions bumped when the rules change)
       - run: vp run golden:check
