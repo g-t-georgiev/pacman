@@ -32,7 +32,7 @@ import type { SimEvent, SirenState } from "./simEvents";
 import { sirenStateOf } from "./siren";
 import { checkCollisions, triggerFrightenedMode } from "./sim/collisions";
 import { spawnFruit, updateFruit } from "./sim/fruit";
-import { spawnActors } from "./sim/spawn";
+import { createActors, spawnActors } from "./sim/spawn";
 import { moveActiveGhost, moveGhosts, movePacman } from "./sim/movement";
 import { defaultRules, defaultSettings } from "./settings";
 import { type GameState, applyState, captureState } from "./gameState";
@@ -70,7 +70,7 @@ export default class GameEngine {
   /** Display, sound, loop timing, input feel and views (plan P1); never recorded. */
   public readonly settings: GameSettings = defaultSettings();
 
-  public maze!: MazeData;
+  public maze: MazeData;
   public score: number = 0;
   public highScore: number = 0;
   public level: number = 1;
@@ -109,8 +109,8 @@ export default class GameEngine {
   public diagnosticController: DiagnosticController = new DiagnosticController();
 
   // Actors
-  public pacman!: Pacman;
-  public ghosts!: Record<GhostType, Ghost>;
+  public pacman: Pacman;
+  public ghosts: Record<GhostType, Ghost>;
 
   public get waveIndex(): number {
     return this.timerController.waveIndex;
@@ -177,6 +177,12 @@ export default class GameEngine {
   constructor(mode: GameMode = "PACMAN", highScoresRecord: number = 0) {
     this.mode = mode;
     this.highScore = highScoresRecord;
+    // The maze and the actors exist from the start (plan N5: no "!" on them); initGame then
+    // sets up level 1 properly
+    this.maze = this.ruleset.maze(this.level);
+    const actors = createActors(this);
+    this.pacman = actors.pacman;
+    this.ghosts = actors.ghosts;
     this.initGame(mode, 1);
   }
 

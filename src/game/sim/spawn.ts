@@ -14,22 +14,31 @@ export function spawnActors(engine: GameEngine): void {
     engine.fruit.active = false;
     engine.fruit = null;
   }
+  const actors = createActors(engine);
+  engine.pacman = actors.pacman;
+  engine.ghosts = actors.ghosts;
+}
 
+/** New actors on the spawn points of `engine`'s maze and level (it only reads the engine). */
+export function createActors(engine: GameEngine): {
+  pacman: Pacman;
+  ghosts: Record<GhostType, Ghost>;
+} {
   const speeds = getSpeedConfigForLevel(engine.level);
   const maze = engine.maze;
 
   // Every actor starts on the seam between its two spawn tiles (F9)
   const pac = seamPx(maze.pacmanSpawn.candidates);
-  engine.pacman = new Pacman(pac.x, pac.y, maze.pacmanSpawn.dir);
-  engine.pacman.speed = speeds.pacmanNormal;
-  engine.pacman.invincible = engine.rules.invincible;
+  const pacman = new Pacman(pac.x, pac.y, maze.pacmanSpawn.dir);
+  pacman.speed = speeds.pacmanNormal;
+  pacman.invincible = engine.rules.invincible;
 
   const spawn = (type: GhostType) => {
     const s = maze.ghostSpawns[type];
     const at = seamPx(s.candidates);
     return new Ghost(type, at.x, at.y, s.initialDir, s.inHouse);
   };
-  engine.ghosts = {
+  const ghosts: Record<GhostType, Ghost> = {
     BLINKY: spawn("BLINKY"),
     PINKY: spawn("PINKY"),
     INKY: spawn("INKY"),
@@ -37,10 +46,11 @@ export function spawnActors(engine: GameEngine): void {
   };
 
   const wave = engine.timerController.currentWave?.mode ?? "CHASE";
-  (Object.keys(engine.ghosts) as GhostType[]).forEach((type) => {
-    const g = engine.ghosts[type];
+  (Object.keys(ghosts) as GhostType[]).forEach((type) => {
+    const g = ghosts[type];
     g.wave = wave;
     g.target = maze.scatterTargets[type];
     g.speed = speeds.ghostNormal;
   });
+  return { pacman, ghosts };
 }
