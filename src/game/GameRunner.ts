@@ -1,5 +1,5 @@
-import soundEngine from "../audio/SoundEngine";
-import GameEvents from "../core/EventBus";
+import appSound, { type SoundEngine } from "../audio/SoundEngine";
+import AppEvents, { type EventBus } from "../core/EventBus";
 import { GameLoopController } from "../controllers/GameLoopController";
 import type GameEngine from "./GameEngine";
 import type GameRenderer from "./GameRenderer";
@@ -64,7 +64,7 @@ export class GameRunner {
     else this.pauses.delete(reason);
     this.engine.paused = this.pauses.size > 0;
     if (this.engine.paused !== before) {
-      GameEvents.emit("PLAY_STATE_CHANGED", this.engine.playState);
+      this.events.emit("PLAY_STATE_CHANGED", this.engine.playState);
     }
     this.syncSiren();
   }
@@ -75,7 +75,20 @@ export class GameRunner {
     return (arcadeRefreshRate ? ARCADE_REFRESH_HZ : SIM_FPS) * gameSpeed;
   }
 
-  constructor(public readonly engine: GameEngine) {
+  /** The UI event bus and the sound engine this runner talks to (plan M5). */
+  public readonly events: EventBus;
+  public readonly sound: SoundEngine;
+
+  /**
+   * `options.events` / `options.sound` default to the app's instances (what the UI listens to);
+   * a test or tool can give a runner its own, so nothing reaches the shared ones.
+   */
+  constructor(
+    public readonly engine: GameEngine,
+    options: { events?: EventBus; sound?: SoundEngine } = {}
+  ) {
+    this.events = options.events ?? AppEvents;
+    this.sound = options.sound ?? appSound;
     this.measure = new Measurements(engine);
     this.loop = new GameLoopController(
       () => this.tick(),
@@ -92,12 +105,12 @@ export class GameRunner {
   public start(): void {
     this.loop.start();
     this.flush();
-    GameEvents.emit("PLAY_STATE_CHANGED", this.engine.playState);
+    this.events.emit("PLAY_STATE_CHANGED", this.engine.playState);
   }
 
   public stop(): void {
     this.loop.stop();
-    soundEngine.stopSiren();
+    this.sound.stopSiren();
   }
 
   /**
@@ -152,7 +165,7 @@ export class GameRunner {
     if (this.engine.phase === "PLAYING" && (import.meta.env.DEV || consoleOpen)) {
       this.engine.diagnosticController.evaluateRules(this.engine, this.engine.lifeFrame);
       if (consoleOpen && this.engine.lifeFrame % 4 === 0) {
-        GameEvents.emit("DIAGNOSTICS_TICK", actorsDiagnostics(this.engine));
+        this.events.emit("DIAGNOSTICS_TICK", actorsDiagnostics(this.engine));
       }
     }
   }
@@ -160,7 +173,7 @@ export class GameRunner {
   /** Dispatches queued sim events and syncs the siren. Also call after engine calls made between ticks. */
   public flush(): void {
     const events = this.engine.drainEvents();
-    for (const event of events) dispatchSimEvent(event);
+    for (const event of events) dispatchSimEvent(event, this.events, this.sound);
     if (events.length > 0) {
       this.practice.onEvents(this.engine, events);
       this.popups.onEvents(events);
@@ -177,75 +190,75 @@ export class GameRunner {
   public syncUi(): void {
     this.flush();
     const e = this.engine;
-    GameEvents.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });
-    GameEvents.emit("LIVES_CHANGED", e.lives);
-    GameEvents.emit("LEVEL_CHANGED", e.level);
-    GameEvents.emit("PLAY_STATE_CHANGED", e.playState);
-    GameEvents.emit("UI_SYNC");
+    this.events.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });
+    this.events.emit("LIVES_CHANGED", e.lives);
+    this.events.emit("LEVEL_CHANGED", e.level);
+    this.events.emit("PLAY_STATE_CHANGED", e.playState);
+    this.events.emit("UI_SYNC");
   }
 
   private syncSiren(): void {
     const siren = this.engine.getSirenState();
     if (!this.engine.settings.soundEnabled || siren.kind === "OFF") {
-      soundEngine.stopSiren();
+      this.sound.stopSiren();
     } else if (siren.kind === "NORMAL") {
-      soundEngine.updateSiren("NORMAL", siren.stage);
+      this.sound.updateSiren("NORMAL", siren.stage);
     } else {
-      soundEngine.updateSiren(siren.kind);
+      this.sound.updateSiren(siren.kind);
     }
   }
 }
 
 /** Maps one sim event to its sounds and UI bus notifications. */
-function dispatchSimEvent(event: SimEvent): void {
+function dispatchSimEvent(event: SimEvent, events: EventBus, sound: SoundEngine): void {
   switch (event.type) {
     case "SCORE_CHANGED":
-      GameEvents.emit("SCORE_CHANGED", { score: event.score, highScore: event.highScore });
+      events.emit("SCORE_CHANGED", { score: event.score, highScore: event.highScore });
       break;
     case "LIVES_CHANGED":
-      GameEvents.emit("LIVES_CHANGED", event.lives);
+      events.emit("LIVES_CHANGED", event.lives);
       break;
     case "LEVEL_CHANGED":
-      GameEvents.emit("LEVEL_CHANGED", event.level);
+      events.emit("LEVEL_CHANGED", event.level);
       break;
     case "PLAY_STATE_CHANGED":
-      GameEvents.emit("PLAY_STATE_CHANGED", event.playState);
-      GameEvents.emit("ROUND_STATE_CHANGED", event.playState);
+      events.emit("PLAY_STATE_CHANGED", event.playState);
+      events.emit("ROUND_STATE_CHANGED", event.playState);
       break;
     case "GAME_OVER":
-      GameEvents.emit("GAME_OVER", event.score);
+      events.emit("GAME_OVER", event.score);
       break;
     case "LEVEL_CLEARED":
-      GameEvents.emit("LEVEL_CLEARED", event.level);
+      events.emit("LEVEL_CLEARED", event.level);
       break;
     case "DOT_EATEN":
-      soundEngine.playWaka();
+      sound.playWaka();
       break;
     case "ENERGIZER_EATEN":
-      soundEngine.playWaka();
-      GameEvents.emit("ENERGIZER_EATEN", { level: event.level });
+      sound.playWaka();
+      events.emit("ENERGIZER_EATEN", { level: event.level });
       break;
     case "GHOST_EATEN":
-      soundEngine.playEatGhost();
-      GameEvents.emit("GHOST_EATEN", { type: event.ghost, points: event.points });
+      sound.playEatGhost();
+      events.emit("GHOST_EATEN", { type: event.ghost, points: event.points });
       break;
     case "FRUIT_EATEN":
-      soundEngine.playEatFruit();
-      GameEvents.emit("FRUIT_EATEN", event.points);
+      sound.playEatFruit();
+      events.emit("FRUIT_EATEN", event.points);
       break;
     case "REWOUND":
-      GameEvents.emit("REWOUND", event.playState);
+      events.emit("REWOUND", event.playState);
       break;
     case "EXTRA_LIFE":
-      soundEngine.playExtraLife();
+      sound.playExtraLife();
       break;
     case "INTRO":
-      soundEngine.playIntro().catch(() => {
+      sound.playIntro().catch(() => {
         /* audio may be blocked until the first user gesture */
       });
       break;
     case "PACMAN_DIED":
-      soundEngine.playDeath().catch(() => {
+      sound.playDeath().catch(() => {
         /* audio may be blocked until the first user gesture */
       });
       break;
