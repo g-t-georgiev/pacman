@@ -32,7 +32,7 @@ The same files are in the repository under `docs/manual/`, so the manual reads o
 
 ## Quick start
 
-Play: open the game, wait for **READY!**, and steer with the arrow keys (or W A S D). Eat every
+Play: open the game ([online](https://g-t-georgiev.github.io/pacman/), or your own dev server), wait for **READY!**, and steer with the arrow keys (or W A S D). Eat every
 dot to clear the level. Eat an energizer (the big flashing dot) and the ghosts turn blue: eat them
 for 200, 400, 800 and 1,600 points.
 

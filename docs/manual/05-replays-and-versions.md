@@ -184,6 +184,9 @@ Then push and open the pull request from `dev` into `main`:
   If you forgot, the check fails and says to run `vp run release`.
 - **After the merge**, CI tags the version (`v1.2.3`) on `main`, and publishes a GitHub Release
   with its changelog notes for a minor or major version. A patch version gets the tag only.
+- **Also after every push to `main`**, the game is built and published on GitHub Pages
+  ([g-t-georgiev.github.io/pacman](https://g-t-georgiev.github.io/pacman/)), so the site always
+  shows the latest release.
 
 Every release is tagged, so a replay or a bug report that names a version can be played on
 exactly that build: `git checkout v1.2.3`. The notes of every release are in `CHANGELOG.md`.

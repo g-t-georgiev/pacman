@@ -19,6 +19,7 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 | `.vite-hooks/commit-msg`                   | The commit-msg hook: the message must start with its type (`feat`, `fix`, ...)                                       |
 | `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build; the release check on pull requests into main |
 | `.github/workflows/release.yml`            | After a merge into main: tag the version, and a GitHub Release for a minor or major one                              |
+| `.github/workflows/pages.yml`              | After every push to main: build the game for /pacman/ and publish it on GitHub Pages                                 |
 | `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                              |
 | `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)                |
 | `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                         |
@@ -29,6 +30,7 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 | :----------------- | :---------------------------------------- | :------------------------------------------------------------------------------------- |
 | `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network                            |
 | `build`            | `vp build`                                | The production build in `dist/`                                                        |
+| `build:pages`      | `vp build --base /pacman/`                | The build for GitHub Pages, served from /pacman/ (CI)                                  |
 | `clean`            | `rm -rf dist`                             | Delete the build                                                                       |
 | `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                                         |
 | `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                                           |
