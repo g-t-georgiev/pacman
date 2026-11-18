@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/docs.css";
-import { CHAPTERS, anchorId, chapterBySlug, renderChapter, searchManual } from "../docs/manual";
-import { type DocsRoute, docsHash, openDocs } from "../docs/route";
+import {
+  CHAPTERS,
+  type ManualChapter,
+  anchorId,
+  chapterBySlug,
+  renderChapter,
+  searchManual,
+} from "../docs/manual";
+import { type DocsRoute, docsHash } from "../docs/route";
 
 interface DocsPageProps {
   route: DocsRoute;
@@ -11,8 +18,10 @@ interface DocsPageProps {
 
 /**
  * The manual (plan DOC1): a full page over the game, which is held while it is open (the `docs`
- * pause reason). A chapter list, search, section anchors and deep links (`#docs/replays`).
- * Loaded on demand (the cabinet imports it lazily): the game's bundle doesn't carry the manual.
+ * pause reason). A chapter list (a side panel on wide screens, a slide-in drawer behind ☰ on
+ * narrow ones) that follows the section being read, search, section anchors and deep links
+ * (`#docs/replays`). Loaded on demand (the cabinet imports it lazily): the game's bundle doesn't
+ * carry the manual.
  */
 const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
   const chapter = chapterBySlug(route.chapter) ?? CHAPTERS[0];
@@ -21,7 +30,11 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
   const hits = useMemo(() => searchManual(query), [query]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const navRef = useRef<HTMLElement>(null);
+  const sideNavRef = useRef<HTMLElement>(null);
+  const drawerNavRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  /** The chapter drawer (narrow screens) is open. */
+  const [drawer, setDrawer] = useState(false);
 
   /** The chapter's sections listed in the chapter list (## headings). */
   const sectionAnchors = useMemo(
@@ -33,19 +46,19 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
   /** The section last opened by a link: at the bottom of the page it stays the active one. */
   const openedRef = useRef<string | null>(route.anchor);
 
+  /** Shows a route's section (or the chapter's top) in the content. */
+  const scrollTo = (anchor: string | null) => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const el = anchor ? document.getElementById(anchorId(anchor)) : null;
+    if (el) el.scrollIntoView({ block: "start" });
+    else box.scrollTop = 0;
+  };
+
   // A new chapter or section: scroll to it
   useEffect(() => {
     openedRef.current = route.anchor;
-    const box = scrollRef.current;
-    if (!box) return;
-    if (route.anchor) {
-      const el = document.getElementById(anchorId(route.anchor));
-      if (el) {
-        el.scrollIntoView({ block: "start" });
-        return;
-      }
-    }
-    box.scrollTop = 0;
+    scrollTo(route.anchor);
   }, [route.chapter, route.anchor, html]);
 
   // Scroll spy: the active section is the last one whose heading has reached the top of the
@@ -91,12 +104,23 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     };
   }, [sectionAnchors, html, route.anchor]);
 
-  // Keep the active section visible in a long chapter list
+  // Keep the active section visible in the side panel's list
   useEffect(() => {
-    navRef.current
+    sideNavRef.current
       ?.querySelector('[aria-current="location"]')
       ?.scrollIntoView({ block: "nearest" });
   }, [active]);
+
+  // Opening the drawer shows where you are: the active section (or the chapter) in view, focused
+  useEffect(() => {
+    if (!drawer) return;
+    const nav = drawerNavRef.current;
+    const here =
+      nav?.querySelector<HTMLElement>('[aria-current="location"]') ??
+      nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    here?.scrollIntoView({ block: "center" });
+    here?.focus({ preventScroll: true });
+  }, [drawer]);
 
   // The page scrolls, not the game behind it
   useEffect(() => {
@@ -107,25 +131,43 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     };
   }, []);
 
-  // Escape: clears the search first, then goes back to the game; "/" focuses the search
+  /** Closes the drawer, giving the keyboard back to the ☰ button. */
+  const closeDrawer = () => {
+    setDrawer(false);
+    menuButtonRef.current?.focus({ preventScroll: true });
+  };
+
+  // Escape: closes the drawer, else clears the search, else goes back to the game;
+  // "/" focuses the search
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (query) setQuery("");
+        if (drawer) closeDrawer();
+        else if (query) setQuery("");
         else onClose();
         e.preventDefault();
       } else if (e.key === "/" && document.activeElement !== searchRef.current) {
         e.preventDefault();
+        setDrawer(false);
         searchRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [query, onClose]);
+  }, [query, onClose, drawer]);
 
+  /**
+   * Goes to a chapter or section from a link: marks it at once, closes the drawer and the search,
+   * and shows it. Picking the section the URL already names scrolls to it again (no hash change).
+   */
   const go = (r: DocsRoute) => {
     setQuery("");
-    openDocs(r);
+    setDrawer(false);
+    if (r.chapter === chapter?.slug) setActive(r.anchor ?? sectionAnchors[0] ?? null);
+    openedRef.current = r.anchor;
+    const target = docsHash(r);
+    if (location.hash === target) scrollTo(r.anchor);
+    else location.hash = target;
   };
 
   if (!chapter) {
@@ -137,16 +179,24 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     );
   }
 
-  const sections = chapter.sections.filter((s) => s.depth === 2);
-
   return (
     <div
       className="fixed inset-0 z-[60] bg-neutral-950 text-white flex flex-col"
       role="dialog"
       aria-label="Manual"
     >
-      {/* Top bar: title, search, back */}
+      {/* Top bar: chapters (narrow screens), title, search, back */}
       <header className="flex flex-wrap items-center gap-2 px-3 sm:px-5 py-2.5 border-b border-neutral-800 bg-neutral-900">
+        <button
+          ref={menuButtonRef}
+          onClick={() => setDrawer((open) => !open)}
+          aria-label="Chapters"
+          aria-expanded={drawer}
+          aria-controls="docs-drawer"
+          className="md:hidden -ml-1 w-9 h-9 flex items-center justify-center rounded-lg text-xl text-neutral-200 hover:bg-neutral-800 cursor-pointer"
+        >
+          ☰
+        </button>
         <span className="font-bold tracking-wider text-sm text-yellow-300">📖 MANUAL</span>
         <div className="relative flex-1 min-w-[10rem] max-w-md order-3 sm:order-none w-full sm:w-auto">
           <input
@@ -193,65 +243,40 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
         </button>
       </header>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Chapter list (wide screens) */}
+      <div className="relative flex flex-1 min-h-0">
+        {/* Chapter list: a side panel on wide screens */}
         <nav
-          ref={navRef}
+          ref={sideNavRef}
           className="hidden md:block w-64 shrink-0 overflow-y-auto border-r border-neutral-800 py-3 text-sm"
           aria-label="Chapters"
         >
-          {CHAPTERS.map((c) => {
-            const current = c.slug === chapter.slug;
-            return (
-              <div key={c.slug}>
-                <a
-                  href={docsHash({ chapter: c.slug, anchor: null })}
-                  onClick={() => setQuery("")}
-                  aria-current={current ? "page" : undefined}
-                  className={`block px-4 py-1.5 ${
-                    current
-                      ? "text-yellow-300 font-bold bg-neutral-900"
-                      : "text-neutral-300 hover:text-white"
-                  }`}
-                >
-                  {c.title}
-                </a>
-                {current &&
-                  sections.map((s) => (
-                    <a
-                      key={s.anchor}
-                      href={docsHash({ chapter: c.slug, anchor: s.anchor })}
-                      aria-current={active === s.anchor ? "location" : undefined}
-                      className={`block pl-7 pr-3 py-1 text-xs ${
-                        active === s.anchor
-                          ? "text-cyan-300"
-                          : "text-neutral-400 hover:text-neutral-200"
-                      }`}
-                    >
-                      {s.title}
-                    </a>
-                  ))}
-              </div>
-            );
-          })}
+          <ChapterList chapter={chapter} active={active} onGo={go} />
+        </nav>
+
+        {/* ...and a drawer that slides in on narrow screens */}
+        <div
+          className={`md:hidden absolute inset-0 z-20 bg-black/60 transition-opacity duration-200 ${
+            drawer ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          onClick={closeDrawer}
+          aria-hidden="true"
+        />
+        <nav
+          ref={drawerNavRef}
+          id="docs-drawer"
+          aria-label="Chapters"
+          inert={!drawer}
+          className={`md:hidden absolute inset-y-0 left-0 z-30 w-72 max-w-[85vw] overflow-y-auto overscroll-contain bg-neutral-900 border-r border-neutral-800 py-3 text-sm shadow-2xl duration-200 ease-out ${
+            // Visible at once when opening (so it can take focus), hidden once it has slid out
+            drawer
+              ? "translate-x-0 visible transition-transform"
+              : "-translate-x-full invisible transition-[transform,visibility]"
+          }`}
+        >
+          <ChapterList chapter={chapter} active={active} onGo={go} />
         </nav>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          {/* Chapter picker (narrow screens) */}
-          <div className="md:hidden px-4 pt-3">
-            <select
-              value={chapter.slug}
-              onChange={(e) => go({ chapter: e.target.value, anchor: null })}
-              aria-label="Chapter"
-              className="w-full px-2 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-            >
-              {CHAPTERS.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
           <article
             className="docs-article px-4 sm:px-8 py-6"
             // The manual is our own Markdown, bundled with the game
@@ -261,6 +286,61 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+/** Every chapter; under the current one, its sections, the one being read marked. */
+const ChapterList: React.FC<{
+  chapter: ManualChapter;
+  active: string | null;
+  onGo: (route: DocsRoute) => void;
+}> = ({ chapter, active, onGo }) => {
+  const sections = chapter.sections.filter((s) => s.depth === 2);
+  /** A real link (copyable, opens in a new tab), handled here on a plain click. */
+  const link = (route: DocsRoute) => ({
+    href: docsHash(route),
+    onClick: (e: React.MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      onGo(route);
+    },
+  });
+  return (
+    <>
+      {CHAPTERS.map((c) => {
+        const current = c.slug === chapter.slug;
+        return (
+          <div key={c.slug}>
+            <a
+              {...link({ chapter: c.slug, anchor: null })}
+              aria-current={current ? "page" : undefined}
+              className={`block px-4 py-1.5 ${
+                current
+                  ? "text-yellow-300 font-bold bg-neutral-900"
+                  : "text-neutral-300 hover:text-white"
+              }`}
+            >
+              {c.title}
+            </a>
+            {current &&
+              sections.map((s) => (
+                <a
+                  key={s.anchor}
+                  {...link({ chapter: c.slug, anchor: s.anchor })}
+                  aria-current={active === s.anchor ? "location" : undefined}
+                  className={`block pl-7 pr-3 py-1 text-xs ${
+                    active === s.anchor
+                      ? "text-cyan-300"
+                      : "text-neutral-400 hover:text-neutral-200"
+                  }`}
+                >
+                  {s.title}
+                </a>
+              ))}
+          </div>
+        );
+      })}
+    </>
   );
 };
 
