@@ -24,8 +24,10 @@ vp run golden:update          # re-record them after an intended change (bumps v
 
 **On every commit** the pre-commit hook (`.vite-hooks/pre-commit`) formats and lints the staged
 files, runs the golden check, the versions check (the versions shown in the README and the
-manual are current; `vp run docs:versions` updates them) and the regression suite. **On every push** CI
-(`.github/workflows/ci.yml`) runs `vp check`, all tests, the golden check and the build.
+manual are current; `vp run docs:versions` updates them) and the regression suite; the `commit-msg` hook checks the message starts with its type
+(`feat`, `fix`, ...; see [Releases](./05-replays-and-versions.md#releases)). **On every push** CI
+(`.github/workflows/ci.yml`) runs `vp check`, all tests, the golden check and the build; on a
+pull request into `main` also the release check.
 
 ## The suites
 

@@ -141,3 +141,51 @@ vp run golden:trace -- after.json --compare before.json
 ```
 
 Identical traces mean the change didn't alter the game.
+
+## Releases
+
+The game itself has a version too: `0.1.0` and up, in `package.json`. The game shows it in the
+footer and this manual in its header; the README lists it with every tool's version.
+
+### How much it goes up
+
+The bump is worked out from what changed since the last release (the last `v1.2.3` tag):
+
+| Change                                                                                                                             | Bump                                                    |
+| :--------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
+| A commit marked breaking: `feat!: ...`, or `BREAKING CHANGE:` in its body                                                          | major                                                   |
+| `feat: ...`                                                                                                                        | minor                                                   |
+| A manual chapter added, deleted or renamed                                                                                         | minor                                                   |
+| The rules, saved state or replay format version went up (the game plays or saves differently; older clips still load, with a note) | minor                                                   |
+| `fix: ...`, `perf: ...`, `revert: ...`                                                                                             | patch                                                   |
+| A manual chapter edited                                                                                                            | patch                                                   |
+| `refactor`, `test`, `ci`, `chore`, `build`, `style`, and docs outside the manual                                                   | nothing on their own: they go out with the next release |
+
+The biggest one wins. The files are a safety net: a `fix` that changes play still makes a
+minor release, because the rules version went up. While the version is below 1.0.0, a breaking
+change bumps the minor number; 1.0.0 is a decision (`vp run release -- --version 1.0.0`).
+
+That is why every commit message starts with its type (`feat`, `fix`, `docs(manual)`, ...): the
+`commit-msg` hook refuses one that doesn't, and `vp run release -- --dry-run` warns about
+doubtful ones, such as a `docs` commit that changes the game's code.
+
+### Making a release
+
+On `dev`, when you want to release:
+
+```bash
+vp run release -- --dry-run   # the next version, and why
+vp run release                # make it: package.json, the versions, CHANGELOG.md, one commit
+```
+
+Then push and open the pull request from `dev` into `main`:
+
+- **On the pull request**, CI checks that the version covers the changes (`vp run release:check`).
+  If you forgot, the check fails and says to run `vp run release`.
+- **After the merge**, CI tags the version (`v1.2.3`) on `main`, and publishes a GitHub Release
+  with its changelog notes for a minor or major version. A patch version gets the tag only.
+
+Every release is tagged, so a replay or a bug report that names a version can be played on
+exactly that build: `git checkout v1.2.3`. The notes of every release are in `CHANGELOG.md`.
+Code: [release.ts](../../scripts/release.ts), [releaseBump.ts](../../scripts/releaseBump.ts),
+[release.yml](../../.github/workflows/release.yml).

@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          # The whole history and its tags: the release check reads the commits since the last tag
+          fetch-depth: 0
       # Installs Vite+, Node.js and the project's package manager (bun), then `vp install`
       - uses: voidzero-dev/setup-vp@v1.22.0
         with:
@@ -31,3 +34,6 @@ jobs:
       # The golden replays still match this build (versions bumped when the rules change)
       - run: vp run golden:check
       - run: vp build
+      # A pull request into main must carry the version its changes need (vp run release on dev)
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: vp run release:check

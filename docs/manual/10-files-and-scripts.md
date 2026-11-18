@@ -5,40 +5,46 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 
 ## Top level
 
-| File                                       | What it is                                                                                                    |
-| :----------------------------------------- | :------------------------------------------------------------------------------------------------------------ |
-| `index.html`                               | The page: the root element, fonts preload, meta tags                                                          |
-| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                                 |
-| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server             |
-| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                         |
-| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone                     |
-| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                          |
-| `README.md`                                | The short overview, commands and file map                                                                     |
-| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the versions check, the regression suite |
-| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build                                        |
-| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                       |
-| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)         |
-| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                  |
+| File                                       | What it is                                                                                                           |
+| :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| `index.html`                               | The page: the root element, fonts preload, meta tags                                                                 |
+| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                                        |
+| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server                    |
+| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                                |
+| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone                            |
+| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                                 |
+| `README.md`                                | The landing page: what it is, the manual's chapters, commands, versions                                              |
+| `CHANGELOG.md`                             | Every release's notes, newest first (written by `vp run release`)                                                    |
+| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the versions check, the regression suite        |
+| `.vite-hooks/commit-msg`                   | The commit-msg hook: the message must start with its type (`feat`, `fix`, ...)                                       |
+| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build; the release check on pull requests into main |
+| `.github/workflows/release.yml`            | After a merge into main: tag the version, and a GitHub Release for a minor or major one                              |
+| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                              |
+| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)                |
+| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                         |
 
 ## Scripts
 
-| Script             | Runs                                      | What it does                                                     |
-| :----------------- | :---------------------------------------- | :--------------------------------------------------------------- |
-| `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network      |
-| `build`            | `vp build`                                | The production build in `dist/`                                  |
-| `clean`            | `rm -rf dist`                             | Delete the build                                                 |
-| `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                   |
-| `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                     |
-| `test`             | `vp test`                                 | Every test: unit, then e2e                                       |
-| `test:unit`        | `vp test --project unit`                  | The headless tests                                               |
-| `test:e2e`         | `vp test --project e2e`                   | The browser tests                                                |
-| `test:regression`  | `vp test --project unit tests/regression` | Core contracts and fixed bugs (pre-commit)                       |
-| `golden:update`    | `scripts/update-golden.ts`                | Re-record the golden replays, bumping versions as needed         |
-| `golden:check`     | `scripts/check-golden.ts`                 | Do the goldens still match this build? (pre-commit, CI)          |
-| `golden:trace`     | `scripts/play-trace.ts`                   | A per-second play trace of every golden, and a comparison of two |
-| `docs:versions`    | `scripts/versions.ts`                     | Rewrite the versions in the README and the manual's introduction |
-| `docs:check`       | `scripts/versions.ts --check`             | Are those versions up to date? (pre-commit, and a test)          |
-| `prepare`          | `vp config`                               | Installs the git hooks after `vp install`                        |
+| Script             | Runs                                      | What it does                                                                           |
+| :----------------- | :---------------------------------------- | :------------------------------------------------------------------------------------- |
+| `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network                            |
+| `build`            | `vp build`                                | The production build in `dist/`                                                        |
+| `clean`            | `rm -rf dist`                             | Delete the build                                                                       |
+| `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                                         |
+| `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                                           |
+| `test`             | `vp test`                                 | Every test: unit, then e2e                                                             |
+| `test:unit`        | `vp test --project unit`                  | The headless tests                                                                     |
+| `test:e2e`         | `vp test --project e2e`                   | The browser tests                                                                      |
+| `test:regression`  | `vp test --project unit tests/regression` | Core contracts and fixed bugs (pre-commit)                                             |
+| `golden:update`    | `scripts/update-golden.ts`                | Re-record the golden replays, bumping versions as needed                               |
+| `golden:check`     | `scripts/check-golden.ts`                 | Do the goldens still match this build? (pre-commit, CI)                                |
+| `golden:trace`     | `scripts/play-trace.ts`                   | A per-second play trace of every golden, and a comparison of two                       |
+| `docs:versions`    | `scripts/versions.ts`                     | Rewrite the versions in the README and the manual's introduction                       |
+| `docs:check`       | `scripts/versions.ts --check`             | Are those versions up to date? (pre-commit, and a test)                                |
+| `release`          | `scripts/release.ts`                      | Make a release on dev (`-- --dry-run` to see it first, `-- --version x.y.z` to choose) |
+| `release:check`    | `scripts/release.ts --check`              | Does the version cover the changes since the last tag? (CI, pull requests into main)   |
+| `release:tag`      | `scripts/release.ts --tag`                | Tag the version, once (CI, after a merge into main)                                    |
+| `prepare`          | `vp config`                               | Installs the git hooks after `vp install`                                              |
 
 Run them with `vp run <script>` (`vp test`, `vp build` and `vp dev` are also Vite+ built-ins).
 
@@ -52,6 +58,11 @@ The files in `scripts/`:
   bumping a version constant in its source file.
 - `versions.ts`: the versions shown in the README and the manual (the game, the rules,
   the saved state, the replay format, the tools), generated from their sources.
+- `release.ts`: releases: works out the next version, writes it, the changelog and a commit;
+  checks a pull request; tags after a merge.
+- `releaseBump.ts`: how much a release bumps the version, from the commits and files (pure,
+  unit-tested).
+- `check-commit-msg.ts`: the commit-msg hook's check.
 
 ## src/
 
