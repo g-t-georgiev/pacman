@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/docs.css";
-import {
-  CHAPTERS,
-  anchorId,
-  chapterBySlug,
-  docsHash,
-  renderChapter,
-  searchManual,
-  type DocsRoute,
-} from "../docs/manual";
+import { CHAPTERS, anchorId, chapterBySlug, renderChapter, searchManual } from "../docs/manual";
+import { type DocsRoute, docsHash, openDocs } from "../docs/route";
 
 interface DocsPageProps {
   route: DocsRoute;
@@ -16,16 +9,12 @@ interface DocsPageProps {
   onClose: () => void;
 }
 
-/** Goes to a docs route (a new history entry: the browser's Back button walks back through it). */
-export function openDocs(route: DocsRoute): void {
-  location.hash = docsHash(route);
-}
-
 /**
  * The manual (plan DOC1): a full page over the game, which is held while it is open (the `docs`
  * pause reason). A chapter list, search, section anchors and deep links (`#docs/replays`).
+ * Loaded on demand (the cabinet imports it lazily): the game's bundle doesn't carry the manual.
  */
-export const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
+const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
   const chapter = chapterBySlug(route.chapter) ?? CHAPTERS[0];
   const html = useMemo(() => (chapter ? renderChapter(chapter) : ""), [chapter]);
   const [query, setQuery] = useState("");
@@ -233,3 +222,5 @@ const ChapterFooter: React.FC<{ slug: string }> = ({ slug }) => {
     </div>
   );
 };
+
+export default DocsPage;

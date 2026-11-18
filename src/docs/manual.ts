@@ -5,6 +5,7 @@ import javascript from "highlight.js/lib/languages/javascript";
 import bash from "highlight.js/lib/languages/bash";
 import json from "highlight.js/lib/languages/json";
 import yaml from "highlight.js/lib/languages/yaml";
+import { docsHash } from "./route";
 
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("ts", typescript);
@@ -106,41 +107,25 @@ function sectionsOf(markdown: string): ManualSection[] {
   return sections;
 }
 
+/** A chapter from its file name and text (also used by the manual's tests, reading from disk). */
+export function parseChapter(path: string, markdown: string): ManualChapter {
+  const sections = sectionsOf(markdown);
+  const file = path.replace(/^.*\//, "");
+  return {
+    slug: slugOfFile(file),
+    file,
+    title: sections[0]?.title || slugOfFile(file),
+    markdown,
+    sections,
+  };
+}
+
 export const CHAPTERS: ManualChapter[] = Object.keys(files)
   .sort()
-  .map((path) => {
-    const markdown = files[path];
-    const sections = sectionsOf(markdown);
-    const file = path.replace(/^.*\//, "");
-    return {
-      slug: slugOfFile(file),
-      file,
-      title: sections[0]?.title || slugOfFile(file),
-      markdown,
-      sections,
-    };
-  });
+  .map((path) => parseChapter(path, files[path]));
 
 export function chapterBySlug(slug: string): ManualChapter | undefined {
   return CHAPTERS.find((c) => c.slug === slug);
-}
-
-/** Where the docs are: `#docs`, `#docs/<chapter>` or `#docs/<chapter>/<section>`. */
-export interface DocsRoute {
-  chapter: string;
-  anchor: string | null;
-}
-
-/** The docs route in a URL fragment, or null when the fragment is not a docs link. */
-export function parseDocsHash(hash: string): DocsRoute | null {
-  const m = /^#docs(?:\/([^/]*))?(?:\/(.*))?$/.exec(hash);
-  if (!m) return null;
-  const chapter = m[1] && chapterBySlug(m[1]) ? m[1] : (CHAPTERS[0]?.slug ?? "");
-  return { chapter, anchor: m[2] ? decodeURIComponent(m[2]) : null };
-}
-
-export function docsHash(route: DocsRoute): string {
-  return `#docs/${route.chapter}${route.anchor ? `/${encodeURIComponent(route.anchor)}` : ""}`;
 }
 
 /** The element id of a section anchor on the page (prefixed: no clash with the app's ids). */
@@ -158,9 +143,10 @@ export function renderChapter(chapter: ManualChapter): string {
   const marked = new Marked({
     gfm: true,
     renderer: {
-      heading({ tokens, depth }: Tokens.Heading) {
+      heading({ tokens, depth, text }: Tokens.Heading) {
         const html = this.parser.parseInline(tokens);
-        let anchor = headingAnchor(plain(html));
+        // From the Markdown text, as the section index does (the HTML has escaped quotes)
+        let anchor = headingAnchor(plain(text));
         const n = used.get(anchor) ?? 0;
         used.set(anchor, n + 1);
         if (n > 0) anchor += `-${n}`;
@@ -187,7 +173,9 @@ export function renderChapter(chapter: ManualChapter): string {
         return `<span class="docs-src" title="${escapeHtml(path)}">${text}</span>`;
       },
       code({ text, lang }: Tokens.Code) {
-        const language = lang && hljs.getLanguage(lang) ? lang : null;
+        // The first word names the language ("js run" marks a recipe the tests run)
+        const first = lang?.split(/\s/)[0];
+        const language = first && hljs.getLanguage(first) ? first : null;
         const html = language ? hljs.highlight(text, { language }).value : escapeHtml(text);
         return `<pre><code class="hljs${language ? ` language-${language}` : ""}">${html}</code></pre>\n`;
       },

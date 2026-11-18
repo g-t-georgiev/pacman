@@ -1,5 +1,5 @@
 import type { Direction, GameMode } from "../types";
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, arcadeFont } from "../game/constants";
 import GameEvents from "../core/EventBus";
@@ -29,8 +29,10 @@ import { OptionsPanel } from "./OptionsPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
-import { DocsPage, openDocs } from "./DocsPage";
-import { CHAPTERS, parseDocsHash, type DocsRoute } from "../docs/manual";
+import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
+
+// The manual is loaded when it is first opened: the game's bundle doesn't carry it
+const DocsPage = lazy(() => import("./DocsPage"));
 import { useGameEvent } from "../hooks/useGameEvent";
 import { setSetting, settingsChanged, useSettingsVersion } from "../hooks/useEngineSettings";
 import { usePanels } from "../hooks/usePanels";
@@ -301,7 +303,7 @@ export const ArcadeCabinet: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => openDocs({ chapter: CHAPTERS[0]?.slug ?? "", anchor: null })}
+            onClick={() => openDocs({ chapter: "", anchor: null })}
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
             title="The manual: how to play, how it works, tools and API (the game waits)"
           >
@@ -522,7 +524,17 @@ export const ArcadeCabinet: React.FC = () => {
       )}
 
       {/* The manual, over everything; the game waits behind it */}
-      {docsRoute && <DocsPage route={docsRoute} onClose={closeDocs} />}
+      {docsRoute && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[60] bg-neutral-950 text-neutral-400 flex items-center justify-center text-sm">
+              Opening the manual…
+            </div>
+          }
+        >
+          <DocsPage route={docsRoute} onClose={closeDocs} />
+        </Suspense>
+      )}
 
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">

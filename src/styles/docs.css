@@ -90,6 +90,11 @@
 
 .docs-article code {
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  /* Code shows exactly what to type: no => or === ligatures */
+  font-variant-ligatures: none;
+  font-feature-settings:
+    "liga" 0,
+    "calt" 0;
   font-size: 0.86em;
   background: #171717;
   border: 1px solid #262626;
@@ -142,6 +147,9 @@
   padding: 0.35rem 0.6rem;
   text-align: left;
   vertical-align: top;
+  /* Wrap at spaces only: a narrow screen scrolls the table instead of splitting words */
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .docs-article th {
   background: #171717;
