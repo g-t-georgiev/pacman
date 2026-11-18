@@ -21,9 +21,21 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
   const hits = useMemo(() => searchManual(query), [query]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  /** The chapter's sections listed in the chapter list (## headings). */
+  const sectionAnchors = useMemo(
+    () => chapter?.sections.filter((s) => s.depth === 2).map((s) => s.anchor) ?? [],
+    [chapter]
+  );
+  /** The section being read: highlighted in the chapter list, and followed while scrolling. */
+  const [active, setActive] = useState<string | null>(route.anchor);
+  /** The section last opened by a link: at the bottom of the page it stays the active one. */
+  const openedRef = useRef<string | null>(route.anchor);
 
   // A new chapter or section: scroll to it
   useEffect(() => {
+    openedRef.current = route.anchor;
     const box = scrollRef.current;
     if (!box) return;
     if (route.anchor) {
@@ -35,6 +47,56 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     }
     box.scrollTop = 0;
   }, [route.chapter, route.anchor, html]);
+
+  // Scroll spy: the active section is the last one whose heading has reached the top of the
+  // page (the first one before that). At the very bottom, short last sections can't reach the
+  // top: there the section opened by a link stays active if its heading is in view, else the last.
+  useEffect(() => {
+    const box = scrollRef.current;
+    if (!box) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const boxTop = box.getBoundingClientRect().top;
+      const line = boxTop + 120; // headings land 80 px below the top (scroll-margin-top)
+      const top = (a: string) => document.getElementById(anchorId(a))?.getBoundingClientRect().top;
+      let current: string | null = sectionAnchors[0] ?? null;
+      for (const a of sectionAnchors) {
+        const t = top(a);
+        if (t === undefined || t > line) break;
+        current = a;
+      }
+      const atBottom =
+        box.scrollTop > 0 && box.scrollTop + box.clientHeight >= box.scrollHeight - 2;
+      // Scrolled away from the opened section: from now on, plain scrolling decides
+      if (!atBottom && current !== openedRef.current) openedRef.current = null;
+      if (atBottom) {
+        const opened = openedRef.current;
+        const openedTop = opened && sectionAnchors.includes(opened) ? top(opened) : undefined;
+        current =
+          openedTop !== undefined && openedTop >= boxTop
+            ? opened
+            : (sectionAnchors[sectionAnchors.length - 1] ?? current);
+      }
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    box.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      box.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [sectionAnchors, html, route.anchor]);
+
+  // Keep the active section visible in a long chapter list
+  useEffect(() => {
+    navRef.current
+      ?.querySelector('[aria-current="location"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [active]);
 
   // The page scrolls, not the game behind it
   useEffect(() => {
@@ -134,6 +196,7 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
       <div className="flex flex-1 min-h-0">
         {/* Chapter list (wide screens) */}
         <nav
+          ref={navRef}
           className="hidden md:block w-64 shrink-0 overflow-y-auto border-r border-neutral-800 py-3 text-sm"
           aria-label="Chapters"
         >
@@ -158,8 +221,9 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
                     <a
                       key={s.anchor}
                       href={docsHash({ chapter: c.slug, anchor: s.anchor })}
+                      aria-current={active === s.anchor ? "location" : undefined}
                       className={`block pl-7 pr-3 py-1 text-xs ${
-                        route.anchor === s.anchor
+                        active === s.anchor
                           ? "text-cyan-300"
                           : "text-neutral-400 hover:text-neutral-200"
                       }`}

@@ -51,4 +51,29 @@ describe("e2e: the manual (DOC1)", () => {
     await page.getByRole("button", { name: /Back to the game/ }).click();
     await expect.poll(() => agent.view().pausedBy).toEqual([]);
   });
+
+  it("the chapter list follows the section being read", async () => {
+    await page.viewport(1280, 800); // the chapter list shows on wide screens
+    history.replaceState(null, "", "#docs/arcade-rules");
+    await mountApp();
+    const active = () =>
+      document.querySelector('nav [aria-current="location"]')?.textContent ?? null;
+    // A chapter opens on its first section
+    await expect.poll(active).toBe("Units: tiles, pixels and frames");
+
+    // Scrolling down moves the mark to the section under the top of the page
+    const box = document.querySelector(".docs-article")!.parentElement!;
+    const heading = document.getElementById("docs-scatter-and-chase")!;
+    box.scrollTop += heading.getBoundingClientRect().top - box.getBoundingClientRect().top - 40;
+    await expect.poll(active).toBe("Scatter and chase");
+
+    // A section near the end, too short to reach the top, stays marked when clicked...
+    await page.getByRole("link", { name: "Ms. Pac-Man", exact: true }).click();
+    await expect.poll(active).toBe("Ms. Pac-Man");
+    // ...and the very bottom marks the last section
+    box.scrollTop = 0;
+    await expect.poll(active).toBe("Units: tiles, pixels and frames");
+    box.scrollTop = box.scrollHeight;
+    await expect.poll(active).toBe("Estimates and open questions");
+  });
 });
