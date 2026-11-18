@@ -3,6 +3,7 @@ import type GameEngine from "../game/GameEngine";
 import { sendGhostsHome, setInvincible as applyInvincible } from "../game/practiceActions";
 import { setSetting, settingsChanged, useEngineSettings } from "../hooks/useEngineSettings";
 import type { PracticeTools } from "../game/practiceTools";
+import { ToggleCard } from "./ui/ToggleCard";
 
 interface PracticePanelProps {
   engine: GameEngine;
@@ -339,140 +340,46 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
 
       {/* Visualizers & Cheats Toggles */}
       <div className="grid grid-cols-2 gap-2 text-[11px]">
-        {/* Invincibility Toggle */}
-        <button
+        <ToggleCard
+          icon="🛡️"
+          label="Invincibility"
+          hint="Pac-Man impervious to ghost contact"
+          on={invincible}
           onClick={handleToggleInvincible}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            invincible
-              ? "bg-amber-500 text-black shadow-md shadow-amber-500/20 ring-1 ring-amber-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🛡️</span>
-              <span>Invincibility</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? "bg-black/20 text-black" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {invincible ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${invincible ? "text-black/80" : "text-neutral-400"}`}
-          >
-            Pac-Man impervious to ghost contact
-          </span>
-        </button>
-
-        {/* Ghost Paths Toggle */}
-        <button
+          tone="amber"
+        />
+        <ToggleCard
+          icon="🧭"
+          label="Ghost Paths"
+          hint="Multi-step corridor lookahead & turn arrows"
+          on={showGhostPaths}
           onClick={handleToggleGhostPaths}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showGhostPaths
-              ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/20 ring-1 ring-cyan-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🧭</span>
-              <span>Ghost Paths</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? "bg-cyan-900 text-cyan-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showGhostPaths ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showGhostPaths ? "text-cyan-100/90" : "text-neutral-400"}`}
-          >
-            Multi-step corridor lookahead & turn arrows
-          </span>
-        </button>
-
-        {/* Target Lines Toggle */}
-        <button
+          tone="cyan"
+        />
+        <ToggleCard
+          icon="📏"
+          label="Target Radar"
+          hint="Laser vector, tile distance & proximity alert"
+          on={showTargetLines}
           onClick={handleToggleTargetLines}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showTargetLines
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>📏</span>
-              <span>Target Radar</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showTargetLines ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showTargetLines ? "text-purple-100/90" : "text-neutral-400"}`}
-          >
-            Laser vector, tile distance & proximity alert
-          </span>
-        </button>
-
-        {/* Show Grid Toggle */}
-        <button
+          tone="purple"
+        />
+        <ToggleCard
+          icon="📐"
+          label="Tile Grid"
+          hint="Maze tile grid & decision intersections"
+          on={showGrid}
           onClick={handleToggleGrid}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showGrid
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>📐</span>
-              <span>Tile Grid</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? "bg-blue-900 text-blue-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showGrid ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}
-          >
-            Maze tile grid & decision intersections
-          </span>
-        </button>
-
-        {/* Live Diagnostics HUD Toggle */}
-        <button
+          tone="blue"
+        />
+        <ToggleCard
+          icon="🔬"
+          label="Diagnostics"
+          hint="Floating HUD telemetry & invariant rules"
+          on={showDiagnosticConsole}
           onClick={handleToggleDiagnosticConsole}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showDiagnosticConsole
-              ? "bg-teal-600 text-white shadow-md shadow-teal-600/20 ring-1 ring-teal-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🔬</span>
-              <span>Diagnostics</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showDiagnosticConsole ? "bg-teal-900 text-teal-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showDiagnosticConsole ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showDiagnosticConsole ? "text-teal-100/90" : "text-neutral-400"}`}
-          >
-            Floating HUD telemetry & invariant rules
-          </span>
-        </button>
+          tone="teal"
+        />
       </div>
 
       {/* Instant Action Triggers */}

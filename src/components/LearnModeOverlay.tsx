@@ -5,6 +5,7 @@ import type { GhostType } from "../types";
 import { getElroyDotThresholds, getScatterChaseSchedule } from "../game/levelTable";
 import { setSetting, useEngineSettings } from "../hooks/useEngineSettings";
 import { clydeFlees } from "../controllers/GhostAiController";
+import { GhostCard } from "./learn/GhostCard";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -245,15 +246,13 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
 
       {/* 4 Ghost Personalities Breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[190px] overflow-y-auto pr-1">
-        {/* Blinky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.BLINKY ? "border-red-900/80" : "border-neutral-800 opacity-60"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-red-400 font-bold text-[11px]">BLINKY (Red / Shadow)</span>
-            {isElroy2 ? (
+        <GhostCard
+          ghost="BLINKY"
+          title="BLINKY (Red / Shadow)"
+          active={ghostFilters.BLINKY}
+          target={formatTarget(engine.ghosts.BLINKY.target)}
+          badge={
+            isElroy2 ? (
               <span className="text-[9px] bg-red-600 text-white font-bold px-1 rounded animate-pulse">
                 ELROY 2
               </span>
@@ -263,63 +262,38 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
               </span>
             ) : (
               <span className="text-[9px] text-neutral-400">Normal</span>
-            )}
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le;{" "}
-            {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
-          </p>
-          <div className="text-[10px] text-red-300">
-            Target: {formatTarget(engine.ghosts.BLINKY.target)}
-          </div>
-        </div>
-
-        {/* Pinky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.PINKY ? "border-pink-900/80" : "border-neutral-800 opacity-60"
-          }`}
+            )
+          }
         >
-          <div className="flex items-center justify-between">
-            <span className="text-pink-400 font-bold text-[11px]">PINKY (Pink / Speedy)</span>
-            <span className="text-[9px] text-pink-300">Ambush</span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left
-            (arcade overflow bug)!
-          </p>
-          <div className="text-[10px] text-pink-300">
-            Target: {formatTarget(engine.ghosts.PINKY.target)}
-          </div>
-        </div>
-
-        {/* Inky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.INKY ? "border-cyan-900/80" : "border-neutral-800 opacity-60"
-          }`}
+          Direct pursuer. Targets Pac-Man's own tile. Speeds up when dots &le; {elroyDots.elroy1}{" "}
+          (Cruise Elroy) and keeps chasing during scatter!
+        </GhostCard>
+        <GhostCard
+          ghost="PINKY"
+          title="PINKY (Pink / Speedy)"
+          active={ghostFilters.PINKY}
+          target={formatTarget(engine.ghosts.PINKY.target)}
+          badge={<span className="text-[9px] text-pink-300">Ambush</span>}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-cyan-400 font-bold text-[11px]">INKY (Cyan / Bashful)</span>
-            <span className="text-[9px] text-cyan-300">Pincer Vector</span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it
-            to trap player!
-          </p>
-          <div className="text-[10px] text-cyan-300">
-            Target: {formatTarget(engine.ghosts.INKY.target)}
-          </div>
-        </div>
-
-        {/* Clyde */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.CLYDE ? "border-amber-900/80" : "border-neutral-800 opacity-60"
-          }`}
+          Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left
+          (arcade overflow bug)!
+        </GhostCard>
+        <GhostCard
+          ghost="INKY"
+          title="INKY (Cyan / Bashful)"
+          active={ghostFilters.INKY}
+          target={formatTarget(engine.ghosts.INKY.target)}
+          badge={<span className="text-[9px] text-cyan-300">Pincer Vector</span>}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
+          Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it to
+          trap player!
+        </GhostCard>
+        <GhostCard
+          ghost="CLYDE"
+          title="CLYDE (Orange / Pokey)"
+          active={ghostFilters.CLYDE}
+          target={formatTarget(engine.ghosts.CLYDE.target)}
+          badge={
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                 !clydeFlees(engine.ghosts.CLYDE, engine.pacman)
@@ -329,15 +303,11 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
             >
               {clydeFlees(engine.ghosts.CLYDE, engine.pacman) ? "FLEEING" : "CHASING"}
             </span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            When far (&ge; 8 tiles), switches between chasing and fleeing. When within 8 tiles,
-            always retreats to bottom-left!
-          </p>
-          <div className="text-[10px] text-amber-300">
-            Target: {formatTarget(engine.ghosts.CLYDE.target)}
-          </div>
-        </div>
+          }
+        >
+          Chases Pac-Man's tile while 8 or more tiles away; closer than that, he heads for his
+          corner at the bottom left instead.
+        </GhostCard>
       </div>
 
       {/* The arcade's targeting overflow: set by the rules preset (Game Modes), shown here */}
