@@ -44,3 +44,12 @@ export function setSetting<K extends keyof GameSettings>(
   engine.settings[key] = value;
   settingsChanged();
 }
+
+/**
+ * Re-renders the component when a setting changes, for components that hold the engine in a ref
+ * and read `engineRef.current?.settings` themselves (the cabinet creates its engine after the
+ * first render).
+ */
+export function useSettingsVersion(): number {
+  return useSyncExternalStore(subscribe, () => version);
+}
