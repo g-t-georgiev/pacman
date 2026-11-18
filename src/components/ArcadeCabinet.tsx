@@ -1,5 +1,5 @@
 import type { Direction, GameMode } from "../types";
-import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../game/constants";
 import GameEvents from "../core/EventBus";
@@ -30,10 +30,13 @@ import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
+import { DocsErrorBoundary } from "./DocsErrorBoundary";
 import { keepArcadeFont } from "../utils/fontLoader";
 
 // The manual is loaded when it is first opened: the game's bundle doesn't carry it
-const DocsPage = lazy(() => import("./DocsPage"));
+const loadDocsPage = () => lazy(() => import("./DocsPage"));
+/** The first try, shared: once loaded, the manual opens at once, even after a remount. */
+const firstDocsPage = loadDocsPage();
 import { useGameEvent } from "../hooks/useGameEvent";
 import { setSetting, settingsChanged, useSettingsVersion } from "../hooks/useEngineSettings";
 import { usePanels } from "../hooks/usePanels";
@@ -113,6 +116,12 @@ export const ArcadeCabinet: React.FC = () => {
     history.replaceState(null, "", location.pathname + location.search);
     setDocsRoute(null);
   };
+  // A failed load stays failed in React: each try gets a fresh request for the manual's code
+  const [docsAttempt, setDocsAttempt] = useState(0);
+  const DocsPage = useMemo(
+    () => (docsAttempt === 0 ? firstDocsPage : loadDocsPage()),
+    [docsAttempt]
+  );
 
   const input = useGameInput(engineRef, runnerRef, bindingsRef, {
     docsOpen: () => docsOpenRef.current,
@@ -528,15 +537,22 @@ export const ArcadeCabinet: React.FC = () => {
 
       {/* The manual, over everything; the game waits behind it */}
       {docsRoute && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-[60] bg-neutral-950 text-neutral-400 flex items-center justify-center text-sm">
-              Opening the manual…
-            </div>
-          }
+        <DocsErrorBoundary
+          key={docsAttempt}
+          attempt={docsAttempt}
+          onRetry={() => setDocsAttempt((n) => n + 1)}
+          onClose={closeDocs}
         >
-          <DocsPage route={docsRoute} onClose={closeDocs} />
-        </Suspense>
+          <Suspense
+            fallback={
+              <div className="fixed inset-0 z-[60] bg-neutral-950 text-neutral-400 flex items-center justify-center text-sm">
+                Opening the manual…
+              </div>
+            }
+          >
+            <DocsPage route={docsRoute} onClose={closeDocs} />
+          </Suspense>
+        </DocsErrorBoundary>
       )}
 
       {/* Footer Info */}

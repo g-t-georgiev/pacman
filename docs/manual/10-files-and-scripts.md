@@ -90,6 +90,7 @@ The files in `scripts/`:
 | `components/OptionsPanel.tsx`           | Options: key remapping, reduce flashing, colorblind colors                              |
 | `components/HighScoresModal.tsx`        | The high score table (local storage)                                                    |
 | `components/DocsPage.tsx`               | This manual's page                                                                      |
+| `components/DocsErrorBoundary.tsx`      | What shows if the manual fails to load: try again, back to the game, reload             |
 | `components/PanelTransitionWrapper.tsx` | A panel's backdrop and open/close transition                                            |
 | `components/VirtualDpad.tsx`            | The on-screen D-pad                                                                     |
 | `components/learn/GhostCard.tsx`        | One ghost's card in the Learn tab                                                       |

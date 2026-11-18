@@ -89,6 +89,9 @@ describe("e2e: the manual (DOC1)", () => {
       return Promise.resolve();
     };
     try {
+      await expect
+        .element(page.getByRole("heading", { name: /The length of a death/ }))
+        .toBeVisible();
       const block = document.getElementById("docs-the-length-of-a-death")!.nextElementSibling!
         .nextElementSibling as HTMLElement; // the heading, its paragraph, then the code
       const button = block.querySelector<HTMLButtonElement>(".docs-copy")!;
@@ -110,6 +113,7 @@ describe("e2e: the manual (DOC1)", () => {
     await page.viewport(375, 812);
     history.replaceState(null, "", "#docs/console-recipes");
     await mountApp();
+    await expect.poll(() => document.querySelectorAll(".docs-code").length).toBeGreaterThan(5);
     const blocks = [...document.querySelectorAll<HTMLElement>(".docs-code")];
     expect(blocks.length).toBeGreaterThan(5);
     for (const block of blocks) {
