@@ -131,6 +131,28 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     };
   }, []);
 
+  /** Said to screen readers after a copy ("Copied", or why not). */
+  const [copyStatus, setCopyStatus] = useState("");
+
+  /** A code block's copy button (the chapter's HTML has them; one listener serves them all). */
+  const onArticleClick = (e: React.MouseEvent) => {
+    const button = (e.target as HTMLElement).closest<HTMLButtonElement>(".docs-copy");
+    if (!button) return;
+    const code = button.parentElement?.querySelector("pre code")?.textContent ?? "";
+    void copyText(code).then((ok) => {
+      button.classList.toggle("copied", ok);
+      button.setAttribute("aria-label", ok ? "Copied" : "Copy code");
+      button.title = ok ? "Copied" : "Couldn't copy: select the code instead";
+      setCopyStatus(ok ? "Copied to the clipboard" : "Couldn't copy");
+      window.setTimeout(() => {
+        button.classList.remove("copied");
+        button.setAttribute("aria-label", "Copy code");
+        button.title = "Copy";
+        setCopyStatus("");
+      }, 1500);
+    });
+  };
+
   /** Closes the drawer, giving the keyboard back to the ☰ button. */
   const closeDrawer = () => {
     setDrawer(false);
@@ -277,7 +299,11 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
         </nav>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          <span role="status" className="sr-only">
+            {copyStatus}
+          </span>
           <article
+            onClick={onArticleClick}
             className="docs-article px-4 sm:px-8 py-6"
             // The manual is our own Markdown, bundled with the game
             dangerouslySetInnerHTML={{ __html: html }}
@@ -288,6 +314,32 @@ const DocsPage: React.FC<DocsPageProps> = ({ route, onClose }) => {
     </div>
   );
 };
+
+/**
+ * Copies text to the clipboard. The Clipboard API needs a secure page (https or localhost); on
+ * plain http (the game opened on the LAN) the older copy command still works.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      area.remove();
+    }
+  }
+}
 
 /** Every chapter; under the current one, its sections, the one being read marked. */
 const ChapterList: React.FC<{

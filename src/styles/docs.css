@@ -118,6 +118,65 @@
   color: #e6edf3;
 }
 
+/* Code blocks with a copy button in the top right corner (it stays put while the code scrolls) */
+.docs-code {
+  position: relative;
+  margin: 0 0 1rem;
+}
+.docs-article .docs-code pre {
+  margin: 0;
+  padding-right: 3rem; /* the first line runs under the button */
+}
+.docs-copy {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #a3a3a3;
+  cursor: pointer;
+  /* Above the code, which scrolls sideways under it on narrow screens */
+  z-index: 1;
+  box-shadow: 0 0 0 4px #0d1117;
+  /* Faded until you point at it (or reach it with the keyboard, or it has just copied) */
+  opacity: 0.5;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.docs-copy:hover,
+.docs-copy:focus-visible,
+.docs-copy.copied {
+  opacity: 1;
+}
+.docs-copy:hover {
+  color: #fafafa;
+  border-color: #525252;
+}
+.docs-copy:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 1px;
+}
+.docs-check-icon {
+  display: none;
+}
+.docs-copy.copied {
+  color: #4ade80;
+  border-color: #166534;
+}
+.docs-copy.copied .docs-copy-icon {
+  display: none;
+}
+.docs-copy.copied .docs-check-icon {
+  display: block;
+}
 /* A path in the repository (no file browser here): shown as code, the path on hover */
 .docs-src {
   border-bottom: 1px dotted #737373;

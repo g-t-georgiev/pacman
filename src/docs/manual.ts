@@ -131,6 +131,12 @@ export function chapterBySlug(slug: string): ManualChapter | undefined {
 /** The element id of a section anchor on the page (prefixed: no clash with the app's ids). */
 export const anchorId = (anchor: string) => `docs-${anchor}`;
 
+/** The copy button's icons (two pages; a check mark once copied). */
+const COPY_ICON =
+  '<svg class="docs-copy-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const CHECK_ICON =
+  '<svg class="docs-check-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -177,7 +183,9 @@ export function renderChapter(chapter: ManualChapter): string {
         const first = lang?.split(/\s/)[0];
         const language = first && hljs.getLanguage(first) ? first : null;
         const html = language ? hljs.highlight(text, { language }).value : escapeHtml(text);
-        return `<pre><code class="hljs${language ? ` language-${language}` : ""}">${html}</code></pre>\n`;
+        const pre = `<pre><code class="hljs${language ? ` language-${language}` : ""}">${html}</code></pre>`;
+        // A copy button in the corner (the page handles its clicks: see DocsPage)
+        return `<div class="docs-code">${pre}<button type="button" class="docs-copy" aria-label="Copy code" title="Copy">${COPY_ICON}${CHECK_ICON}</button></div>\n`;
       },
     },
   });

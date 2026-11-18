@@ -77,6 +77,57 @@ describe("e2e: the manual (DOC1)", () => {
     await expect.poll(active).toBe("Estimates and open questions");
   });
 
+  it("a code block's copy button copies its exact text and says so", async () => {
+    await page.viewport(1280, 800);
+    history.replaceState(null, "", "#docs/console-recipes/the-length-of-a-death");
+    await mountApp();
+    const copied: string[] = [];
+    const clipboard = navigator.clipboard;
+    const original = clipboard.writeText.bind(clipboard);
+    clipboard.writeText = (text: string) => {
+      copied.push(text);
+      return Promise.resolve();
+    };
+    try {
+      const block = document.getElementById("docs-the-length-of-a-death")!.nextElementSibling!
+        .nextElementSibling as HTMLElement; // the heading, its paragraph, then the code
+      const button = block.querySelector<HTMLButtonElement>(".docs-copy")!;
+      await page.elementLocator(button).click();
+      expect(copied).toEqual([block.querySelector("pre code")!.textContent]);
+      expect(copied[0]).toMatch(/^const a = pacmanAgent;\n/);
+      const label = () => button.getAttribute("aria-label");
+      await expect.poll(label).toBe("Copied");
+      // Fully opaque while it shows the check mark (it fades in over 0.15 s)
+      await expect.poll(() => getComputedStyle(button).opacity).toBe("1");
+      // ...then back to the copy icon
+      await expect.poll(label, { timeout: 3000 }).toBe("Copy code");
+    } finally {
+      clipboard.writeText = original;
+    }
+  });
+
+  it("on a phone, the copy button stays in its corner while the code scrolls under it", async () => {
+    await page.viewport(375, 812);
+    history.replaceState(null, "", "#docs/console-recipes");
+    await mountApp();
+    const blocks = [...document.querySelectorAll<HTMLElement>(".docs-code")];
+    expect(blocks.length).toBeGreaterThan(5);
+    for (const block of blocks) {
+      block.scrollIntoView({ block: "center" });
+      const pre = block.querySelector("pre")!;
+      const button = block.querySelector<HTMLElement>(".docs-copy")!;
+      pre.scrollLeft = pre.scrollWidth; // scrolled all the way sideways
+      const b = button.getBoundingClientRect();
+      const p = block.getBoundingClientRect();
+      expect(p.right - b.right).toBeLessThan(12); // top right corner
+      expect(b.top - p.top).toBeLessThan(12);
+      expect(b.right).toBeLessThanOrEqual(innerWidth); // on screen
+      // Nothing covers it: the button is what a tap there hits
+      const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      expect(button.contains(hit)).toBe(true);
+    }
+  });
+
   describe("on a narrow screen: the ☰ drawer", () => {
     const drawer = () => document.getElementById("docs-drawer")!;
     const menu = () => page.getByRole("button", { name: "Chapters" });

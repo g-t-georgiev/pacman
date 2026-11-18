@@ -72,6 +72,15 @@ describe("The manual (DOC10)", () => {
     }
   });
 
+  it("every code block gets a copy button", () => {
+    for (const chapter of CHAPTERS) {
+      const html = renderChapter(chapter);
+      const blocks = (html.match(/<pre>/g) ?? []).length;
+      const buttons = (html.match(/class="docs-copy"/g) ?? []).length;
+      expect(buttons, chapter.file).toBe(blocks);
+    }
+  });
+
   it("every repository file it links to exists", () => {
     const missing: string[] = [];
     for (const chapter of CHAPTERS) {
