@@ -3,7 +3,8 @@ import React from "react";
 import type GameEngine from "../game/GameEngine";
 import { LearnModeOverlay } from "./LearnModeOverlay";
 import { PracticePanel } from "./PracticePanel";
-import { DebugOverlayPanel } from "./DebugOverlayPanel";
+import { DebugPanel } from "./DebugPanel";
+import type { GameRunner } from "../game/GameRunner";
 
 export type LabTab = "LEARN" | "PRACTICE" | "DEBUG";
 
@@ -19,12 +20,14 @@ interface LabPanelProps {
   clips?: React.ComponentProps<typeof PracticePanel>["clips"];
   /** Pattern recorder and first-death heatmap (Phase 5). */
   practice?: PracticeTools;
+  /** The real-time shell: pause, stepping and measurements for the Debug tab (M6). */
+  runner?: GameRunner;
 }
 
 const TABS: Array<{ id: LabTab; label: string; devOnly?: boolean }> = [
   { id: "LEARN", label: "🎯 Learn" },
   { id: "PRACTICE", label: "🛠️ Practice" },
-  { id: "DEBUG", label: "🔬 Debug", devOnly: true },
+  { id: "DEBUG", label: "🔬 Debug" },
 ];
 
 /**
@@ -40,6 +43,7 @@ export const LabPanel: React.FC<LabPanelProps> = ({
   onVisualSettingsChange,
   clips,
   practice,
+  runner,
 }) => {
   const tabs = TABS.filter((t) => !t.devOnly || import.meta.env.DEV);
   return (
@@ -96,8 +100,8 @@ export const LabPanel: React.FC<LabPanelProps> = ({
           practice={practice}
         />
       )}
-      {tab === "DEBUG" && import.meta.env.DEV && (
-        <DebugOverlayPanel engine={engine} onChange={onUpdate} />
+      {tab === "DEBUG" && (
+        <DebugPanel engine={engine} runner={runner} onChange={onUpdate} clips={clips} />
       )}
     </div>
   );

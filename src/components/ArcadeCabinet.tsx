@@ -230,11 +230,6 @@ export const ArcadeCabinet: React.FC = () => {
     if (e) setSetting(e, "crtFilter", !e.settings.crtFilter);
   };
 
-  const handleToggleDiagnostics = () => {
-    const e = engineRef.current;
-    if (e) setSetting(e, "showDiagnosticConsole", !e.settings.showDiagnosticConsole);
-  };
-
   const toggleDisplayOption = (key: "reducedFlash" | "colorblindPalette", pref: string) => {
     const e = engineRef.current;
     if (!e) return;
@@ -322,8 +317,6 @@ export const ArcadeCabinet: React.FC = () => {
           onOpenRestart={handleOpenRestartPanel}
           restartPanelOpen={panels.showRestartPanel}
           isGameOver={gameOver.isGameOver}
-          showDiagnostics={showDiagnostics}
-          onToggleDiagnostics={handleToggleDiagnostics}
         />
 
         {/* Canvas Screen Container */}
@@ -410,6 +403,7 @@ export const ArcadeCabinet: React.FC = () => {
             }}
             onVisualSettingsChange={settingsChanged}
             practice={runnerRef.current?.practice}
+            runner={runnerRef.current ?? undefined}
             clips={replays.clips}
           />
         )}

@@ -8,6 +8,7 @@ import { ReplayViewer } from "./ReplayViewer";
 import { PracticeTools } from "./practiceTools";
 import { LatencyMeter } from "./latencyMeter";
 import { ScorePopups } from "./scorePopups";
+import { Measurements } from "./measurements";
 import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 import { actorsDiagnostics } from "../diagnostics/actorData";
 
@@ -29,6 +30,8 @@ export class GameRunner {
   public readonly latency = new LatencyMeter();
   /** The floating fruit points (plan P2). */
   public readonly popups = new ScorePopups();
+  /** Speed recorder and tick rate (plan M6), shared by the Debug panel and the agent driver. */
+  public readonly measure: Measurements;
   public renderer: GameRenderer | null = null;
   /** Called before every tick (gamepad polling). */
   public onPreUpdate?: () => void;
@@ -73,6 +76,7 @@ export class GameRunner {
   }
 
   constructor(public readonly engine: GameEngine) {
+    this.measure = new Measurements(engine);
     this.loop = new GameLoopController(
       () => this.tick(),
       () => {
@@ -129,8 +133,10 @@ export class GameRunner {
     this.onPreUpdate?.();
     this.viewer.beforeTick();
     this.onBeforeTick?.();
+    this.measure.before();
     const before = this.engine.tick;
     this.engine.update();
+    this.measure.after(!this.stepping && this.engine.tick !== before);
     if (this.engine.tick !== before) {
       this.practice.afterTick(this.engine);
       this.latency.afterTick();

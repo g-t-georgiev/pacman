@@ -34,13 +34,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const [clipStatus, setClipStatus] = useState<string>("");
   // Read from the engine on every render (O2): no copies to keep in sync
   const settings = useEngineSettings(engine);
-  const {
-    gameSpeed: speed,
-    showGhostPaths,
-    showTargetLines,
-    showGrid,
-    showDiagnosticConsole,
-  } = settings;
+  const { gameSpeed: speed, showGhostPaths, showTargetLines, showGrid } = settings;
   const invincible = engine.rules.invincible;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
@@ -71,11 +65,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
 
   const handleToggleGrid = () => {
     setSetting(engine, "showGrid", !showGrid);
-    onUpdate();
-  };
-
-  const handleToggleDiagnosticConsole = () => {
-    setSetting(engine, "showDiagnosticConsole", !showDiagnosticConsole);
     onUpdate();
   };
 
@@ -371,14 +360,6 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
           on={showGrid}
           onClick={handleToggleGrid}
           tone="blue"
-        />
-        <ToggleCard
-          icon="🔬"
-          label="Diagnostics"
-          hint="Floating HUD telemetry & invariant rules"
-          on={showDiagnosticConsole}
-          onClick={handleToggleDiagnosticConsole}
-          tone="teal"
         />
       </div>
 
