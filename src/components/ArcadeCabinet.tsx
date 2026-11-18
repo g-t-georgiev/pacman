@@ -1,7 +1,7 @@
 import type { Direction, GameMode } from "../types";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, arcadeFont } from "../game/constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import { GameRunner } from "../game/GameRunner";
@@ -30,6 +30,7 @@ import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
+import { keepArcadeFont } from "../utils/fontLoader";
 
 // The manual is loaded when it is first opened: the game's bundle doesn't carry it
 const DocsPage = lazy(() => import("./DocsPage"));
@@ -172,8 +173,9 @@ export const ArcadeCabinet: React.FC = () => {
     // Gamepads are polled before every tick
     runner.onPreUpdate = () => input.pollGamepads(engine);
 
-    // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading)
-    void document.fonts?.load(arcadeFont(16));
+    // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading),
+    // and again if that request fails: else every canvas text stays in a thin fallback font
+    const stopFontRetries = keepArcadeFont();
 
     runner.start();
 
@@ -199,6 +201,7 @@ export const ArcadeCabinet: React.FC = () => {
     if (import.meta.env.DEV) window.pacmanAgent = new AgentDriver(engine, runner);
 
     return () => {
+      stopFontRetries();
       runner.stop();
       if (import.meta.env.DEV) delete window.pacmanAgent;
       soundEngine.stopSiren();

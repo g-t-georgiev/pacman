@@ -198,6 +198,7 @@ The files in `scripts/`:
 | `types/index.ts`       | Shared types: directions, tiles, modes, settings, debug layers |
 | `utils/keyBindings.ts` | Key bindings: defaults, remapping, saving                      |
 | `utils/preferences.ts` | Reading and writing preferences in local storage, safely       |
+| `utils/fontLoader.ts`  | Loads the canvas pixel font, and retries if that request fails |
 
 ## tests/
 
