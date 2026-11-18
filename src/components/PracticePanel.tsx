@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import type GameEngine from "../game/GameEngine";
+import { sendGhostsHome, setInvincible as applyInvincible } from "../game/practiceActions";
+import { setSetting, settingsChanged, useEngineSettings } from "../hooks/useEngineSettings";
 import type { PracticeTools } from "../game/practiceTools";
+import { ToggleCard } from "./ui/ToggleCard";
 
 interface PracticePanelProps {
   engine: GameEngine;
@@ -29,80 +32,54 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   const [, refreshPractice] = useState(0);
   const [patternStatus, setPatternStatus] = useState<string>("");
   const [clipStatus, setClipStatus] = useState<string>("");
-  const [speed, setSpeed] = useState<number>(engine.settings.gameSpeed);
-  const [invincible, setInvincible] = useState<boolean>(engine.settings.invincible);
-  const [showGhostPaths, setShowGhostPaths] = useState<boolean>(engine.settings.showGhostPaths);
-  const [showTargetLines, setShowTargetLines] = useState<boolean>(engine.settings.showTargetLines);
-  const [showGrid, setShowGrid] = useState<boolean>(engine.settings.showGrid);
-  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
-    engine.settings.emulateRomQuirks ?? false
-  );
-  const showDiagnosticConsole = engine.settings.showDiagnosticConsole ?? false;
+  // Read from the engine on every render (O2): no copies to keep in sync
+  const settings = useEngineSettings(engine);
+  const { gameSpeed: speed, showGhostPaths, showTargetLines, showGrid } = settings;
+  const invincible = engine.rules.invincible;
   // Read from the engine on every render, so it is right however the state changed (R key...)
   const isScrubbing = engine.rewindIndex !== -1;
 
-  const bufferLen = engine.getRewindBufferLength();
+  const bufferLen = engine.timeline.length;
   const currentScrubIdx = engine.rewindIndex !== -1 ? engine.rewindIndex : bufferLen - 1;
 
   const handleSpeedChange = (val: number) => {
-    setSpeed(val);
-    engine.settings.gameSpeed = val;
+    setSetting(engine, "gameSpeed", val);
     onUpdate();
   };
 
   const handleToggleInvincible = () => {
-    engine.toggleInvincible();
-    setInvincible(engine.settings.invincible);
+    applyInvincible(engine, !engine.rules.invincible);
+    settingsChanged();
     onUpdate();
   };
 
   const handleToggleGhostPaths = () => {
-    const nextVal = !engine.settings.showGhostPaths;
-    engine.settings.showGhostPaths = nextVal;
-    setShowGhostPaths(nextVal);
+    setSetting(engine, "showGhostPaths", !showGhostPaths);
     onUpdate();
   };
 
   const handleToggleTargetLines = () => {
-    const nextVal = !engine.settings.showTargetLines;
-    engine.settings.showTargetLines = nextVal;
-    setShowTargetLines(nextVal);
+    setSetting(engine, "showTargetLines", !showTargetLines);
     onUpdate();
   };
 
   const handleToggleGrid = () => {
-    const nextVal = !engine.settings.showGrid;
-    engine.settings.showGrid = nextVal;
-    setShowGrid(nextVal);
-    onUpdate();
-  };
-
-  const handleToggleRomQuirks = () => {
-    const nextVal = !engine.settings.emulateRomQuirks;
-    engine.settings.emulateRomQuirks = nextVal;
-    engine.ghostAiController.emulateRomQuirks = nextVal;
-    setEmulateRomQuirks(nextVal);
-    onUpdate();
-  };
-
-  const handleToggleDiagnosticConsole = () => {
-    const nextVal = !engine.settings.showDiagnosticConsole;
-    engine.settings.showDiagnosticConsole = nextVal;
+    setSetting(engine, "showGrid", !showGrid);
     onUpdate();
   };
 
   const handleRewindSeconds = (secs: number) => {
-    engine.rewindSeconds(secs);
+    engine.timeline.rewindSeconds(secs);
     onUpdate();
   };
 
   const handleScrub = (idx: number) => {
-    engine.scrubToFrame(idx);
+    engine.timeline.scrubTo(idx);
     onUpdate();
   };
 
   const handleResume = () => {
-    engine.resumeFromScrub();
+    engine.timeline.resume();
     onUpdate();
   };
 
@@ -352,167 +329,38 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
 
       {/* Visualizers & Cheats Toggles */}
       <div className="grid grid-cols-2 gap-2 text-[11px]">
-        {/* Invincibility Toggle */}
-        <button
+        <ToggleCard
+          icon="🛡️"
+          label="Invincibility"
+          hint="Pac-Man impervious to ghost contact"
+          on={invincible}
           onClick={handleToggleInvincible}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            invincible
-              ? "bg-amber-500 text-black shadow-md shadow-amber-500/20 ring-1 ring-amber-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🛡️</span>
-              <span>Invincibility</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${invincible ? "bg-black/20 text-black" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {invincible ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${invincible ? "text-black/80" : "text-neutral-400"}`}
-          >
-            Pac-Man impervious to ghost contact
-          </span>
-        </button>
-
-        {/* Ghost Paths Toggle */}
-        <button
+          tone="amber"
+        />
+        <ToggleCard
+          icon="🧭"
+          label="Ghost Paths"
+          hint="Multi-step corridor lookahead & turn arrows"
+          on={showGhostPaths}
           onClick={handleToggleGhostPaths}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showGhostPaths
-              ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/20 ring-1 ring-cyan-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🧭</span>
-              <span>Ghost Paths</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGhostPaths ? "bg-cyan-900 text-cyan-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showGhostPaths ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showGhostPaths ? "text-cyan-100/90" : "text-neutral-400"}`}
-          >
-            Multi-step corridor lookahead & turn arrows
-          </span>
-        </button>
-
-        {/* Target Lines Toggle */}
-        <button
+          tone="cyan"
+        />
+        <ToggleCard
+          icon="📏"
+          label="Target Radar"
+          hint="Laser vector, tile distance & proximity alert"
+          on={showTargetLines}
           onClick={handleToggleTargetLines}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showTargetLines
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>📏</span>
-              <span>Target Radar</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showTargetLines ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showTargetLines ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showTargetLines ? "text-purple-100/90" : "text-neutral-400"}`}
-          >
-            Laser vector, tile distance & proximity alert
-          </span>
-        </button>
-
-        {/* Show Grid Toggle */}
-        <button
+          tone="purple"
+        />
+        <ToggleCard
+          icon="📐"
+          label="Tile Grid"
+          hint="Maze tile grid & decision intersections"
+          on={showGrid}
           onClick={handleToggleGrid}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showGrid
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 ring-1 ring-blue-400"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>📐</span>
-              <span>Tile Grid</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showGrid ? "bg-blue-900 text-blue-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showGrid ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showGrid ? "text-blue-100/90" : "text-neutral-400"}`}
-          >
-            Maze tile grid & decision intersections
-          </span>
-        </button>
-
-        {/* 1980 ROM Overflow Quirks Toggle */}
-        <button
-          onClick={handleToggleRomQuirks}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            emulateRomQuirks
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/20 ring-1 ring-purple-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>👾</span>
-              <span>1980 Quirks</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${emulateRomQuirks ? "bg-purple-900 text-purple-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {emulateRomQuirks ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${emulateRomQuirks ? "text-purple-100/90" : "text-neutral-400"}`}
-          >
-            Z80 UP bug (Pinky/Inky leftward shift)
-          </span>
-        </button>
-
-        {/* Live Diagnostics HUD Toggle */}
-        <button
-          onClick={handleToggleDiagnosticConsole}
-          className={`p-2.5 rounded-lg flex flex-col gap-1 text-left font-semibold transition-all cursor-pointer ${
-            showDiagnosticConsole
-              ? "bg-teal-600 text-white shadow-md shadow-teal-600/20 ring-1 ring-teal-300"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-1.5">
-              <span>🔬</span>
-              <span>Diagnostics</span>
-            </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${showDiagnosticConsole ? "bg-teal-900 text-teal-100" : "bg-neutral-800 text-neutral-400"}`}
-            >
-              {showDiagnosticConsole ? "ON" : "OFF"}
-            </span>
-          </div>
-          <span
-            className={`text-[9px] font-normal leading-tight ${showDiagnosticConsole ? "text-teal-100/90" : "text-neutral-400"}`}
-          >
-            Floating HUD telemetry & invariant rules
-          </span>
-        </button>
+          tone="blue"
+        />
       </div>
 
       {/* Instant Action Triggers */}
@@ -539,7 +387,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
 
         <button
           onClick={() => {
-            engine.resetGhostsToHouse();
+            sendGhostsHome(engine);
             onUpdate();
           }}
           className="flex-1 px-2 py-1.5 rounded bg-red-900/60 border border-red-700/60 hover:bg-red-800/80 text-red-200 font-semibold text-center"

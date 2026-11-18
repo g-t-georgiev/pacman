@@ -1,0 +1,45 @@
+# After a merge into main: tag the version in package.json (once), and publish a GitHub Release
+# with its changelog notes for a minor or major version. Patch versions get the tag only.
+# The version itself is bumped on dev with `vp run release`; CI checks it on the pull request.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "26"
+          cache: true
+      - name: Tag the version
+        id: tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          vp run release:tag
+      - name: Push the tag
+        if: steps.tag.outputs.tagged == 'true'
+        run: git push origin "${{ steps.tag.outputs.tag }}"
+      - name: Publish a GitHub Release (minor and major versions)
+        if: steps.tag.outputs.tagged == 'true' && steps.tag.outputs.kind != 'patch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ steps.tag.outputs.tag }}"
+          --title "Pac-Man Arcade Lab ${{ steps.tag.outputs.tag }}"
+          --notes-file "${{ steps.tag.outputs.notes }}"
+          --verify-tag

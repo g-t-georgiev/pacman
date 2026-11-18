@@ -8,6 +8,7 @@
 // A golden that already carries other versions (bumped by hand) needs no further bump. Comments,
 // formatting, renames and refactors never change a hash, so they never bump anything.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { GOLDEN_SCENARIOS } from "../tests/golden/scenarios";
 import { type Replay, RULES_VERSION } from "../src/game/replay";
@@ -40,24 +41,27 @@ for (const { scenario, old, replay } of recorded) {
   }
 }
 
-let rules = RULES_VERSION;
-let state = GAME_STATE_VERSION;
-if (shapeChanged) {
-  state = bumpConstant("src/game/gameState.ts", "GAME_STATE_VERSION");
-  console.log(`GAME_STATE_VERSION ${GAME_STATE_VERSION} -> ${state} (src/game/gameState.ts)`);
-} else if (playChanged) {
-  rules = bumpConstant("src/game/replay.ts", "RULES_VERSION");
-  console.log(`RULES_VERSION ${RULES_VERSION} -> ${rules} (src/game/replay.ts)`);
+if (shapeChanged || playChanged) {
+  if (shapeChanged) {
+    const next = bumpConstant("src/game/gameState.ts", "GAME_STATE_VERSION");
+    console.log(`GAME_STATE_VERSION ${GAME_STATE_VERSION} -> ${next} (src/game/gameState.ts)`);
+  } else {
+    const next = bumpConstant("src/game/replay.ts", "RULES_VERSION");
+    console.log(`RULES_VERSION ${RULES_VERSION} -> ${next} (src/game/replay.ts)`);
+  }
+  // This process still has the old version loaded, and the state version is part of every state
+  // (and so of every checkpoint hash): record in a fresh process that loads the new one. Its
+  // goldens carry the old versions, so it sees nothing more to bump.
+  console.log("Re-recording with the new version...");
+  const run = spawnSync("vpx ./scripts/update-golden.ts", { stdio: "inherit", shell: true });
+  if (run.status === 0)
+    console.log("Commit the bumped version together with the re-recorded goldens.");
+  process.exit(run.status ?? 1);
 }
 
 for (const { scenario, file, replay } of recorded) {
-  // This process imported the old constants: stamp the new ones on the files it writes
-  replay.made = { rules, state };
   writeFileSync(file, JSON.stringify(replay) + "\n");
   console.log(
     `${scenario.name}: ${replay.endTick} ticks, ${replay.inputs.length} inputs, ${replay.checkpoints.length} checkpoints -> ${file}`
   );
-}
-if (shapeChanged || playChanged) {
-  console.log("Commit the bumped version together with the re-recorded goldens.");
 }

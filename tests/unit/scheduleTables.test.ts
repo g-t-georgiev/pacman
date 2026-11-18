@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { DEFAULT_SCATTER_TARGETS, SIM_FPS } from "../../src/game/constants";
-import { getScatterChaseSchedule } from "../../src/utils";
+import { getScatterChaseSchedule } from "../../src/game/levelTable";
 
 /** A schedule as [mode, seconds] pairs; 1/60 s and "indefinite" kept readable. */
 function seconds(level: number): Array<[string, number | string]> {

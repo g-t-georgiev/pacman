@@ -18,7 +18,7 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     // Single step
     runner.loop.stepOnce();
     expect(preUpdateCalled).toBe(true);
-    expect(engine.currLevelFrame).toBe(1);
+    expect(engine.lifeFrame).toBe(1);
 
     // Start & Stop
     runner.start();
@@ -27,7 +27,7 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
 
   it("EventBus emits SCORE_CHANGED, LIVES_CHANGED and DIAGNOSTICS_TICK", () => {
     const engine = new GameEngine("PACMAN", 5000);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     let diagReceived!: DiagnosticData;
     const listener = (e: CustomEvent<DiagnosticData>) => {
@@ -57,7 +57,7 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
 
   it("Blinky adheres to Cruise Elroy Scatter Immunity when dotsRemaining <= 20", () => {
     const engine = new GameEngine("PACMAN", 5000);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     engine.dotsRemaining = 20; // level 1 Elroy 1 threshold
 
     const blinky = engine.ghosts.BLINKY;
@@ -79,18 +79,14 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     // Blinky must remain in CHASE
     expect(blinky.mode).toBe("CHASE");
 
-    // Evaluate diagnostic invariant
-    const rule = engine.diagnosticController.rules.find(
-      (r) => r.id === "RULE_BLINKY_ELROY_SCATTER_IMMUNITY"
-    );
-    expect(rule).toBeDefined();
-    const result = rule!.evaluate(engine);
-    expect(result.pass).toBe(true);
+    // ...so he targets Pac-Man's tile
+    const pac = engine.pacman.tileCoord;
+    expect(blinky.target).toEqual({ col: pac.col, row: pac.row });
   });
 
   it("Ghosts exit house and turn into the maze corridors rather than staying on row 14", () => {
     const engine = new GameEngine("PACMAN", 5000);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Pinky has a dot limit of 0, so the house releases him on the first playing frame
     const pinky = engine.ghosts.PINKY;

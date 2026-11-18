@@ -2,25 +2,22 @@ import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { GameRunner } from "../../src/game/GameRunner";
 import { AgentDriver } from "../../src/agent/AgentDriver";
-import { applyRulesPreset, rulesPresetOf } from "../../src/game/presets";
+import { RULES_PRESETS, applyRulesPreset } from "../../src/game/presets";
 
 describe("Rules presets (Phase 5)", () => {
   it("Arcade is the default; Modern drops the quirk and runs at 60 Hz", () => {
     const e = new GameEngine("PACMAN", 0);
-    expect(rulesPresetOf(e.settings)).toBe("ARCADE");
+    expect(e.rules.emulateRomQuirks).toBe(RULES_PRESETS.ARCADE.settings.rules.emulateRomQuirks);
+    expect(e.settings.arcadeRefreshRate).toBe(
+      RULES_PRESETS.ARCADE.settings.settings.arcadeRefreshRate
+    );
     applyRulesPreset(e, "MODERN");
-    expect(e.settings.emulateRomQuirks).toBe(false);
+    expect(e.rules.emulateRomQuirks).toBe(false);
     expect(e.ghostAiController.emulateRomQuirks).toBe(false);
     expect(new GameRunner(e).ticksPerSecond).toBe(60);
     applyRulesPreset(e, "ARCADE");
     expect(e.ghostAiController.emulateRomQuirks).toBe(true);
     expect(new GameRunner(e).ticksPerSecond).toBeCloseTo(60.606, 2);
-  });
-
-  it("a Lab toggle that matches neither preset reads as CUSTOM", () => {
-    const e = new GameEngine("PACMAN", 0);
-    e.settings.emulateRomQuirks = false;
-    expect(rulesPresetOf(e.settings)).toBe("CUSTOM");
   });
 });
 
@@ -30,7 +27,7 @@ describe("Release clears the turn (joystick feel)", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
     e.settings.releaseClearsBuffer = releaseClears;
-    agent.scenario({ playState: "PLAYING", pacman: { col: 10, row: 26, dir: "LEFT" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 10, row: 26, dir: "LEFT" } });
     e.setInputDirection("UP");
     agent.step(1);
     e.releaseInputDirection("UP");
@@ -56,7 +53,7 @@ describe("Release clears the turn (joystick feel)", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
     e.settings.releaseClearsBuffer = true;
-    agent.scenario({ playState: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
     e.setInputDirection("LEFT");
     agent.step(1);
     const inputs = agent.saveReplay().inputs.length;

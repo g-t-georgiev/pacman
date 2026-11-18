@@ -1,3 +1,5 @@
+import { PLAY_STATE_ENTRY_PHASE } from "../game/RoundSequencer";
+import { Measurements } from "../game/measurements";
 import type { LatencyStats } from "../game/latencyMeter";
 import GameEngine from "../game/GameEngine";
 import { type Replay, type ReplayResult, playReplay } from "../game/replay";
@@ -9,7 +11,7 @@ import { type GameState, hashGameState } from "../game/gameState";
 import type { HouseState } from "../controllers/HouseController";
 import { TILE_SIZE } from "../game/constants";
 import type { RoundPhase } from "../game/RoundSequencer";
-import { SpeedRecorder, type SpeedReport } from "./SpeedRecorder";
+import { type SpeedReport } from "./SpeedRecorder";
 import type {
   DebugLayers,
   Direction,
@@ -24,6 +26,9 @@ import type {
 
 /** Everything an agent usually needs to know about one frame, as plain JSON. */
 export interface AgentView {
+  /** Frames since this life (or level) began: the speed masks run on it. */
+  lifeFrame: number;
+  /** @deprecated Use `lifeFrame` (kept for one version, plan N1). */
   frame: number;
   playState: PlayState;
   /** Who holds the game (browser): "user", "panel", "agent". Empty while it runs. */
@@ -88,6 +93,9 @@ export interface Placement {
 
 export interface Scenario {
   level?: number;
+  /** Start this round phase (e.g. PLAYING skips READY); PAUSED is not a phase (use pause()). */
+  phase?: RoundPhase;
+  /** @deprecated Use `phase` (kept for one version, plan N2): PLAYING, READY, DYING, ... map to their first phase; PAUSED holds the engine. */
   playState?: PlayState;
   /**
    * Removes dots from the maze (plain dots first, in reading order, then energizers) until this
@@ -126,20 +134,16 @@ const center = (tile: number) => tile * TILE_SIZE + TILE_SIZE / 2;
  */
 export class AgentDriver {
   private recorded: SimEvent[] = [];
-  private speedRecorder: SpeedRecorder | null = null;
-  private tickCounter: (() => void) | null = null;
+  /** Headless (no runner): the driver keeps its own measurements. */
+  private readonly ownMeasure: Measurements;
 
   constructor(
     public readonly engine: GameEngine,
     private readonly runner?: GameRunner
   ) {
+    this.ownMeasure = new Measurements(engine);
     if (runner) {
       runner.onEvents = (events) => this.recorded.push(...events);
-      runner.onBeforeTick = () => this.speedRecorder?.before();
-      runner.onAfterTick = () => {
-        this.speedRecorder?.after();
-        this.tickCounter?.();
-      };
     }
   }
 
@@ -262,7 +266,16 @@ export class AgentDriver {
     if (s.frightened) e.triggerFrightenedMode();
     if (s.prngIndex !== undefined) e.prng.state = s.prngIndex;
     if (s.randomSeed !== undefined) e.simRandom.reset(s.randomSeed);
-    if (s.playState) e.playState = s.playState;
+    if (s.phase) {
+      e.paused = false;
+      if (e.phase !== s.phase) e.enterPhase(s.phase);
+    } else if (s.playState === "PAUSED") {
+      e.paused = true;
+    } else if (s.playState) {
+      const entry = PLAY_STATE_ENTRY_PHASE[s.playState];
+      e.paused = false;
+      if (e.playState !== s.playState) e.enterPhase(entry);
+    }
     e.replayLog.reset(e); // the edits above are not inputs: recordings start from here
     this.render();
     return this.view();
@@ -381,12 +394,12 @@ export class AgentDriver {
    * Works in live play too: call it, play normally, then read `speedReport()`.
    */
   public recordSpeeds(): void {
-    this.speedRecorder = new SpeedRecorder(this.engine);
+    this.measure.startSpeeds();
   }
 
   /** Measured vs table speed per actor and source, plus real ticks per second (live play). */
   public speedReport(): SpeedReport | null {
-    return this.speedRecorder?.report() ?? null;
+    return this.measure.speedReport();
   }
 
   /**
@@ -409,32 +422,17 @@ export class AgentDriver {
     animationFramesPerSecond: number;
   }> {
     if (!this.runner) throw new Error("measureTickRate needs the live game (window.pacmanAgent)");
-    let ticks = 0;
-    let frames = 0;
-    this.tickCounter = () => ticks++;
-    const countFrame = () => {
-      frames++;
-      rafId = requestAnimationFrame(countFrame);
-    };
-    let rafId = requestAnimationFrame(countFrame);
-    const start = performance.now();
-    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-    const elapsed = (performance.now() - start) / 1000;
-    cancelAnimationFrame(rafId);
-    this.tickCounter = null;
-    const round = (v: number) => Math.round(v * 1000) / 1000;
-    return {
-      ticksPerSecond: round(ticks / elapsed),
-      expected: round(this.runner.ticksPerSecond),
-      animationFramesPerSecond: round(frames / elapsed),
-    };
+    return this.runner.measure.measureTickRate(seconds, this.runner.ticksPerSecond);
   }
 
   /** Stops recording and returns the final report. */
   public stopSpeeds(): SpeedReport | null {
-    const report = this.speedReport();
-    this.speedRecorder = null;
-    return report;
+    return this.measure.stopSpeeds();
+  }
+
+  /** The runner's measurements in the browser (shared with the Debug panel), else the driver's. */
+  private get measure(): Measurements {
+    return this.runner?.measure ?? this.ownMeasure;
   }
 
   // --- Observation --------------------------------------------------------------------------------
@@ -462,7 +460,8 @@ export class AgentDriver {
     }
     const pacTile = p.tileCoord;
     return {
-      frame: e.currLevelFrame,
+      lifeFrame: e.lifeFrame,
+      frame: e.lifeFrame,
       playState: e.playState,
       pausedBy: this.runner?.pausedBy ?? (e.paused ? ["user"] : []),
       phase: e.phase,
@@ -519,10 +518,10 @@ export class AgentDriver {
       if (this.engine.paused) this.runner.stepWhilePaused(1, undefined, false);
       else this.runner.tick();
     } else {
-      this.speedRecorder?.before();
+      this.ownMeasure.before();
       this.engine.update();
-      this.speedRecorder?.after();
-      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.currLevelFrame);
+      this.ownMeasure.after();
+      this.engine.diagnosticController.evaluateRules(this.engine, this.engine.lifeFrame);
       this.collectHeadless();
     }
   }
@@ -543,7 +542,7 @@ export class AgentDriver {
           if (row[col] !== kind) continue;
           row[col] = "EMPTY";
           e.dotsRemaining--;
-          e.dotsEatenThisRound++;
+          e.dotsEatenThisLevel++;
         }
       }
     }
@@ -563,7 +562,7 @@ export class AgentDriver {
 
 declare global {
   interface Window {
-    /** Dev builds only: the agent driver for the running game (see docs/AGENT_DRIVER.md). */
+    /** Dev builds only: the agent driver for the running game (see docs/manual/08-agent-api.md). */
     pacmanAgent?: AgentDriver;
   }
 }

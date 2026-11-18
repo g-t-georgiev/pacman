@@ -3,7 +3,7 @@
  * ghost PRNG so that drawing, say, a fruit timer never shifts the ghosts' choices.
  * Its state is part of GameState, so replays and rewinds stay exact.
  */
-export const SIM_RANDOM_SEED = 0x2f6b_1d35;
+const SIM_RANDOM_SEED = 0x2f6b_1d35;
 
 export class SimRandom {
   public state: number = SIM_RANDOM_SEED;

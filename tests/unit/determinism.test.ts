@@ -17,7 +17,7 @@ function step(engine: GameEngine, f: number): void {
 
 function newPlayingEngine(): GameEngine {
   const engine = new GameEngine("PACMAN", 0);
-  engine.playState = "PLAYING";
+  engine.enterPhase("PLAYING");
   return engine;
 }
 

@@ -1,6 +1,6 @@
 import type GameEngine from "./GameEngine";
 import type { Ghost } from "../core/Ghost";
-import { getSpeedConfigForLevel } from "../utils";
+import { getSpeedConfigForLevel } from "./levelTable";
 import { isTunnelSlowZone } from "./mazeAnalysis";
 
 /** Why an actor moves at the speed it does this frame. */

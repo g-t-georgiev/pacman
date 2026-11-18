@@ -44,7 +44,7 @@ const EYES_SIREN = { lo: 600, hi: 1300, rate: 12 };
 /** One frequency point of a sweep: seconds from the sound's start, Hz. */
 type Sweep = Array<[number, number]>;
 
-class SoundEngine {
+export class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private enabled: boolean = true;

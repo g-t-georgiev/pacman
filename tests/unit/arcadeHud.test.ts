@@ -65,7 +65,7 @@ describe("Arcade HUD in the maze's blank rows (T13)", () => {
 
   it("1UP blinks while playing", () => {
     const engine = new GameEngine("PACMAN", 0);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     const shown = [0, HUD_LAYOUT.oneUpBlinkFrames].map((tick) => {
       engine.tick = tick;
       const r = recordingContext();

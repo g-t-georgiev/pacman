@@ -1,151 +1,135 @@
 # Pac-Man Arcade Lab
 
-A Pac-Man game that follows the original arcade mechanics as documented in _The Pac-Man
-Dossier_ and in published analyses, built with TypeScript, React and the Canvas 2D API, with a
-deterministic simulation and tooling to study and test it.
+A Pac-Man that plays like the 1980 arcade machine, and a workbench for studying how it does that.
+The mechanics follow _The Pac-Man Dossier_ and other published analyses, rule by rule, in the
+arcade's own units (8-pixel tiles, whole pixels, one step per arcade frame at 60.606 Hz). Built with
+TypeScript, React and the Canvas 2D API on a deterministic simulation.
 
 Two modes: **Pac-Man** and **Ms. Pac-Man**.
 
-## Running and checking
+## The manual
 
-This project uses [Vite+](https://viteplus.dev/guide/) (`vp`).
+Everything is documented in the **manual**: in the game (**📖 Manual** in the top bar, or a link
+such as `#docs/arcade-rules`), and as Markdown in [`docs/manual/`](docs/manual/).
+
+| Chapter                                                                 | For                                                                           |
+| :---------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
+| [Introduction](docs/manual/01-introduction.md)                          | What the game is, quick start                                                 |
+| [Playing](docs/manual/02-playing.md)                                    | Controls, remapping, touch and gamepads, options, devices                     |
+| [The arcade rules](docs/manual/03-arcade-rules.md)                      | How the arcade game works, each rule with its source or marked as an estimate |
+| [Architecture](docs/manual/04-architecture.md)                          | The deterministic engine, the real-time shell, the game loop, events          |
+| [Replays, rewind and versions](docs/manual/05-replays-and-versions.md)  | Recording, rewind, replay files and links, version bumps                      |
+| [Testing](docs/manual/06-testing.md)                                    | The suites, golden replays, writing tests                                     |
+| [Debugging and tools](docs/manual/07-debugging-tools.md)                | The Lab, the debug overlay, measurements, hunting a bug                       |
+| [Agent driver and API](docs/manual/08-agent-api.md)                     | `window.pacmanAgent`, headless use, integrating other tools                   |
+| [Measuring from the browser console](docs/manual/09-console-recipes.md) | Copy-paste recipes                                                            |
+| [Files and scripts](docs/manual/10-files-and-scripts.md)                | Every file and script, checked by a test                                      |
+
+## Running it
+
+The project uses [Vite+](https://viteplus.dev/guide/) (the `vp` command; it brings Node and the
+package manager).
 
 ```bash
-vp install           # after pulling
-vp dev --port=3000   # dev server (debug overlay, agent driver and diagnostics enabled)
-vp check             # format, lint, type check
-vp test              # unit, integration, fidelity and golden replay tests
-vp run golden:update # re-record golden replays (and bump versions) after an intended change
-vp run golden:check  # do the golden replays still match? (the pre-commit hook runs it)
+vp install           # dependencies (after every pull)
+vp dev --port=3000   # the dev server: debug overlay, agent driver and diagnostics are on
+vp build             # the production build in dist/
 ```
 
-## Screen
+## Checking it
 
-Like the arcade, the score texts live in the maze's blank rows: `1UP` and `HIGH SCORE` with
-their scores above the maze, spare lives and the recent levels' fruit below it, in the Emulogic
-pixel font (exact columns in
-`HUD_LAYOUT`, `src/game/arcadeHud.ts`). The bar above the canvas holds the buttons: Restart,
-Turbo, Lab, diagnostics, CRT, a pause button in dev builds, and sound.
+```bash
+vp check               # format, lint, type check
+vp test                # every test: the headless suites, then the browser tests
+vp run test:unit       # the headless suites only (a few seconds)
+vp run test:e2e        # the app in Chromium (first time: vp exec playwright install chromium)
+vp run test:regression # core contracts and fixed bugs (under a second)
+vp run golden:check    # do the golden replays still play back exactly?
+vp run golden:update   # re-record them after an intended change (bumps the versions itself)
+vp run docs:versions   # update the versions shown in this README and the manual
+vp run release -- --dry-run # the next version and why; `vp run release` makes it (on dev)
+```
 
-Actors are drawn at the arcade's sprite size, two tiles across, so they overlap the walls beside a
-corridor; which tile an actor is in (and so every collision) depends only on its center point.
+Every commit runs the format and lint, the golden check, the versions check and the regression
+suite (the pre-commit hook). Every push runs all checks, every test and the build
+([CI](.github/workflows/ci.yml)).
 
-## Controls
+## Features
 
-| Action                            | Keys                                          |
-| :-------------------------------- | :-------------------------------------------- |
-| Move                              | Arrow keys or W A S D (remappable in Options) |
-| Pause / resume (closes panels)    | Space, or ⏸ in the HUD (dev)                  |
-| Close panel, else pause           | Escape                                        |
-| Turbo (1.6×)                      | T                                             |
-| Lab: Learn tab (ghost AI lab)     | L                                             |
-| Lab: Practice tab (rewind, speed) | P                                             |
-| Rewind 2 s (Lab open)             | R                                             |
-| Debug overlay (dev builds)        | F1                                            |
-| Step 1 frame / to next mode (dev) | `.` / `>` while paused                        |
+- **Arcade-accurate play:** speed patterns, cornering, look-ahead ghost decisions, the four
+  personalities and the "up" overflow quirk, scatter/chase waves, frightened mode with the
+  arcade's random-number scheme, Cruise Elroy, the ghost house counters, the per-level table.
+  See [The arcade rules](docs/manual/03-arcade-rules.md).
+- **Rules presets:** Arcade (the original, quirks included) or Modern (no overflow, 60 Hz), and
+  an optional joystick feel.
+- **Options:** remappable keys, touch swipes, an on-screen D-pad, gamepads, reduced flashing,
+  colorblind-safe colors.
+- **The Lab:** a ghost AI explainer (Learn), rewind, slow motion, routes and a death heatmap
+  (Practice), and every debugging and measuring tool (Debug).
+- **Replays:** a rolling recording of the last two minutes, exact rewind, clips to watch in the
+  game, download or share as a link.
+- **The agent driver:** script, inspect and test the game frame by frame, in the browser console
+  or headless.
 
-Touch swipes, an on-screen D-pad and gamepads work too.
-
-The Game Modes menu picks the rules: **Arcade** (the original's targeting overflow, 60.606 Hz)
-or **Modern** (no overflow, 60 Hz), and an optional **joystick feel** where letting go of a
-direction cancels a turn you queued but haven't reached yet. **Options** (header) remaps the
-movement keys and has **Reduce flashing** and **Colorblind-safe colors**.
-
-## Mechanics
-
-The simulation runs in the arcade's own units: 8-px tiles, integer pixel positions, one tick per
-arcade frame, with the real-time loop at 60.606 Hz. The canvas draws it at 2×. Per-level values
-(speeds, Elroy, frightened time, flashes, fruit, house limits, schedule) are one table,
-`src/game/levelTable.ts`, checked row by row against the Dossier's Table A.1.
-
-- **Speed.** Percentages of 1.25 px/frame (75.76 px/s). Each speed is a 16-frame step mask, so
-  80% moves exactly 1 px every frame. Pac-Man stops 1 frame per dot and 3 per energizer.
-- **Cornering.** Pac-Man may turn up to 3 px before or 4 px after a turn's center (mirrored on
-  the other side) and moves diagonally while he does. Input is buffered.
-- **Ghost decisions.** On entering a tile, a ghost decides which way to turn at the next one,
-  choosing the exit closest to its target (ties: up, left, down, right). It turns at tile
-  centers, never reverses on its own, and cannot turn up in the four no-up tiles.
-- **Reversals.** Every scatter/chase switch and the start of frightened mode make ghosts reverse,
-  obeyed on entering their next tile. Leaving frightened mode does not.
-- **Targets.** Blinky: Pac-Man's tile. Pinky: 4 tiles ahead of Pac-Man. Inky: the vector from
-  Blinky to 2 tiles ahead of Pac-Man, doubled. Clyde: Pac-Man while 8 or more tiles away, his
-  corner when closer. The arcade's overflow when Pac-Man faces up (Pinky and Inky also shift
-  left) is on by default and can be turned off.
-- **Cruise Elroy.** Blinky speeds up at a level-dependent number of dots left (20 on level 1, up
-  to 120), and again at half that; he keeps chasing during scatter. Suspended after a death until
-  Clyde leaves the house.
-- **Frightened.** No target: an arcade-shaped PRNG picks a direction at every tile, trying the
-  next one clockwise when blocked. From level 17, energizers only reverse the ghosts.
-- **Ghost house.** Personal dot counters, a global counter after a death (7/17/32), and an idle
-  timer (4 s, 3 s from level 5). Ghosts leave to the left; a reversal latched inside is obeyed
-  outside.
-- **Round flow.** READY, a 1 s pause when a ghost is eaten (score shown, eyes keep moving), a
-  freeze before the death animation, maze flashes on a level clear, an extra life at 10,000,
-  fruit after 70 and 170 dots for 9-10 s.
-
-Not every value has a source: phase lengths other than the eat pause and death freeze, the eyes'
-speed and the house speed are estimates, marked as such in the code. The speed bit patterns are
-evenly spaced placeholders on the Dossier's scale. See `docs/REFACTOR_PLAN.md` for the open
-questions.
-
-## Debugging and testing tools
-
-- **Agent driver** (`window.pacmanAgent` in dev builds; `docs/AGENT_DRIVER.md`): pause, step,
-  run until a condition, set up scenarios, inspect state, record speeds, save and verify
-  replays. Works headless in tests too.
-- **Replays.** The game keeps a rolling recording (a keyframe every second, inputs, state
-  hashes). The last 2 minutes can be rewound exactly from the Lab's Practice tab, saved as a file,
-  and verified on another build.
-- **Patterns and heatmap** (Lab, Practice tab). Save a life's route as the level's pattern and
-  follow it as a trail; see where your first death on each level happens.
-- **Replay viewer.** Watch a clip of the last 20 s inside the game (Lab, Practice tab), with
-  play/pause, speed and scrub, or share it as a link (`#replay=...` opens the viewer).
-- **Golden replays.** `tests/golden/*.json` must replay hash for hash; a mechanics change fails
-  at the first second that differs. After an intended change, `vp run golden:update` re-records
-  them and bumps `RULES_VERSION` (or `GAME_STATE_VERSION`) by itself; the pre-commit hook runs
-  `vp run golden:check` and stops a commit whose goldens no longer match.
-- **Debug overlay (F1).** Layers for the grid, occupied tiles, ghost targets and decisions,
-  no-up and tunnel zones, intersections, Pac-Man's turn window, a speed readout, the
-  scatter/chase timeline and the ghost house counters.
-- **Fidelity suite.** `tests/fidelity/dossier.test.ts`, one test per Dossier claim.
-- **Diagnostics console.** Runtime invariants, checked in dev builds or while the console is open.
-
-## Project structure
+## Project layout
 
 ```
-src/
-├── agent/          AgentDriver (runtime test driver), SpeedRecorder
-├── audio/          SoundEngine (procedural Web Audio)
-├── components/     React UI: cabinet, button bar, Lab panel (Learn / Practice / Debug tabs),
-│                   replay bar, Restart / Game Modes / Scores panels
-├── config/         ui.config.ts (UI timings and panel transitions)
-├── controllers/    Game loop, timers, ghost AI, movement, ghost house, animation
-├── core/           Actor, Pacman, Ghost, PRNG, SimRandom, EventBus
-├── diagnostics/    Runtime invariant rules and the diagnostics console
-├── game/
-│   ├── GameEngine.ts      The pure simulation (no audio, UI or clock)
-│   ├── GameRunner.ts      Real-time shell: loop, renderer, audio, events
-│   ├── RoundSequencer.ts  READY, play, eat pause, death and level-clear phases
-│   ├── levelTable.ts      Per-level values (Table A.1)
-│   ├── speedMasks.ts      16-frame speed step masks
-│   ├── replay.ts          Recording, replay, rewind keyframes
-│   ├── ReplayViewer.ts    Watching a replay in the game; replayShare.ts: share links
-│   ├── arcadeHud.ts       Score, high score, lives and fruit in the maze's blank rows
-│   ├── mazeAnalysis.ts    Corridors, intersections, tunnel zones, maze validator
-│   ├── rulesets.ts        What differs per mode (maze, fruit, looks)
-│   ├── gameState.ts       Serializable state and its hash
-│   ├── debugOverlay.ts    Debug overlay layers
-│   ├── mazes.ts           Maze data and spawn points
-│   └── ...                Renderer, constants, events, AI helpers
-├── hooks/          useGameEvent
-├── types/          Shared types
-└── utils/          Per-level helpers and speed steps
-tests/              unit, integration, fidelity and golden replay tests
-scripts/            update-golden.ts
-docs/               REFACTOR_PLAN.md, AGENT_DRIVER.md
+src/            the game: engine (game/), controllers, actors (core/), UI (components/, hooks/),
+                sound, the agent driver, diagnostics, the manual page (docs/)
+tests/          unit, integration, fidelity, regression, golden replay and e2e (browser) tests
+scripts/        golden replays: update, check, trace
+docs/manual/    the manual, one Markdown file per chapter
+docs/           OPEN_ITEMS.md (what is still open); history/ (the finished plans)
+public/         the canvas font and the icon
 ```
+
+Every file is described in [Files and scripts](docs/manual/10-files-and-scripts.md).
+
+## Open questions
+
+Some values have no published source and are estimates until checked against the original game
+(round phase lengths, the energizer's look, when the start tune plays, the ghost house release
+overlap, sounds). They are tracked, with the constant that sets each one, in
+[`docs/OPEN_ITEMS.md`](docs/OPEN_ITEMS.md), along with two rule decisions still to make. The
+finished project plans are kept in [`docs/history/`](docs/history/).
+
+## Versions
+
+<!-- versions:start (generated by `vp run docs:versions`; checked by a test) -->
+
+This README describes **Pac-Man Arcade Lab 0.1.0**.
+
+| What                                         | Version                               |
+| :------------------------------------------- | :------------------------------------ |
+| Game                                         | 0.1.0                                 |
+| Manual (in the game and in `docs/manual/`)   | 0.1.0: it describes this game version |
+| Rules: what a frame does (replays record it) | 1                                     |
+| Saved state: its shape (replays record it)   | 6                                     |
+| Replay files: their format                   | 2                                     |
+| Vite+: dev server, build, lint, format       | 1.4.0                                 |
+| Vitest: the tests                            | 5.0.5                                 |
+| Playwright: the browser tests (Chromium)     | 1.65.1                                |
+| TypeScript                                   | 7.0.2                                 |
+| React                                        | 19.3.1                                |
+| Tailwind CSS                                 | 4.3.3                                 |
+| marked and highlight.js: the manual's page   | 18.2.1 and 11.12.0                    |
+| Node.js: CI                                  | 26                                    |
+| bun: package manager                         | 1.4.4                                 |
+
+<!-- versions:end -->
+
+The game's version is in `package.json`; the rules and saved-state versions are bumped by
+`vp run golden:update` when play changes (see
+[Replays, rewind and versions](docs/manual/05-replays-and-versions.md#versions)). The table is
+regenerated by `vp run docs:versions`; the pre-commit hook and a test fail when it is out of
+date. Releases bump the game's version from the commit messages, tag it on `main` and keep
+[`CHANGELOG.md`](CHANGELOG.md): see [Releases](docs/manual/05-replays-and-versions.md#releases).
 
 ## Credits
 
-- **Emulogic** font (canvas texts), © 2004 ck! / [freakyfonts.de](http://www.freakyfonts.de),
-  in `public/fonts/`. Check the author's terms before publishing the game.
+- Pac-Man and Ms. Pac-Man are trademarks of Bandai Namco. This is a fan-made study of the
+  game's published mechanics; it contains no code or data from the original ROMs.
+- The main source is _The Pac-Man Dossier_ by Jamey Pittman; frightened-ghost randomness after
+  _Retro Game Mechanics Explained_.
+- **Emulogic** font (canvas texts), © 2004 ck! / [freakyfonts.de](http://www.freakyfonts.de), in
+  `public/fonts/`. Check the author's terms before publishing the game.

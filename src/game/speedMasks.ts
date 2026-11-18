@@ -43,3 +43,20 @@ export function arcadeStepsOnFrame(mask: SpeedMask, frame: number): number {
   const shift = 15 - (frame % 16);
   return ((mask.step1 >> shift) & 1) + ((mask.step2 >> shift) & 1);
 }
+
+/**
+ * Pixels to move this frame, from the speed's 16-frame step mask. Callers move one sim pixel at
+ * a time and run the full per-pixel logic for each.
+ *
+ * @param lifeFrame The frame counter the masks are indexed by.
+ * @param speedPct A speed percentage that has an entry in SPEED_MASKS.
+ * @param turboMultiplier Turbo (practice) multiplier.
+ */
+export function getPixelStepsThisFrame(
+  lifeFrame: number,
+  speedPct: number,
+  turboMultiplier: number = 1.0
+): number {
+  const steps = arcadeStepsOnFrame(SPEED_MASKS[speedPct], lifeFrame);
+  return turboMultiplier > 1.0 ? Math.round(steps * turboMultiplier) : steps;
+}

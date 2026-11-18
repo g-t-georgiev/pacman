@@ -1,3 +1,4 @@
+import { drawIntersectionTiles, drawTileGrid } from "./render/draw";
 import type { LatencyStats } from "./latencyMeter";
 import type GameEngine from "./GameEngine";
 import type { Ghost } from "../core/Ghost";
@@ -14,9 +15,9 @@ import {
   TILE_SIZE,
 } from "./constants";
 import { getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
-import { getScatterChaseSchedule } from "../utils";
+import { getScatterChaseSchedule } from "./levelTable";
 import { ghostSpeed, pacmanSpeed } from "./speedSource";
-import { TUNNEL_SLOW_TILES, deriveIntersections } from "./mazeAnalysis";
+import { TUNNEL_SLOW_TILES } from "./mazeAnalysis";
 import {
   GLOBAL_COUNTER_END,
   GLOBAL_RELEASE_INKY,
@@ -79,18 +80,7 @@ export function renderDebugOverlay(
 // --- Maze layers ---------------------------------------------------------------------------------
 
 function drawGrid(ctx: CanvasRenderingContext2D, maze: MazeData): void {
-  ctx.strokeStyle = "rgba(0, 220, 255, 0.18)";
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  for (let c = 0; c <= maze.width; c++) {
-    ctx.moveTo(c * T, 0);
-    ctx.lineTo(c * T, maze.height * T);
-  }
-  for (let r = 0; r <= maze.height; r++) {
-    ctx.moveTo(0, r * T);
-    ctx.lineTo(maze.width * T, r * T);
-  }
-  ctx.stroke();
+  drawTileGrid(ctx, maze, "rgba(0, 220, 255, 0.18)");
 }
 
 function drawZones(ctx: CanvasRenderingContext2D, maze: MazeData): void {
@@ -110,14 +100,11 @@ function drawZones(ctx: CanvasRenderingContext2D, maze: MazeData): void {
   }
 }
 
-/** Intersections derived from the tiles (green; yellow where ghosts may not turn up). */
 function drawIntersections(ctx: CanvasRenderingContext2D, maze: MazeData): void {
-  for (const t of maze.intersections ?? deriveIntersections(maze)) {
-    ctx.fillStyle = isTileNoUpZone(t.col, t.row, maze)
-      ? "rgba(255, 230, 0, 0.45)"
-      : "rgba(40, 255, 80, 0.35)";
-    ctx.fillRect(t.col * T, t.row * T, T, T);
-  }
+  drawIntersectionTiles(ctx, maze, {
+    normal: "rgba(40, 255, 80, 0.35)",
+    noUp: "rgba(255, 230, 0, 0.45)",
+  });
 }
 
 // --- Actor layers --------------------------------------------------------------------------------

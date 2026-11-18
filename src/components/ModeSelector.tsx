@@ -3,7 +3,7 @@ import type { GameMode } from "../types";
 import { RULES_PRESETS, type RulesPreset } from "../game/presets";
 
 interface ModeSelectorProps {
-  rulesPreset: RulesPreset | "CUSTOM";
+  rulesPreset: RulesPreset;
   onSelectPreset: (preset: RulesPreset) => void;
   releaseClears: boolean;
   onToggleReleaseClears: () => void;
@@ -42,7 +42,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       icon: "🟡",
       accent: "border-yellow-500/60 text-yellow-400",
       description:
-        "The iconic arcade maze, original Blinky/Pinky/Inky/Clyde AI, and authentic siren tones.",
+        "The arcade rules as documented in The Pac-Man Dossier: each ghost's targeting, the speeds, the ghost house and the siren.",
     },
     {
       id: "MS_PACMAN",
@@ -52,7 +52,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       icon: "🎀",
       accent: "border-pink-500/60 text-pink-400",
       description:
-        "Pink bow, lipstick, beauty mark, 2 pairs of warp tunnels, salmon maze, and bouncing fruits.",
+        "The bow and the look, two pairs of tunnels, maze colors that change with the level, and fruit that bounces in place.",
     },
   ];
 
@@ -61,9 +61,9 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       {/* Title */}
       <div className="text-center flex flex-col items-center gap-1">
         <h2 className="text-xl sm:text-2xl font-bold tracking-widest text-yellow-400 drop-shadow">
-          ARCADE ARCIVE
+          GAME MODES
         </h2>
-        <p className="text-xs text-neutral-400">SELECT GAME EDITION & SPEED</p>
+        <p className="text-xs text-neutral-400">PICK A GAME, ITS RULES AND SPEED</p>
       </div>
 
       {/* Mode List */}
@@ -104,11 +104,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="font-bold text-xs text-cyan-300">RULES</span>
-          {rulesPreset === "CUSTOM" && (
-            <span className="text-[9px] px-1 rounded bg-neutral-800 text-neutral-400">
-              CUSTOM (changed in the Lab)
-            </span>
-          )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(RULES_PRESETS) as RulesPreset[]).map((id) => {

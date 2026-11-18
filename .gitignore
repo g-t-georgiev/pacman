@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Vitest browser mode: failure screenshots
+.vitest/
+
+# Release notes written by vp run release:tag (CI)
+.release-notes.md

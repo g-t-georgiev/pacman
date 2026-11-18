@@ -1,8 +1,7 @@
-import type { Direction, GameMode, PlayState } from "../types";
-import React, { useEffect, useRef, useState } from "react";
+import type { Direction, GameMode } from "../types";
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import soundEngine from "../audio/SoundEngine";
-import { uiConfig } from "../config/ui.config";
-import { CANVAS_HEIGHT, CANVAS_WIDTH, arcadeFont } from "../game/constants";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../game/constants";
 import GameEvents from "../core/EventBus";
 import GameEngine from "../game/GameEngine";
 import { GameRunner } from "../game/GameRunner";
@@ -12,12 +11,11 @@ import { HighScoresModal, getStoredHighScores } from "./HighScoresModal";
 import { HUD } from "./HUD";
 import { ModeSelector } from "./ModeSelector";
 import { PanelTransitionWrapper } from "./PanelTransitionWrapper";
-import { LabPanel, type LabTab } from "./LabPanel";
+import { LabPanel } from "./LabPanel";
 import { ReplayBar } from "./ReplayBar";
-import type { Replay } from "../game/replay";
-import { decodeReplay, replayCodeFromHash, replayLink } from "../game/replayShare";
+import { decodeReplay, replayCodeFromHash } from "../game/replayShare";
 import { RULESETS } from "../game/rulesets";
-import { type RulesPreset, applyRulesPreset, rulesPresetOf } from "../game/presets";
+import { type RulesPreset, applyRulesPreset } from "../game/presets";
 import {
   PREF_COLORBLIND,
   PREF_PRESET,
@@ -26,242 +24,133 @@ import {
   loadPreference,
   savePreference,
 } from "../utils/preferences";
-import {
-  type KeyBindings,
-  directionForKey,
-  loadBindings,
-  saveBindings,
-} from "../utils/keyBindings";
+import { type KeyBindings, loadBindings, saveBindings } from "../utils/keyBindings";
 import { OptionsPanel } from "./OptionsPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
-import { useGameEvent } from "../hooks/useGameEvent";
+import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
+import { DocsErrorBoundary } from "./DocsErrorBoundary";
+import { APP_VERSION_LABEL, VERSIONS } from "../version";
+import { keepArcadeFont } from "../utils/fontLoader";
 
+// The manual is loaded when it is first opened: the game's bundle doesn't carry it
+const loadDocsPage = () => lazy(() => import("./DocsPage"));
+/** The first try, shared: once loaded, the manual opens at once, even after a remount. */
+const firstDocsPage = loadDocsPage();
+import { useGameEvent } from "../hooks/useGameEvent";
+import { setSetting, settingsChanged, useSettingsVersion } from "../hooks/useEngineSettings";
+import { usePanels } from "../hooks/usePanels";
+import { useGameOver } from "../hooks/useGameOver";
+import { useReplays } from "../hooks/useReplays";
+import { useGameInput } from "../hooks/useGameInput";
+
+/**
+ * The game screen (plan M3): creates the session (engine, runner, renderer) and wires the hooks
+ * (panels, game over, replays, input) to the markup. Settings are read from the engine itself.
+ */
 export const ArcadeCabinet: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Engine & Renderer instances
   const engineRef = useRef<GameEngine | null>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
   const runnerRef = useRef<GameRunner | null>(null);
 
-  // Decoupled reactive state subscriptions via EventBus
   const scoreData = useGameEvent(GameEvents, "SCORE_CHANGED", () => {
     const stored = getStoredHighScores();
     const highest = stored.length > 0 ? stored[0].score : 10000;
     return { score: 0, highScore: highest };
   });
   const level = useGameEvent(GameEvents, "LEVEL_CHANGED", () => 1);
+  const playState = useGameEvent(GameEvents, "PLAY_STATE_CHANGED", () => "READY");
 
-  const score = scoreData.score;
-  const highScore = scoreData.highScore;
+  const [, setUiTick] = useState(0);
+  const refresh = () => setUiTick((t) => t + 1);
 
-  // UI state for reactive modals and controls
+  // UI-only state; everything that is a game setting is read from the engine below (O2)
   const [currentMode, setCurrentMode] = useState<GameMode>("PACMAN");
-  const [turbo, setTurbo] = useState<boolean>(false);
-  const [rulesPreset, setRulesPreset] = useState<RulesPreset | "CUSTOM">(
+  const [rulesPreset, setRulesPreset] = useState<RulesPreset>(
     () => loadPreference<RulesPreset>(PREF_PRESET) ?? "ARCADE"
   );
-  const [releaseClears, setReleaseClears] = useState<boolean>(
-    () => loadPreference<boolean>(PREF_RELEASE) ?? false
-  );
-  /** The Lab panel (Learn / Practice / Debug tabs), or null when closed (plan T11). */
-  const [lab, setLab] = useState<LabTab | null>(null);
-  const [learnVisualsActive, setLearnVisualsActive] = useState<boolean>(true);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [crtFilter, setCrtFilter] = useState<boolean>(false);
-  const [showDpad, setShowDpad] = useState<boolean>(false);
-  const [showMenu, setShowMenu] = useState<boolean>(false);
-  const [showHighScores, setShowHighScores] = useState<boolean>(false);
-  const [showOptions, setShowOptions] = useState<boolean>(false);
+  const [showDpad, setShowDpad] = useState(false);
   const [bindings, setBindings] = useState<KeyBindings>(() => loadBindings());
   const bindingsRef = useRef(bindings);
   bindingsRef.current = bindings;
-  const [reducedFlash, setReducedFlash] = useState<boolean>(
-    () => loadPreference<boolean>(PREF_REDUCED_FLASH) === true
-  );
-  const [colorblindPalette, setColorblindPalette] = useState<boolean>(
-    () => loadPreference<boolean>(PREF_COLORBLIND) === true
-  );
-  const [showRestartPanel, setShowRestartPanel] = useState<boolean>(false);
-  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
-  const [isGameOverState, setIsGameOverState] = useState<boolean>(false);
-  const [pendingScore, setPendingScore] = useState<{
-    score: number;
-    mode: GameMode;
-    level: number;
-  } | null>(null);
-  const [, setUiTick] = useState<number>(0);
-  const playState = useGameEvent(GameEvents, "PLAY_STATE_CHANGED", () => "READY");
 
-  // Panels hold the game while open (T11). The keyboard handler reads these through refs.
-  const anyPanelOpen =
-    lab !== null || showRestartPanel || showMenu || showHighScores || showOptions;
-  const anyPanelOpenRef = useRef(anyPanelOpen);
-  anyPanelOpenRef.current = anyPanelOpen;
-  const labRef = useRef(lab);
-  labRef.current = lab;
+  useSettingsVersion(); // re-render when a setting changes
+  const engine = engineRef.current;
+  const turbo = engine?.rules.turbo ?? false;
+  const soundEnabled = engine?.settings.soundEnabled ?? true;
+  const crtFilter = engine?.settings.crtFilter ?? false;
+  const learnVisualsActive = engine?.settings.learnVisualsEnabled ?? false;
+  const showDiagnostics = engine?.settings.showDiagnosticConsole ?? false;
+  const releaseClears = engine?.settings.releaseClearsBuffer ?? false;
+  const reducedFlash = engine?.settings.reducedFlash ?? false;
+  const colorblindPalette = engine?.settings.colorblindPalette ?? false;
 
+  const panels = usePanels(engineRef, runnerRef, refresh);
+  const gameOver = useGameOver(engineRef, runnerRef, panels.setShowRestartPanel);
+  const replays = useReplays(engineRef, runnerRef, panels.closeLab, refresh);
+
+  const handleToggleTurbo = () => {
+    const e = engineRef.current;
+    if (!e) return;
+    e.rules.turbo = !e.rules.turbo;
+    settingsChanged();
+  };
+
+  // The manual (DOC1): open while the URL is a docs link (#docs/...), holding the game
+  const [docsRoute, setDocsRoute] = useState<DocsRoute | null>(() => parseDocsHash(location.hash));
+  const docsOpenRef = useRef(docsRoute !== null);
+  docsOpenRef.current = docsRoute !== null;
   useEffect(() => {
-    runnerRef.current?.setPaused("panel", anyPanelOpen);
-  }, [anyPanelOpen]);
-
-  /** Closes the Lab. A rewound game plays on from the frame shown, never stays held. */
-  const closeLab = () => {
-    engineRef.current?.resumeFromScrub();
-    setLab(null);
-  };
-
-  /** Closes every panel (Escape, Space, and live game events). */
-  const closeAllPanels = () => {
-    closeLab();
-    setShowRestartPanel(false);
-    setShowMenu(false);
-    setShowHighScores(false);
-    setShowOptions(false);
-  };
-
-  // --- Replays (T12) ---
-
-  /** Watches a replay in the game; the live game comes back on exit. */
-  const watchReplay = (replay: Replay) => {
-    const runner = runnerRef.current;
-    if (!runner) return;
-    closeLab();
-    runner.setPaused("user", false);
-    runner.viewer.start(replay);
-    setUiTick((t) => t + 1);
-  };
-
-  /** Back to the live game, held by the player's pause. */
-  const exitReplay = () => {
-    runnerRef.current?.viewer.stop();
-    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
-    setUiTick((t) => t + 1);
-  };
-
-  const clipOf = (seconds: number) => {
-    const engine = engineRef.current!;
-    return engine.replayLog.export(engine, seconds);
-  };
-
-  const clips = {
-    watch: (seconds: number) => watchReplay(clipOf(seconds)),
-    copyLink: async (seconds: number) => {
-      const link = await replayLink(clipOf(seconds), location.href);
-      await navigator.clipboard.writeText(link);
-      return `link copied (${(link.length / 1024).toFixed(1)} KB)`;
-    },
-    download: (seconds: number) => {
-      const replay = clipOf(seconds);
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(replay)], { type: "application/json" })
-      );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `pacman-replay-L${replay.start.level}-t${replay.endTick}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-  };
-
-  /** Opens the Lab on a tab, or closes it when it is already open on that tab. */
-  const toggleLab = (tab: LabTab) => {
-    if (labRef.current === tab) closeLab();
-    else setLab(tab);
-  };
-
-  /** Space and the HUD pause button: with a panel open, close it and play on; else toggle. */
-  const togglePause = () => {
-    const runner = runnerRef.current;
-    if (!runner) return;
-    if (anyPanelOpenRef.current) {
-      closeAllPanels();
-      runner.setPaused("user", false);
-    } else {
-      runner.setPaused("user", !runner.pausedBy.includes("user"));
-    }
-    setUiTick((t) => t + 1);
-  };
-
-  // Panels close on live game events (T11): a death, a respawn or new level/game (READY), a level
-  // clear or game over. These come from the sim itself, never from a pause or a UI sync.
+    const onHash = () => setDocsRoute(parseDocsHash(location.hash));
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   useEffect(() => {
-    const onRoundChange = (e: CustomEvent<PlayState>) => {
-      if (["DYING", "READY", "LEVEL_CLEAR", "GAME_OVER"].includes(e.detail)) closeAllPanels();
-    };
-    GameEvents.on("ROUND_STATE_CHANGED", onRoundChange);
-    return () => GameEvents.off("ROUND_STATE_CHANGED", onRoundChange);
+    runnerRef.current?.setPaused("docs", docsRoute !== null);
+    refresh();
+  }, [docsRoute]);
+  const closeDocs = () => {
+    history.replaceState(null, "", location.pathname + location.search);
+    setDocsRoute(null);
+  };
+  // A failed load stays failed in React: each try gets a fresh request for the manual's code
+  const [docsAttempt, setDocsAttempt] = useState(0);
+  const DocsPage = useMemo(
+    () => (docsAttempt === 0 ? firstDocsPage : loadDocsPage()),
+    [docsAttempt]
+  );
+
+  const input = useGameInput(engineRef, runnerRef, bindingsRef, {
+    docsOpen: () => docsOpenRef.current,
+    anyPanelOpen: () => panels.anyPanelOpenRef.current,
+    labOpen: () => panels.labRef.current !== null,
+    togglePause: panels.togglePause,
+    closeAllPanels: panels.closeAllPanels,
+    toggleLab: panels.toggleLab,
+    toggleTurbo: handleToggleTurbo,
+    exitReplay: replays.exitReplay,
+    refresh,
+  });
+
+  // The agent driver edits state between ticks: re-render what reads the engine directly
+  useEffect(() => {
+    const onUiSync = () => refresh();
+    GameEvents.on("UI_SYNC", onUiSync);
+    return () => GameEvents.off("UI_SYNC", onUiSync);
   }, []);
 
-  const gameOverTimerRef = useRef<number | null>(null);
-
-  // Initialize engine once
-  useEffect(() => {
-    const handleGameOver = (e: CustomEvent<number>) => {
-      const finalScore = e.detail;
-      setIsGameOverState(true);
-
-      // Trigger Restart Panel with configurable delay so player comprehends game over
-      if (gameOverTimerRef.current !== null) {
-        window.clearTimeout(gameOverTimerRef.current);
-      }
-
-      gameOverTimerRef.current = window.setTimeout(() => {
-        setShowRestartPanel(true);
-      }, uiConfig.timings.gameOverRestartDelayMs);
-
-      // Check if qualifies for leaderboard
-      const scores = getStoredHighScores();
-      const isTop = scores.length < 10 || finalScore > scores[scores.length - 1].score;
-
-      if (isTop && finalScore > 0 && engineRef.current) {
-        setPendingScore({
-          score: finalScore,
-          mode: engineRef.current.mode,
-          level: engineRef.current.level,
-        });
-      }
-    };
-
-    // The agent driver edits state between ticks; re-render panels that read the engine directly
-    const handleUiSync = () => setUiTick((t) => t + 1);
-
-    // A rewind out of a game over brings the round back: drop the game-over UI (and a delayed
-    // Restart panel that has not opened yet), so nothing covers the board while you play on.
-    const handleRewound = (e: CustomEvent<PlayState>) => {
-      if (e.detail !== "GAME_OVER") {
-        if (gameOverTimerRef.current !== null) {
-          window.clearTimeout(gameOverTimerRef.current);
-          gameOverTimerRef.current = null;
-        }
-        setShowRestartPanel(false);
-        setIsGameOverState(false);
-        setPendingScore(null);
-      }
-      runnerRef.current?.syncUi(); // score, lives, level and play state of the rewound frame
-    };
-
-    GameEvents.on("GAME_OVER", handleGameOver);
-    GameEvents.on("UI_SYNC", handleUiSync);
-    GameEvents.on("REWOUND", handleRewound);
-    return () => {
-      GameEvents.off("GAME_OVER", handleGameOver);
-      GameEvents.off("UI_SYNC", handleUiSync);
-      GameEvents.off("REWOUND", handleRewound);
-    };
-  }, []);
-
-  // Initialize engine & GameLoopController once on mount
+  // The session: engine, runner and renderer, created once on mount
   useEffect(() => {
     const stored = getStoredHighScores();
     const highest = stored.length > 0 ? stored[0].score : 10000;
 
     const engine = new GameEngine("PACMAN", highest);
     engineRef.current = engine;
-    // The player's remembered rules preset and joystick feel
+    // The player's remembered rules preset, joystick feel and display options
     const preset = loadPreference<RulesPreset>(PREF_PRESET);
     if (preset === "ARCADE" || preset === "MODERN") applyRulesPreset(engine, preset);
     engine.settings.releaseClearsBuffer = loadPreference<boolean>(PREF_RELEASE) === true;
@@ -270,48 +159,42 @@ export const ArcadeCabinet: React.FC = () => {
     engine.replayLog.reset(engine); // the recording starts with these settings
     const runner = new GameRunner(engine);
     runnerRef.current = runner;
-    setLearnVisualsActive(engine.settings.learnVisualsEnabled ?? true);
+    if (docsOpenRef.current) runner.setPaused("docs", true); // opened on a docs link
 
-    // Detect mobile touch capability to show D-pad automatically
-    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    if (isTouchDevice) {
-      setShowDpad(true);
-    }
+    // Touch devices get the on-screen D-pad
+    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) setShowDpad(true);
 
-    // Setup Canvas & Renderer
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        // High DPI setup
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = CANVAS_WIDTH * dpr;
-        canvas.height = CANVAS_HEIGHT * dpr;
-        ctx.scale(dpr, dpr);
-        const renderer = new GameRenderer(ctx);
-        rendererRef.current = renderer;
-        runner.renderer = renderer;
-        renderer.practice = runner.practice;
-        renderer.latency = runner.latency;
-      }
+    const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) {
+      // High DPI
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = CANVAS_WIDTH * dpr;
+      canvas.height = CANVAS_HEIGHT * dpr;
+      ctx.scale(dpr, dpr);
+      const renderer = new GameRenderer(ctx);
+      rendererRef.current = renderer;
+      runner.renderer = renderer;
+      renderer.practice = runner.practice;
+      renderer.latency = runner.latency;
+      renderer.popups = runner.popups;
     }
 
-    // Connect gamepad polling to engine's pre-update tick
-    runner.onPreUpdate = () => {
-      pollGamepads(engine);
-    };
+    // Gamepads are polled before every tick
+    runner.onPreUpdate = () => input.pollGamepads(engine);
 
-    // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading)
-    void document.fonts?.load(arcadeFont(16));
+    // Load the canvas pixel font now (canvas text alone does not trigger @font-face loading),
+    // and again if that request fails: else every canvas text stays in a thin fallback font
+    const stopFontRetries = keepArcadeFont();
 
-    // Start deterministic game loop via GameLoopController
     runner.start();
 
     // A new engine (first load, or a dev-server reload) starts with every panel closed
-    setLab(null);
-    setShowRestartPanel(false);
-    setShowMenu(false);
-    setShowHighScores(false);
+    panels.setLab(null);
+    panels.setShowRestartPanel(false);
+    panels.setShowMenu(false);
+    panels.setShowHighScores(false);
+    settingsChanged(); // the settings above now come from the engine
 
     // A replay link (#replay=...) opens the viewer (T12)
     const code = replayCodeFromHash(location.hash);
@@ -319,216 +202,34 @@ export const ArcadeCabinet: React.FC = () => {
       decodeReplay(code)
         .then((replay) => {
           runner.viewer.start(replay);
-          setUiTick((t) => t + 1);
+          refresh();
         })
         .catch((error: unknown) => console.warn("Could not open the replay link:", error));
     }
 
-    // Dev builds: expose the agent driver for automated play-testing from the console or tools
+    // Dev builds: the agent driver for automated play-testing from the console or tools
     if (import.meta.env.DEV) window.pacmanAgent = new AgentDriver(engine, runner);
 
     return () => {
+      stopFontRetries();
       runner.stop();
       if (import.meta.env.DEV) delete window.pacmanAgent;
       soundEngine.stopSiren();
-      if (gameOverTimerRef.current !== null) {
-        window.clearTimeout(gameOverTimerRef.current);
-      }
     };
+    // Once per mount: the hooks' functions read refs, so the first ones stay valid
   }, []);
 
-  // Keyboard navigation & Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const engine = engineRef.current;
-      if (!engine) return;
+  // --- Actions ---
 
-      // Prevent scrolling on arrow keys or space
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-        e.preventDefault();
-      }
-
-      // Watching a replay: Space plays/pauses it, Escape leaves (or closes an open panel first)
-      const viewer = runnerRef.current?.viewer;
-      if (
-        viewer?.state.active &&
-        !anyPanelOpenRef.current &&
-        (e.key === " " || e.key === "Escape")
-      ) {
-        if (e.key === " ") {
-          if (viewer.state.playing) viewer.pause();
-          else viewer.play();
-        } else {
-          exitReplay();
-        }
-        setUiTick((t) => t + 1);
-        return;
-      }
-
-      // Dev builds: debug overlay (F1) and frame stepping while paused (plan T1, T3)
-      if (import.meta.env.DEV) {
-        const runner = runnerRef.current;
-        if (e.key === "F1") {
-          e.preventDefault(); // not the browser's help page
-          engine.settings.debugOverlay = !engine.settings.debugOverlay;
-          runner?.renderer?.render(engine);
-          setUiTick((t) => t + 1);
-          return;
-        }
-        if (runner && (e.key === "." || e.key === ">")) {
-          if (e.key === ".") {
-            runner.stepWhilePaused(1);
-          } else {
-            // Next mode change: a scatter/chase switch, or frightened starting or ending
-            const wave = engine.timerController.waveIndex;
-            const fright = engine.frightenedGlobalTimer > 0;
-            runner.stepWhilePaused(
-              20 * 60 * 60,
-              () =>
-                engine.timerController.waveIndex !== wave ||
-                engine.frightenedGlobalTimer > 0 !== fright
-            );
-          }
-          setUiTick((t) => t + 1);
-          return;
-        }
-      }
-
-      // Movement keys (remappable, Options panel) come before the letter shortcuts
-      const moveDir = directionForKey(bindingsRef.current, e.key);
-      if (moveDir) {
-        e.preventDefault();
-        runnerRef.current?.latency.onInput(e.timeStamp);
-        engine.setInputDirection(moveDir);
-        return;
-      }
-
-      switch (e.key) {
-        case " ":
-          togglePause();
-          break;
-        case "Escape":
-          // Close what is open; with nothing open, pause or resume
-          if (anyPanelOpenRef.current) closeAllPanels();
-          else togglePause();
-          break;
-        case "t":
-        case "T":
-          handleToggleTurbo();
-          break;
-        case "l":
-        case "L":
-          toggleLab("LEARN");
-          break;
-        case "p":
-        case "P":
-          toggleLab("PRACTICE");
-          break;
-        case "r":
-        case "R":
-          if (labRef.current !== null) {
-            // In the Lab: scrub back 2 s; "Resume from Here" (or closing the Lab) plays on
-            engine.rewindSeconds(2);
-            setUiTick((t) => t + 1);
-          } else if (anyPanelOpenRef.current) {
-            // E.g. the Restart panel after a game over: back to 2 s before the fatal collision,
-            // then hold there (your pause) with the board in view; press Space when ready
-            // The round phase, not playState: an open panel makes playState read "PAUSED"
-            if (engine.phase === "GAME_OVER" || engine.phase.startsWith("DEATH_")) {
-              engine.rewindBeforeDeath(2);
-            } else {
-              engine.rewindSeconds(2);
-            }
-            engine.resumeFromScrub();
-            runnerRef.current?.setPaused("user", true);
-            setUiTick((t) => t + 1);
-          }
-          break;
-      }
-    };
-
-    // Letting go of a direction (only matters with "release clears the turn")
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const dir = directionForKey(bindingsRef.current, e.key);
-      if (dir) engineRef.current?.releaseInputDirection(dir);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  // Touch Swipe Gesture Detection
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-    const threshold = 18; // minimum swipe distance
-
-    if (Math.max(absX, absY) > threshold) {
-      if (absX > absY) {
-        // Horizontal swipe
-        engineRef.current?.setInputDirection(dx > 0 ? "RIGHT" : "LEFT");
-      } else {
-        // Vertical swipe
-        engineRef.current?.setInputDirection(dy > 0 ? "DOWN" : "UP");
-      }
-    }
-    touchStartRef.current = null;
-  };
-
-  // Gamepad Polling
-  const lastGamepadDirRef = useRef<Direction>("NONE");
-  const pollGamepads = (engine: GameEngine) => {
-    if (typeof navigator.getGamepads !== "function") return;
-    const gamepads = navigator.getGamepads();
-    if (!gamepads) return;
-
-    for (const gp of gamepads) {
-      if (!gp) continue;
-
-      let dir: Direction = "NONE";
-      // D-pad buttons: 12 (up), 13 (down), 14 (left), 15 (right)
-      if (gp.buttons[12]?.pressed || gp.axes[1] < -0.4) dir = "UP";
-      else if (gp.buttons[13]?.pressed || gp.axes[1] > 0.4) dir = "DOWN";
-      else if (gp.buttons[14]?.pressed || gp.axes[0] < -0.4) dir = "LEFT";
-      else if (gp.buttons[15]?.pressed || gp.axes[0] > 0.4) dir = "RIGHT";
-
-      if (dir !== "NONE" && dir !== lastGamepadDirRef.current) {
-        lastGamepadDirRef.current = dir;
-        runnerRef.current?.latency.onInput(performance.now());
-        engine.setInputDirection(dir);
-      } else if (dir === "NONE" && lastGamepadDirRef.current !== "NONE") {
-        engine.releaseInputDirection(lastGamepadDirRef.current);
-        lastGamepadDirRef.current = "NONE";
-      }
-    }
-  };
-
-  // Mode Selection
   const handleSelectMode = (mode: GameMode) => {
     setCurrentMode(mode);
-    if (engineRef.current) {
-      soundEngine.stopSiren();
-      engineRef.current.initGame(mode, 1);
-      runnerRef.current?.setPaused("user", false); // a new game starts running
-      setShowMenu(false);
-      setShowRestartPanel(false);
-      setIsGameOverState(false);
-    }
+    if (!engineRef.current) return;
+    soundEngine.stopSiren();
+    engineRef.current.initGame(mode, 1);
+    runnerRef.current?.setPaused("user", false); // a new game starts running
+    panels.setShowMenu(false);
+    panels.setShowRestartPanel(false);
+    gameOver.setIsGameOver(false);
   };
 
   /** Redraws the (held) game so a display option shows at once behind the panel. */
@@ -539,82 +240,66 @@ export const ArcadeCabinet: React.FC = () => {
 
   // Rules preset and joystick feel (Phase 5), remembered in this browser
   const handleSelectPreset = (preset: RulesPreset) => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    applyRulesPreset(engine, preset);
+    const e = engineRef.current;
+    if (!e) return;
+    applyRulesPreset(e, preset);
     setRulesPreset(preset);
     savePreference(PREF_PRESET, preset);
+    settingsChanged();
   };
 
   const handleToggleReleaseClears = () => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    const next = !engine.settings.releaseClearsBuffer;
-    engine.settings.releaseClearsBuffer = next;
-    setReleaseClears(next);
-    savePreference(PREF_RELEASE, next);
-  };
-
-  const handleToggleTurbo = () => {
-    if (!engineRef.current) return;
-    const nextTurbo = !engineRef.current.settings.turbo;
-    engineRef.current.settings.turbo = nextTurbo;
-    setTurbo(nextTurbo);
+    const e = engineRef.current;
+    if (!e) return;
+    setSetting(e, "releaseClearsBuffer", !e.settings.releaseClearsBuffer);
+    savePreference(PREF_RELEASE, e.settings.releaseClearsBuffer);
   };
 
   const handleToggleSound = () => {
-    const nextSound = !soundEnabled;
-    soundEngine.setEnabled(nextSound);
-    setSoundEnabled(nextSound);
-    if (engineRef.current) {
-      engineRef.current.settings.soundEnabled = nextSound;
-    }
+    const e = engineRef.current;
+    if (!e) return;
+    setSetting(e, "soundEnabled", !e.settings.soundEnabled);
+    soundEngine.setEnabled(e.settings.soundEnabled);
   };
 
   const handleToggleCrt = () => {
-    if (!engineRef.current) return;
-    const nextCrt = !engineRef.current.settings.crtFilter;
-    engineRef.current.settings.crtFilter = nextCrt;
-    setCrtFilter(nextCrt);
+    const e = engineRef.current;
+    if (e) setSetting(e, "crtFilter", !e.settings.crtFilter);
   };
 
-  const handleToggleDiagnostics = () => {
-    if (!engineRef.current) return;
-    const nextVal = !showDiagnostics;
-    setShowDiagnostics(nextVal);
-    engineRef.current.settings.showDiagnosticConsole = nextVal;
+  const toggleDisplayOption = (key: "reducedFlash" | "colorblindPalette", pref: string) => {
+    const e = engineRef.current;
+    if (!e) return;
+    setSetting(e, key, !e.settings[key]);
+    savePreference(pref, e.settings[key]);
+    redraw();
   };
 
-  // Restart Actions
-  const handleRestartRound = () => {
+  const handleRestartLevel = () => {
     if (!engineRef.current) return;
-    if (gameOverTimerRef.current !== null) {
-      window.clearTimeout(gameOverTimerRef.current);
-      gameOverTimerRef.current = null;
-    }
+    gameOver.cancelDelayedPanel();
     engineRef.current.restartLevel(engineRef.current.level);
     runnerRef.current?.setPaused("user", false);
-    setShowRestartPanel(false);
-    setIsGameOverState(false);
+    panels.setShowRestartPanel(false);
+    gameOver.setIsGameOver(false);
   };
 
   const handleNewGame = () => {
     if (!engineRef.current) return;
-    if (gameOverTimerRef.current !== null) {
-      window.clearTimeout(gameOverTimerRef.current);
-      gameOverTimerRef.current = null;
-    }
+    gameOver.cancelDelayedPanel();
     engineRef.current.initGame(currentMode, 1);
     runnerRef.current?.setPaused("user", false);
-    setShowRestartPanel(false);
-    setIsGameOverState(false);
+    panels.setShowRestartPanel(false);
+    gameOver.setIsGameOver(false);
   };
 
   const handleOpenRestartPanel = () => {
-    const isOver = isGameOverState || engineRef.current?.playState === "GAME_OVER";
-    setIsGameOverState(isOver);
-    setShowRestartPanel(true);
+    const isOver = gameOver.isGameOver || engineRef.current?.playState === "GAME_OVER";
+    gameOver.setIsGameOver(isOver);
+    panels.setShowRestartPanel(true);
   };
+
+  const { lab } = panels;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-between p-2 sm:p-4 selection:bg-yellow-500 selection:text-black font-sans">
@@ -631,19 +316,26 @@ export const ArcadeCabinet: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowMenu(true)}
+            onClick={() => openDocs({ chapter: "", anchor: null })}
+            className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="The manual: how to play, how it works, tools and API (the game waits)"
+          >
+            <span>📖 Manual</span>
+          </button>
+          <button
+            onClick={() => panels.setShowMenu(true)}
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>🎮 Game Modes</span>
           </button>
           <button
-            onClick={() => setShowOptions(true)}
+            onClick={() => panels.setShowOptions(true)}
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>⚙️ Options</span>
           </button>
           <button
-            onClick={() => setShowHighScores(true)}
+            onClick={() => panels.setShowHighScores(true)}
             className="px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/20 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>🏆 Scores</span>
@@ -653,32 +345,29 @@ export const ArcadeCabinet: React.FC = () => {
 
       {/* Main Arcade Frame */}
       <main className="w-full flex-1 flex flex-col items-center justify-center my-2 max-w-2xl">
-        {/* HUD Scoreboard */}
         <HUD
           turbo={turbo}
           onToggleTurbo={handleToggleTurbo}
           labOpen={lab !== null}
-          onToggleLab={() => toggleLab(labRef.current ?? "LEARN")}
+          onToggleLab={() => panels.toggleLab(panels.labRef.current ?? "LEARN")}
           learnVisualsEnabled={learnVisualsActive}
           paused={playState === "PAUSED"}
           pausedBy={runnerRef.current?.pausedBy ?? []}
-          onTogglePause={togglePause}
+          onTogglePause={panels.togglePause}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
           crtFilter={crtFilter}
           onToggleCrt={handleToggleCrt}
           onOpenRestart={handleOpenRestartPanel}
-          restartPanelOpen={showRestartPanel}
-          isGameOver={isGameOverState}
-          showDiagnostics={showDiagnostics || engineRef.current?.settings.showDiagnosticConsole}
-          onToggleDiagnostics={handleToggleDiagnostics}
+          restartPanelOpen={panels.showRestartPanel}
+          isGameOver={gameOver.isGameOver}
         />
 
         {/* Canvas Screen Container */}
         <div
           ref={containerRef}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          onTouchStart={input.onTouchStart}
+          onTouchEnd={input.onTouchEnd}
           className="relative w-full max-w-[480px] aspect-[28/36] bg-black border-x border-neutral-800 flex items-center justify-center overflow-hidden shadow-2xl"
         >
           <canvas
@@ -689,7 +378,7 @@ export const ArcadeCabinet: React.FC = () => {
         </div>
 
         {runnerRef.current?.viewer.state.active && (
-          <ReplayBar runner={runnerRef.current} onExit={exitReplay} />
+          <ReplayBar runner={runnerRef.current} onExit={replays.exitReplay} />
         )}
 
         {/* Below the screen: lives and fruit are drawn in the maze's bottom rows now (T13) */}
@@ -713,7 +402,7 @@ export const ArcadeCabinet: React.FC = () => {
           <div className="mt-3">
             <VirtualDpad
               onDirection={(dir: Direction) => engineRef.current?.setInputDirection(dir)}
-              currentDir={engineRef.current.pacmanState.dir}
+              currentDir={engineRef.current.pacman.dir}
             />
           </div>
         )}
@@ -722,50 +411,44 @@ export const ArcadeCabinet: React.FC = () => {
       {/* Restart Game Panel Modal */}
       <PanelTransitionWrapper
         panelId="RESTART_PANEL"
-        isOpen={showRestartPanel}
-        onClose={() => setShowRestartPanel(false)}
+        isOpen={panels.showRestartPanel}
+        onClose={() => panels.setShowRestartPanel(false)}
       >
         <RestartPanel
-          score={score}
-          highScore={highScore}
+          score={scoreData.score}
+          highScore={scoreData.highScore}
           level={level}
           mode={currentMode}
-          isGameOver={isGameOverState}
-          onRestartRound={handleRestartRound}
+          isGameOver={gameOver.isGameOver}
+          onRestartLevel={handleRestartLevel}
           onNewGame={handleNewGame}
           onChangeMode={() => {
-            setShowRestartPanel(false);
-            setShowMenu(true);
+            panels.setShowRestartPanel(false);
+            panels.setShowMenu(true);
           }}
-          onClose={() => setShowRestartPanel(false)}
+          onClose={() => panels.setShowRestartPanel(false)}
         />
       </PanelTransitionWrapper>
 
       {/* Lab: Learn, Practice and (dev) Debug tabs in one panel (T11) */}
-      <PanelTransitionWrapper panelId="LAB_PANEL" isOpen={lab !== null} onClose={closeLab}>
+      <PanelTransitionWrapper panelId="LAB_PANEL" isOpen={lab !== null} onClose={panels.closeLab}>
         {engineRef.current && lab && (
           <LabPanel
             engine={engineRef.current}
             tab={lab}
-            onTab={setLab}
-            onClose={closeLab}
+            onTab={panels.setLab}
+            onClose={panels.closeLab}
             onUpdate={() => {
-              const engine = engineRef.current;
-              if (!engine) return;
-              GameEvents.emit("SCORE_CHANGED", {
-                score: engine.score,
-                highScore: engine.highScore,
-              });
-              runnerRef.current?.renderer?.render(engine);
-              setUiTick((t) => t + 1);
+              const e = engineRef.current;
+              if (!e) return;
+              GameEvents.emit("SCORE_CHANGED", { score: e.score, highScore: e.highScore });
+              runnerRef.current?.renderer?.render(e);
+              refresh();
             }}
-            onVisualSettingsChange={() => {
-              if (engineRef.current) {
-                setLearnVisualsActive(engineRef.current.settings.learnVisualsEnabled);
-              }
-            }}
+            onVisualSettingsChange={settingsChanged}
             practice={runnerRef.current?.practice}
-            clips={clips}
+            runner={runnerRef.current ?? undefined}
+            clips={replays.clips}
           />
         )}
       </PanelTransitionWrapper>
@@ -773,14 +456,12 @@ export const ArcadeCabinet: React.FC = () => {
       {/* Mode Selector Modal */}
       <PanelTransitionWrapper
         panelId="MODE_SELECTOR"
-        isOpen={showMenu}
-        onClose={() => setShowMenu(false)}
+        isOpen={panels.showMenu}
+        onClose={() => panels.setShowMenu(false)}
       >
         <div className="relative">
           <ModeSelector
-            rulesPreset={
-              engineRef.current ? rulesPresetOf(engineRef.current.settings) : rulesPreset
-            }
+            rulesPreset={rulesPreset}
             onSelectPreset={handleSelectPreset}
             releaseClears={releaseClears}
             onToggleReleaseClears={handleToggleReleaseClears}
@@ -789,12 +470,12 @@ export const ArcadeCabinet: React.FC = () => {
             turbo={turbo}
             onToggleTurbo={handleToggleTurbo}
             onStartGame={() => {
-              setShowMenu(false);
-              if (isGameOverState) handleNewGame();
+              panels.setShowMenu(false);
+              if (gameOver.isGameOver) handleNewGame();
             }}
           />
           <button
-            onClick={() => setShowMenu(false)}
+            onClick={() => panels.setShowMenu(false)}
             className="absolute top-4 right-4 text-neutral-400 hover:text-white p-2 text-sm font-bold cursor-pointer"
             aria-label="Close"
           >
@@ -806,8 +487,8 @@ export const ArcadeCabinet: React.FC = () => {
       {/* Options (Phase 5: keys, reduced flashing, colorblind-safe colors) */}
       <PanelTransitionWrapper
         panelId="OPTIONS"
-        isOpen={showOptions}
-        onClose={() => setShowOptions(false)}
+        isOpen={panels.showOptions}
+        onClose={() => panels.setShowOptions(false)}
       >
         <OptionsPanel
           bindings={bindings}
@@ -816,62 +497,74 @@ export const ArcadeCabinet: React.FC = () => {
             saveBindings(next);
           }}
           reducedFlash={reducedFlash}
-          onToggleReducedFlash={() => {
-            const next = !reducedFlash;
-            setReducedFlash(next);
-            savePreference(PREF_REDUCED_FLASH, next);
-            if (engineRef.current) engineRef.current.settings.reducedFlash = next;
-            redraw();
-          }}
+          onToggleReducedFlash={() => toggleDisplayOption("reducedFlash", PREF_REDUCED_FLASH)}
           colorblindPalette={colorblindPalette}
-          onToggleColorblindPalette={() => {
-            const next = !colorblindPalette;
-            setColorblindPalette(next);
-            savePreference(PREF_COLORBLIND, next);
-            if (engineRef.current) engineRef.current.settings.colorblindPalette = next;
-            redraw();
-          }}
-          onClose={() => setShowOptions(false)}
+          onToggleColorblindPalette={() =>
+            toggleDisplayOption("colorblindPalette", PREF_COLORBLIND)
+          }
+          onClose={() => panels.setShowOptions(false)}
         />
       </PanelTransitionWrapper>
 
       {/* High Scores Modal */}
       <PanelTransitionWrapper
         panelId="HIGH_SCORES"
-        isOpen={showHighScores}
+        isOpen={panels.showHighScores}
         onClose={() => {
-          setShowHighScores(false);
-          setPendingScore(null);
+          panels.setShowHighScores(false);
+          gameOver.setPendingScore(null);
         }}
       >
         <HighScoresModal
-          pendingNewScore={pendingScore}
-          onScoreSubmitted={() => setPendingScore(null)}
+          pendingNewScore={gameOver.pendingScore}
+          onScoreSubmitted={() => gameOver.setPendingScore(null)}
           onClose={() => {
-            setShowHighScores(false);
-            setPendingScore(null);
+            panels.setShowHighScores(false);
+            gameOver.setPendingScore(null);
           }}
         />
       </PanelTransitionWrapper>
 
       {/* Floating Interactive Diagnostic & Invariants Console HUD */}
-      {engineRef.current &&
-        (showDiagnostics || engineRef.current.settings.showDiagnosticConsole) && (
-          <DiagnosticConsole
-            engine={engineRef.current}
-            onClose={() => {
-              setShowDiagnostics(false);
-              if (engineRef.current) {
-                engineRef.current.settings.showDiagnosticConsole = false;
-              }
-              setUiTick((t) => t + 1);
-            }}
-          />
-        )}
+      {engineRef.current && showDiagnostics && (
+        <DiagnosticConsole
+          engine={engineRef.current}
+          onClose={() => {
+            const e = engineRef.current;
+            if (e) setSetting(e, "showDiagnosticConsole", false);
+          }}
+        />
+      )}
+
+      {/* The manual, over everything; the game waits behind it */}
+      {docsRoute && (
+        <DocsErrorBoundary
+          key={docsAttempt}
+          attempt={docsAttempt}
+          onRetry={() => setDocsAttempt((n) => n + 1)}
+          onClose={closeDocs}
+        >
+          <Suspense
+            fallback={
+              <div className="fixed inset-0 z-[60] bg-neutral-950 text-neutral-400 flex items-center justify-center text-sm">
+                Opening the manual…
+              </div>
+            }
+          >
+            <DocsPage route={docsRoute} onClose={closeDocs} />
+          </Suspense>
+        </DocsErrorBoundary>
+      )}
 
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">
         <span>Pac-Man Arcade &copy; 1980 Namco / Midway</span>
+        <span
+          className="ml-2 text-neutral-600"
+          title={`Game ${APP_VERSION_LABEL} · rules version ${VERSIONS.rules} · saved state version ${VERSIONS.state} · replay format ${VERSIONS.replayFormat}`}
+        >
+          · {APP_VERSION_LABEL} · rules {VERSIONS.rules}
+        </span>
       </footer>
     </div>
   );

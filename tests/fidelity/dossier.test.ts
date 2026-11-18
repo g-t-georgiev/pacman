@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
-import GameEngine from "../../src/game/GameEngine";
-import { AgentDriver } from "../../src/agent/AgentDriver";
 import { SIM_FPS } from "../../src/game/constants";
 import {
   getFrightenedDuration,
   getFrightenedFlashCount,
   getFruitDataPerLevel,
-} from "../../src/utils";
+  getSpeedConfigForLevel,
+} from "../../src/game/levelTable";
 import { ghostSpeed, pacmanSpeed } from "../../src/game/speedSource";
-import { getSpeedConfigForLevel } from "../../src/utils";
 import { getOppositeDirection } from "../../src/game/ghostAiUtils";
+import { playing } from "../helpers";
 
 /**
  * Fidelity checklist (plan T9): one test per claim from "The Pac-Man Dossier", grouped by its
@@ -27,14 +26,6 @@ import { getOppositeDirection } from "../../src/game/ghostAiUtils";
  * - Targeting (Pinky/Inky up-quirk, Clyde's 8 tiles): tests/unit/targetingQuirks.test.ts
  * - Extra life at 10,000, freezes when eating a ghost, death sequence: tests/unit/roundSequencer.test.ts
  */
-
-/** A headless game on `level`, already playing. */
-function playing(level = 1): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.scenario({ level, playState: "PLAYING" });
-  agent.events();
-  return agent;
-}
 
 describe("Dossier · The Basics", () => {
   it("each maze has 240 dots and 4 energizers", () => {
@@ -63,7 +54,7 @@ describe("Dossier · The Basics", () => {
   it("bonus fruit appears after 70 and 170 dots eaten", () => {
     const agent = playing();
     const e = agent.engine;
-    e.dotsEatenThisRound = 69;
+    e.dotsEatenThisLevel = 69;
     agent.scenario({ pacman: { col: 1, row: 8, dir: "RIGHT" } });
     e.maze.tiles[8][2] = "DOT";
     agent.runUntil((v) => v.pacman.col === 2, 30);
@@ -71,7 +62,7 @@ describe("Dossier · The Basics", () => {
 
     e.spawnFruit(); // reset to a fresh, unrelated fruit object...
     e.fruit!.active = false; // ...that is not showing
-    e.dotsEatenThisRound = 169;
+    e.dotsEatenThisLevel = 169;
     e.maze.tiles[8][3] = "DOT";
     agent.runUntil((v) => v.pacman.col === 3, 30);
     expect(e.fruit?.active).toBe(true);
@@ -197,7 +188,7 @@ describe("Dossier · Maze Logic 101", () => {
   it("in scatter mode Blinky ends up circling the block below his top-right target", () => {
     const agent = playing();
     const e = agent.engine;
-    e.settings.invincible = true;
+    e.rules.invincible = true;
     e.pacman.invincible = true;
     const visited = new Set<string>();
     for (let f = 0; f < 1500; f++) {
@@ -237,7 +228,7 @@ describe("Dossier · Meet the Ghosts", () => {
     // Pac-Man stays still against the wall in the top-left corner (not Clyde's lower-left one).
     const agent = playing();
     const e = agent.engine;
-    e.settings.invincible = true;
+    e.rules.invincible = true;
     e.pacman.invincible = true;
     agent.scenario({
       waveIndex: 1,
@@ -269,7 +260,7 @@ describe("Dossier · Home Sweet Home", () => {
     const agent = playing();
     const e = agent.engine;
     const house = e.houseController;
-    e.settings.invincible = true; // no ghost may end the round while we wait
+    e.rules.invincible = true; // no ghost may end the round while we wait
     e.pacman.invincible = true;
     // After a life was lost: the global counter runs, and has passed 32 with Clyde outside
     house.state.globalCounterActive = true;

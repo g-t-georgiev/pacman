@@ -1,3 +1,5 @@
+import type GameEngine from "./GameEngine";
+import type { SirenState } from "./simEvents";
 /**
  * Which background siren plays (S1). The arcade has a normal siren and four faster, higher
  * "spurt" sirens ("Normal Move", "Spurt Move #1-#4" on Namco's sound effects album), stepping up
@@ -11,4 +13,21 @@ export function sirenStage(dotsEaten: number, totalDots: number): number {
   if (totalDots <= 0) return 0;
   const share = dotsEaten / totalDots;
   return SIREN_STAGE_SHARE_EATEN.filter((t) => share >= t).length;
+}
+
+/**
+ * The background siren for the game's state (the shell plays it). Only during play: silent
+ * through READY, the ghost-eaten pause, deaths, level clears and while paused. Eyes going home
+ * win over frightened, which wins over the normal siren (the arcade's "Return to Home",
+ * "Turn to Blue" and "Normal Move" / "Spurt Move" sounds).
+ */
+export function sirenStateOf(engine: GameEngine): SirenState {
+  if (engine.paused || engine.sequencer.phase !== "PLAYING") return { kind: "OFF" };
+  const ghosts = Object.values(engine.ghosts);
+  if (ghosts.some((g) => g.mode === "EATEN")) return { kind: "EYES" };
+  if (ghosts.some((g) => g.mode === "FRIGHTENED")) return { kind: "FRIGHTENED" };
+  return {
+    kind: "NORMAL",
+    stage: sirenStage(engine.totalDots - engine.dotsRemaining, engine.totalDots),
+  };
 }

@@ -1,5 +1,5 @@
 import type { GhostBehavior, ScatterChaseSchedule } from "../types";
-import { getScatterChaseSchedule } from "../utils";
+import { getScatterChaseSchedule } from "../game/levelTable";
 
 /**
  * Timer Controller responsible for managing global game timers, all counted in whole frames:

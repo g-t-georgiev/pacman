@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
 import { AgentDriver } from "../../src/agent/AgentDriver";
+import { faceBlinky } from "../helpers";
 
 describe("Pac-Man's mouth (sprite frames)", () => {
   it("is a closed circle through READY and until he first moves", () => {
@@ -21,7 +22,7 @@ describe("Pac-Man's mouth (sprite frames)", () => {
 
   it("chomps closed, half, open, half while he moves", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
     const e = agent.engine;
     const seen: number[] = [];
     for (let i = 0; i < 40; i++) {
@@ -34,7 +35,7 @@ describe("Pac-Man's mouth (sprite frames)", () => {
 
   it("holds a half-open mouth while blocked by a wall", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING", pacman: { col: 1, row: 26, dir: "UP" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 1, row: 26, dir: "UP" } });
     const e = agent.engine;
     // Up from the bottom-left corner: the wall at the top of the corridor stops him at a tile center
     let last = { x: NaN, y: NaN };
@@ -54,9 +55,8 @@ describe("Pac-Man's mouth (sprite frames)", () => {
 
   it("is closed again after a death, until he moves", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING" });
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
+    agent.scenario({ phase: "PLAYING" });
+    faceBlinky(agent);
     agent.runUntil((v) => v.phase === "READY", 600);
     expect(agent.engine.pacman.mouthFrame).toBe(0);
   });

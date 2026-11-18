@@ -1,31 +1,29 @@
+import { renderFruit, renderGhosts, renderPlayer } from "./render/actors";
+import { renderGrid, renderIntersectionTiles, renderPlayerOverlay } from "./render/playerOverlay";
+import type { ScorePopups } from "./scorePopups";
 import type { LatencyMeter } from "./latencyMeter";
 import type { PracticeTools } from "./practiceTools";
-import {
-  frightenedColors,
-  frightenedEnding,
-  ghostBodyColor,
-  mazeFlashWallColor,
-} from "./accessibility";
-import type { Direction, GhostType, MazeData } from "../types";
+import { mazeFlashWallColor } from "./accessibility";
+import type { MazeData } from "../types";
 import type GameEngine from "./GameEngine";
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
-  FRUIT_FONT_PX,
-  GHOST_COLORS,
-  GHOST_DRAW_SCALE,
-  PACMAN_DRAW_SCALE,
-  SPRITE_HALF,
   arcadeFont,
   RENDER_SCALE,
   RENDER_TILE_SIZE as TILE_SIZE,
 } from "./constants";
-import { chooseNextGhostDirection, getDirectionVector, isTileNoUpZone } from "./ghostAiUtils";
 import { renderDebugOverlay } from "./debugOverlay";
 import { renderArcadeHud } from "./arcadeHud";
 
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
+
+/**
+ * One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). Placeholder: the
+ * energizer's look waits on footage (docs/OPEN_ITEMS.md).
+ */
+const ENERGIZER_PULSE_FRAMES = 45;
 
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -38,6 +36,8 @@ export default class GameRenderer {
 
   /** Practice overlays (pattern trail, first-death heatmap), owned by the runner. */
   public practice: PracticeTools | null = null;
+  /** The floating fruit points (plan P2), owned by the runner. */
+  public popups: ScorePopups | null = null;
   /** Input latency readout for the debug overlay (Phase 5), owned by the runner. */
   public latency: LatencyMeter | null = null;
 
@@ -49,48 +49,30 @@ export default class GameRenderer {
     ctx.fillStyle = engine.maze.bgColor || "#000000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    const { showGrid, showGhostPaths, showTargetLines, learnMode, learnVisualsEnabled, crtFilter } =
-      engine.settings;
+    const { showGrid, crtFilter } = engine.settings;
 
-    if (showGrid) {
-      // Render Intersection and No-Up Tiles
-      this.renderIntersectionTiles(engine);
-    }
+    if (showGrid) renderIntersectionTiles(ctx, engine);
 
     // Render Maze Walls, Dots, and Gates
     this.renderMaze(engine);
 
     // Render Tile Grid & Decision Intersections if enabled (Practice Mode)
-    if (showGrid) {
-      this.renderGrid(engine);
-    }
+    if (showGrid) renderGrid(ctx, engine);
 
     // Practice overlays: the saved pattern and the first-death heatmap (Phase 5)
     this.practice?.render(ctx, engine, px);
 
     // Render Fruit / Treats
-    this.renderFruit(engine);
+    renderFruit(ctx, engine);
 
-    // Render Learn Mode Overlays (Target reticles, Inky vector, Clyde 8-tile radius)
-    if (learnMode || learnVisualsEnabled) {
-      this.renderLearnMode(engine);
-    }
-
-    // Render Practice Ghost Paths (Multi-Step Lookahead Corridor Trajectories)
-    if (showGhostPaths) {
-      this.renderPracticeGhostPaths(engine);
-    }
-
-    // Render Practice Target Lines (Tactical Distance Meters & Proximity Radar)
-    if (showTargetLines) {
-      this.renderPracticeTargetLines(engine);
-    }
+    // The player overlay: Learn cues, Practice ghost paths and target lines
+    renderPlayerOverlay(ctx, engine);
 
     // Render Ghosts
-    this.renderGhosts(engine);
+    renderGhosts(ctx, engine);
 
     // Render Pac-Man / Hero
-    this.renderPlayer(engine);
+    renderPlayer(ctx, engine);
 
     // Arcade score and status texts in the maze's blank rows (T13)
     renderArcadeHud(ctx, engine);
@@ -99,7 +81,7 @@ export default class GameRenderer {
     if (engine.settings.debugOverlay) renderDebugOverlay(ctx, engine, this.latency?.stats ?? null);
 
     // Render Floating Score Popups
-    this.renderScorePopups(engine);
+    this.popups?.render(ctx, px);
 
     // Render State Messages ("READY!", "GAME OVER", "LEVEL CLEAR")
     this.renderStateBanners(engine);
@@ -174,8 +156,11 @@ export default class GameRenderer {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
-          // Pulsing energizer (steady with reduced flashing)
-          const pulse = engine.settings.reducedFlash ? 0.5 : (Math.sin(Date.now() / 120) + 1) * 0.5;
+          // Pulsing energizer on game frames (P3: it holds still while paused and slows with the
+          // practice speed); steady with reduced flashing. Its final look waits on footage.
+          const pulse = engine.settings.reducedFlash
+            ? 0.5
+            : (Math.sin((engine.tick * 2 * Math.PI) / ENERGIZER_PULSE_FRAMES) + 1) * 0.5;
           const radius = 5 + pulse * 2.5;
 
           ctx.fillStyle = maze.dotColor;
@@ -203,631 +188,6 @@ export default class GameRenderer {
         ctx.stroke();
       }
     }
-  }
-
-  private renderPlayer(engine: GameEngine) {
-    const ctx = this.ctx;
-    const p = engine.pacmanState;
-    if (!p || !engine.pacmanVisible) return;
-
-    ctx.save();
-    ctx.translate(px(p.x), px(p.y));
-    ctx.scale(PACMAN_DRAW_SCALE, PACMAN_DRAW_SCALE); // arcade-size sprite (F27)
-
-    // Death animation
-    if (p.isDying) {
-      const angle = p.deathProgress * Math.PI;
-      ctx.fillStyle = "#ffff00";
-      ctx.beginPath();
-      ctx.arc(0, 0, TILE_SIZE / 2 + 1, angle, Math.PI * 2 - angle);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-      ctx.restore();
-      return;
-    }
-
-    // Invincibility shield effect
-    if (engine.settings.invincible) {
-      ctx.strokeStyle = `hsl(${(Date.now() / 5) % 360}, 100%, 70%)`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, TILE_SIZE / 2 + 4, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // Rotation based on direction
-    let rot = 0;
-    switch (p.dir) {
-      case "UP":
-        rot = -Math.PI / 2;
-        break;
-      case "DOWN":
-        rot = Math.PI / 2;
-        break;
-      case "LEFT":
-        rot = Math.PI;
-        break;
-      case "RIGHT":
-        rot = 0;
-        break;
-    }
-    ctx.rotate(rot);
-
-    const radius = TILE_SIZE / 2 + 1;
-    // Mouth half-angle (as a fraction of pi) per frame: closed circle, half open, wide open
-    const mouth = [0, 0.13, 0.27][engine.pacman.mouthFrame];
-
-    if (engine.ruleset.playerLook === "PACMAN") {
-      // Classic Pac-Man
-      ctx.fillStyle = "#ffff00";
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, mouth * Math.PI, (2 - mouth) * Math.PI);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-    } else {
-      // Ms. Pac-Man: Yellow body + Pink Bow + Eye with lashes + Red Lipstick
-      ctx.fillStyle = "#ffff00";
-      ctx.beginPath();
-      ctx.arc(0, 0, radius, mouth * Math.PI, (2 - mouth) * Math.PI);
-      ctx.lineTo(0, 0);
-      ctx.fill();
-
-      // Red Lipstick
-      ctx.fillStyle = "#ff0044";
-      ctx.beginPath();
-      ctx.arc(radius * 0.85, 0, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Eye
-      ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(radius * 0.2, -radius * 0.45, 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Pink Bow on head
-      ctx.fillStyle = "#ff3366";
-      ctx.beginPath();
-      ctx.arc(-radius * 0.4, -radius * 0.7, 3.5, 0, Math.PI * 2);
-      ctx.arc(-radius * 0.8, -radius * 0.7, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(-radius * 0.6, -radius * 0.7, 1.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Beauty mark
-      ctx.fillStyle = "#222222";
-      ctx.fillRect(radius * 0.1, radius * 0.3, 1.5, 1.5);
-    }
-
-    ctx.restore();
-  }
-
-  private renderGhosts(engine: GameEngine) {
-    const ctx = this.ctx;
-    if (!engine.ghostsVisible) return;
-    const { eatenGhost, eatenPoints } = engine.sequencer.state;
-
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
-
-      // While the action is paused after eating a ghost, its score shows in its place.
-      if (type === eatenGhost) {
-        ctx.save();
-        ctx.font = arcadeFont(12);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#00ffff";
-        ctx.fillText(`${eatenPoints}`, px(g.x), px(g.y));
-        ctx.restore();
-        return;
-      }
-
-      ctx.save();
-      ctx.translate(px(g.x), px(g.y));
-      ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE); // arcade-size sprite (F27)
-
-      const radius = TILE_SIZE / 2;
-
-      // 1. EATEN (Eyes only)
-      if (g.mode === "EATEN") {
-        this.renderGhostEyes(ctx, g.dir);
-        ctx.restore();
-        return;
-      }
-
-      // 2. Body Color
-      // Frightened: blue, flashing white near the end; with reduced flashing it stays blue and
-      // gets a steady white outline for the last stretch instead
-      const fright = frightenedColors(engine.settings);
-      const flashWhite = g.flashState && !engine.settings.reducedFlash;
-      let bodyColor = ghostBodyColor(type, engine.settings);
-      if (g.mode === "FRIGHTENED") bodyColor = flashWhite ? fright.flashBody : fright.body;
-
-      ctx.fillStyle = bodyColor;
-      ctx.beginPath();
-      // Dome head
-      ctx.arc(0, -2, radius, Math.PI, 0, false);
-      // Sides down
-      ctx.lineTo(radius, radius);
-
-      // Wavy bottom skirt (3 scallops)
-      const wave = Math.sin(g.feetAnimation * Math.PI * 2) * 2;
-      ctx.lineTo(radius * 0.5, radius - 2 + wave);
-      ctx.lineTo(0, radius);
-      ctx.lineTo(-radius * 0.5, radius - 2 - wave);
-      ctx.lineTo(-radius, radius);
-      ctx.closePath();
-      ctx.fill();
-      if (g.mode === "FRIGHTENED" && engine.settings.reducedFlash && frightenedEnding(engine)) {
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-
-      // 3. Frightened Face vs Regular Eyes
-      if (g.mode === "FRIGHTENED") {
-        // Frightened squiggly mouth & eyes
-        const mouthColor = flashWhite ? fright.flashFace : fright.face;
-        ctx.fillStyle = mouthColor;
-        ctx.fillRect(-3, -3, 2, 2);
-        ctx.fillRect(1, -3, 2, 2);
-
-        ctx.strokeStyle = mouthColor;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(-5, 3);
-        ctx.lineTo(-3, 1);
-        ctx.lineTo(-1, 3);
-        ctx.lineTo(1, 1);
-        ctx.lineTo(3, 3);
-        ctx.lineTo(5, 1);
-        ctx.stroke();
-      } else {
-        // Regular eyes
-        this.renderGhostEyes(ctx, g.dir);
-      }
-
-      ctx.restore();
-    });
-  }
-
-  private renderGhostEyes(ctx: CanvasRenderingContext2D, dir: Direction) {
-    const eyeOffsetX = dir === "LEFT" ? -2 : dir === "RIGHT" ? 2 : 0;
-    const eyeOffsetY = dir === "UP" ? -2 : dir === "DOWN" ? 2 : 0;
-
-    // Sclera (white)
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.ellipse(-3.5, -3, 3, 4, 0, 0, Math.PI * 2);
-    ctx.ellipse(3.5, -3, 3, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Pupils (blue)
-    ctx.fillStyle = "#0000bb";
-    ctx.beginPath();
-    ctx.arc(-3.5 + eyeOffsetX, -3 + eyeOffsetY, 1.8, 0, Math.PI * 2);
-    ctx.arc(3.5 + eyeOffsetX, -3 + eyeOffsetY, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  private renderFruit(engine: GameEngine) {
-    const ctx = this.ctx;
-    const f = engine.fruit;
-    if (!f || !f.active) return;
-
-    // Centered on the seam between its two tiles (13/14), like the spawn points, at sprite size
-    const x = (f.col + 1) * TILE_SIZE;
-    const y = f.row * TILE_SIZE + TILE_SIZE / 2 + px(f.bounceY || 0);
-
-    ctx.save();
-    ctx.font = `${FRUIT_FONT_PX}px monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(f.symbol, x, y);
-    ctx.restore();
-  }
-
-  private renderLearnMode(engine: GameEngine) {
-    const ctx = this.ctx;
-    const activeVisuals = engine.settings.activeGhostVisuals || {
-      BLINKY: true,
-      PINKY: true,
-      INKY: true,
-      CLYDE: true,
-    };
-    const showCues = engine.settings.learnMode || engine.settings.learnVisualsEnabled;
-
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      // Check if visual cues are enabled for this specific ghost
-      if (activeVisuals[type] === false) return;
-
-      const g = engine.ghostStates[type];
-      const target = g.target;
-      if (g.inHouse || !target) return; // frightened ghosts have no target
-
-      const ghostColor = ghostBodyColor(type, engine.settings);
-      const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
-      const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
-
-      // 1. Target Connecting Lines (dashed)
-      if (showCues) {
-        ctx.strokeStyle = ghostColor;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(px(g.x), px(g.y));
-        ctx.lineTo(targetX, targetY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // 2. Target Reticle Crosshair & Target Tile Coordinates
-      ctx.strokeStyle = ghostColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      // Reticle Box
-      ctx.strokeRect(
-        target.col * TILE_SIZE + 2,
-        target.row * TILE_SIZE + 2,
-        TILE_SIZE - 4,
-        TILE_SIZE - 4
-      );
-      // Crosshairs
-      ctx.moveTo(targetX - 5, targetY);
-      ctx.lineTo(targetX + 5, targetY);
-      ctx.moveTo(targetX, targetY - 5);
-      ctx.lineTo(targetX, targetY + 5);
-      ctx.stroke();
-
-      // Target Coordinate Pill at Reticle
-      ctx.save();
-      const coordTag = `[${target.col},${target.row}]`;
-      ctx.font = "bold 8px monospace";
-      ctx.fillStyle = ghostColor;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.fillText(coordTag, targetX, target.row * TILE_SIZE);
-      ctx.restore();
-
-      // Inky Pincer Vector Visualization
-      if (type === "INKY" && g.intermediateTarget && showCues) {
-        const pivotX = g.intermediateTarget.col * TILE_SIZE + TILE_SIZE / 2;
-        const pivotY = g.intermediateTarget.row * TILE_SIZE + TILE_SIZE / 2;
-        const blinky = engine.ghostStates.BLINKY;
-
-        // Draw line from Blinky to Intermediate Pivot
-        ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath();
-        ctx.moveTo(px(blinky.x), px(blinky.y));
-        ctx.lineTo(pivotX, pivotY);
-        ctx.lineTo(targetX, targetY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Small circle at intermediate pivot
-        ctx.fillStyle = "#00ffff";
-        ctx.beginPath();
-        ctx.arc(pivotX, pivotY, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Clyde 8-tile radius circle visualization
-      if (type === "CLYDE" && showCues) {
-        ctx.strokeStyle = "rgba(255, 184, 82, 0.45)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 5]);
-        ctx.beginPath();
-        ctx.arc(px(g.x), px(g.y), 8 * TILE_SIZE, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // 3. Overhead Ghost Status Badge (Name, Mode, Target Tile Coordinates)
-      if (showCues) {
-        const ghostName = engine.ruleset.ghostName(type).toUpperCase();
-
-        let modeStr = g.mode as string;
-        if (g.mode === "CHASE") {
-          if (type === "CLYDE") {
-            modeStr = g.clydeWanderState === "CHASE" ? "CHASE" : "FLEE";
-          } else {
-            modeStr = "CHASE";
-          }
-        } else if (g.mode === "SCATTER") {
-          modeStr = "SCATTER";
-        } else if (g.mode === "FRIGHTENED") {
-          modeStr = "FRIGHT";
-        } else if (g.mode === "EATEN") {
-          modeStr = "EYES";
-        }
-
-        const targetTag = g.target ? `[${g.target.col},${g.target.row}]` : "[random]";
-        const label = `${ghostName} · ${modeStr} ${targetTag}`;
-
-        ctx.save();
-        ctx.font = "bold 8.5px monospace";
-        const textMetrics = ctx.measureText(label);
-        const textWidth = textMetrics.width;
-        const badgeW = textWidth + 8;
-        const badgeH = 13;
-
-        // Position badge above ghost dome, flip below skirt if too close to top of canvas
-        let badgeY = px(g.y) - SPRITE_HALF - 4;
-        if (badgeY < 6) {
-          badgeY = px(g.y) + 12;
-        }
-
-        // Clamp horizontally so badge never clips outside canvas edges
-        const badgeX = Math.max(4, Math.min(CANVAS_WIDTH - badgeW - 4, px(g.x) - badgeW / 2));
-
-        // Dark rounded pill background with ghost color border
-        ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
-        ctx.strokeStyle = ghostColor;
-        ctx.lineWidth = 1;
-
-        if (typeof ctx.roundRect === "function") {
-          ctx.beginPath();
-          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 2.5);
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
-          ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
-        }
-
-        // Text
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(label, badgeX + badgeW / 2, badgeY + badgeH / 2);
-        ctx.restore();
-      }
-    });
-  }
-
-  /**
-   * Practice Mode: Grid Overlay & Decision Intersections
-   */
-  private renderGrid(engine: GameEngine) {
-    const ctx = this.ctx;
-    const maze = engine.maze;
-    ctx.save();
-
-    // 1. Maze Tile Grid Lines
-    ctx.strokeStyle = "rgba(0, 220, 255, 0.12)";
-    ctx.lineWidth = 0.5;
-
-    for (let c = 0; c <= maze.width; c++) {
-      ctx.beginPath();
-      ctx.moveTo(c * TILE_SIZE, 0);
-      ctx.lineTo(c * TILE_SIZE, maze.height * TILE_SIZE);
-      ctx.stroke();
-    }
-    for (let r = 0; r <= maze.height; r++) {
-      ctx.beginPath();
-      ctx.moveTo(0, r * TILE_SIZE);
-      ctx.lineTo(maze.width * TILE_SIZE, r * TILE_SIZE);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  public renderIntersectionTiles(engine: GameEngine) {
-    const ctx = this.ctx;
-    const maze = engine.maze;
-    if (!maze.intersections) return;
-
-    for (const { col, row } of maze.intersections) {
-      if (isTileNoUpZone(col, row, maze)) {
-        ctx.fillStyle = "rgba(238, 255, 0, 0.45)";
-      } else {
-        ctx.fillStyle = "rgba(21, 255, 0, 0.45)";
-      }
-      ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-    }
-  }
-
-  /**
-   * Practice Mode: Multi-Step Lookahead Corridor Trajectory
-   * Simulates upcoming corridor path 6-8 tiles forward using ghost AI turn decisions!
-   */
-  private renderPracticeGhostPaths(engine: GameEngine) {
-    const ctx = this.ctx;
-    const maze = engine.maze;
-
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
-      const target = g.target;
-      if (g.inHouse || !target) return; // a frightened ghost's path is random
-
-      const ghostColor = ghostBodyColor(type, engine.settings);
-      const startCol = Math.floor(px(g.x) / TILE_SIZE);
-      const startRow = Math.floor(px(g.y) / TILE_SIZE);
-
-      // Simulate forward corridor trajectory for next 7 steps
-      const pathPoints: Array<{ col: number; row: number; dir: Direction }> = [];
-      let curCol = startCol;
-      let curRow = startRow;
-      let curDir = g.dir;
-
-      for (let step = 0; step < 7; step++) {
-        const nextDir = chooseNextGhostDirection(g, target, maze, curCol, curRow, curDir);
-        const { dx, dy } = getDirectionVector(nextDir);
-        curCol += dx;
-        curRow += dy;
-        curDir = nextDir;
-
-        // Boundary checks
-        if (curCol < 0 || curCol >= maze.width || curRow < 0 || curRow >= maze.height) break;
-
-        if (maze.tiles[curRow][curCol] === "WALL") break;
-
-        pathPoints.push({ col: curCol, row: curRow, dir: nextDir });
-      }
-
-      if (pathPoints.length === 0) return;
-
-      ctx.save();
-
-      // Glowing corridor line connecting predicted tiles
-      ctx.strokeStyle = ghostColor;
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash([3, 3]);
-      ctx.globalAlpha = 0.85;
-
-      ctx.beginPath();
-      ctx.moveTo(px(g.x), px(g.y));
-      for (const pt of pathPoints) {
-        ctx.lineTo(pt.col * TILE_SIZE + TILE_SIZE / 2, pt.row * TILE_SIZE + TILE_SIZE / 2);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw breadcrumb steps with turn markers
-      pathPoints.forEach((pt, idx) => {
-        const px = pt.col * TILE_SIZE + TILE_SIZE / 2;
-        const py = pt.row * TILE_SIZE + TILE_SIZE / 2;
-        const radius = Math.max(1.8, 3.8 - idx * 0.35);
-
-        // Breadcrumb circle
-        ctx.fillStyle = ghostColor;
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Direction chevron indicator at turns or end
-        const isTurn = idx > 0 && pt.dir !== pathPoints[idx - 1].dir;
-        if (isTurn || idx === pathPoints.length - 1) {
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 1.4;
-          const { dx, dy } = getDirectionVector(pt.dir);
-          ctx.beginPath();
-          ctx.moveTo(px - dx * 2.5, py - dy * 2.5);
-          ctx.lineTo(px + dx * 3.5, py + dy * 3.5);
-          ctx.stroke();
-        }
-      });
-
-      ctx.restore();
-    });
-  }
-
-  /**
-   * Practice Mode: Tactical Target Lines & Proximity Radar
-   * High-tech vector line with real-time tile distance meters and danger warnings!
-   */
-  private renderPracticeTargetLines(engine: GameEngine) {
-    const ctx = this.ctx;
-    const pacman = engine.pacmanState;
-
-    (Object.keys(engine.ghostStates) as GhostType[]).forEach((type) => {
-      const g = engine.ghostStates[type];
-      const target = g.target;
-      if (g.inHouse || !target) return;
-
-      const ghostColor = ghostBodyColor(type, engine.settings);
-      const targetX = target.col * TILE_SIZE + TILE_SIZE / 2;
-      const targetY = target.row * TILE_SIZE + TILE_SIZE / 2;
-
-      // Distance to target in tiles
-      const targetDistTiles = (
-        Math.hypot(px(g.x) - targetX, px(g.y) - targetY) / TILE_SIZE
-      ).toFixed(1);
-
-      // Distance to Pac-Man in tiles
-      const pacDistTiles = Math.hypot(px(g.x) - px(pacman.x), px(g.y) - px(pacman.y)) / TILE_SIZE;
-      const isDangerous = pacDistTiles <= 5.0 && g.mode !== "FRIGHTENED" && g.mode !== "EATEN";
-
-      ctx.save();
-
-      // Vector ray to target
-      ctx.strokeStyle = isDangerous ? "#ff3344" : ghostColor;
-      ctx.lineWidth = isDangerous ? 2 : 1.2;
-      ctx.setLineDash(isDangerous ? [6, 2] : [4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(px(g.x), px(g.y));
-      ctx.lineTo(targetX, targetY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Floating tactical badge at midpoint
-      const midX = (px(g.x) + targetX) / 2;
-      const midY = (px(g.y) + targetY) / 2;
-
-      const label = `${GHOST_COLORS[type].name.toUpperCase()}: ${targetDistTiles}t`;
-      ctx.font = "bold 9px monospace";
-      const textWidth = ctx.measureText(label).width;
-
-      // Badge background
-      ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
-      ctx.strokeStyle = isDangerous ? "#ff3344" : ghostColor;
-      ctx.lineWidth = 1;
-      const bx = midX - textWidth / 2 - 4;
-      const by = midY - 7;
-      const bw = textWidth + 8;
-      const bh = 14;
-
-      if (typeof ctx.roundRect === "function") {
-        ctx.beginPath();
-        ctx.roundRect(bx, by, bw, bh, 3);
-        ctx.fill();
-        ctx.stroke();
-      } else {
-        ctx.fillRect(bx, by, bw, bh);
-        ctx.strokeRect(bx, by, bw, bh);
-      }
-
-      // Badge text
-      ctx.fillStyle = isDangerous ? "#ffdddd" : "#ffffff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(label, midX, midY);
-
-      // Proximity Danger Alert if ghost is within 5 tiles of Pac-Man
-      if (isDangerous) {
-        const alertLabel = `⚠️ ${pacDistTiles.toFixed(1)}t PROXIMITY`;
-        ctx.font = "bold 9px monospace";
-        const alertWidth = ctx.measureText(alertLabel).width;
-        const abx = px(g.x) - alertWidth / 2 - 3;
-        const aby = px(g.y) - SPRITE_HALF - 6;
-        const abw = alertWidth + 6;
-        const abh = 13;
-
-        ctx.fillStyle = "rgba(255, 20, 50, 0.9)";
-        if (typeof ctx.roundRect === "function") {
-          ctx.beginPath();
-          ctx.roundRect(abx, aby, abw, abh, 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(abx, aby, abw, abh);
-        }
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(alertLabel, px(g.x), aby + abh / 2);
-      }
-
-      ctx.restore();
-    });
-  }
-
-  private renderScorePopups(engine: GameEngine) {
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.font = arcadeFont(12);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    engine.scorePopups.forEach((popup) => {
-      ctx.fillStyle = popup.color;
-      ctx.fillText(popup.text, px(popup.x), px(popup.y));
-    });
-
-    ctx.restore();
   }
 
   private renderStateBanners(engine: GameEngine) {

@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { GHOST_COLORS, SIM_FPS } from "../game/constants";
 import type GameEngine from "../game/GameEngine";
 import type { GhostType } from "../types";
-import { getElroyDotThresholds, getScatterChaseSchedule } from "../utils";
+import { getElroyDotThresholds, getScatterChaseSchedule } from "../game/levelTable";
+import { setSetting, useEngineSettings } from "../hooks/useEngineSettings";
+import { clydeFlees } from "../controllers/GhostAiController";
+import { GhostCard } from "./learn/GhostCard";
 
 interface LearnModeOverlayProps {
   engine: GameEngine;
@@ -53,18 +56,10 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   onVisualSettingsChange,
   embedded = false,
 }) => {
-  const [visualsEnabled, setVisualsEnabled] = useState<boolean>(
-    engine.settings.learnVisualsEnabled ?? true
-  );
-  const [emulateRomQuirks, setEmulateRomQuirks] = useState<boolean>(
-    engine.settings.emulateRomQuirks ?? false
-  );
-  const [ghostFilters, setGhostFilters] = useState<Record<GhostType, boolean>>({
-    BLINKY: engine.settings.activeGhostVisuals?.BLINKY ?? true,
-    PINKY: engine.settings.activeGhostVisuals?.PINKY ?? true,
-    INKY: engine.settings.activeGhostVisuals?.INKY ?? true,
-    CLYDE: engine.settings.activeGhostVisuals?.CLYDE ?? true,
-  });
+  // Read from the engine on every render (O2): no copies to keep in sync
+  const settings = useEngineSettings(engine);
+  const visualsEnabled = settings.learnVisualsEnabled;
+  const ghostFilters = settings.activeGhostVisuals;
 
   const wave = getScatterChaseSchedule(engine.level)[engine.waveIndex];
   const isFrightened = engine.frightenedGlobalTimer > 0;
@@ -73,25 +68,12 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
   const isElroy2 = engine.ghosts.BLINKY.elroyStage === 2;
 
   const handleToggleMasterVisuals = () => {
-    const nextVal = !visualsEnabled;
-    setVisualsEnabled(nextVal);
-    engine.settings.learnVisualsEnabled = nextVal;
-    if (onVisualSettingsChange) onVisualSettingsChange();
-  };
-
-  const handleToggleRomQuirks = () => {
-    const nextVal = !emulateRomQuirks;
-    setEmulateRomQuirks(nextVal);
-    engine.settings.emulateRomQuirks = nextVal;
-    engine.ghostAiController.emulateRomQuirks = nextVal;
+    setSetting(engine, "learnVisualsEnabled", !visualsEnabled);
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
   const handleToggleGhost = (type: GhostType) => {
-    const nextVal = !ghostFilters[type];
-    const nextFilters = { ...ghostFilters, [type]: nextVal };
-    setGhostFilters(nextFilters);
-    engine.settings.activeGhostVisuals = nextFilters;
+    setSetting(engine, "activeGhostVisuals", { ...ghostFilters, [type]: !ghostFilters[type] });
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -102,8 +84,7 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
       INKY: enabled,
       CLYDE: enabled,
     };
-    setGhostFilters(nextFilters);
-    engine.settings.activeGhostVisuals = nextFilters;
+    setSetting(engine, "activeGhostVisuals", nextFilters);
     if (onVisualSettingsChange) onVisualSettingsChange();
   };
 
@@ -265,15 +246,13 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
 
       {/* 4 Ghost Personalities Breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[190px] overflow-y-auto pr-1">
-        {/* Blinky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.BLINKY ? "border-red-900/80" : "border-neutral-800 opacity-60"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-red-400 font-bold text-[11px]">BLINKY (Red / Shadow)</span>
-            {isElroy2 ? (
+        <GhostCard
+          ghost="BLINKY"
+          title="BLINKY (Red / Shadow)"
+          active={ghostFilters.BLINKY}
+          target={formatTarget(engine.ghosts.BLINKY.target)}
+          badge={
+            isElroy2 ? (
               <span className="text-[9px] bg-red-600 text-white font-bold px-1 rounded animate-pulse">
                 ELROY 2
               </span>
@@ -283,115 +262,74 @@ export const LearnModeOverlay: React.FC<LearnModeOverlayProps> = ({
               </span>
             ) : (
               <span className="text-[9px] text-neutral-400">Normal</span>
-            )}
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Direct pursuer. Targets Pac-Man"s exact tile. Speeds up when dots &le;{" "}
-            {elroyDots.elroy1} (Cruise Elroy) and keeps chasing during scatter!
-          </p>
-          <div className="text-[10px] text-red-300">
-            Target: {formatTarget(engine.ghostStates.BLINKY.target)}
-          </div>
-        </div>
-
-        {/* Pinky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.PINKY ? "border-pink-900/80" : "border-neutral-800 opacity-60"
-          }`}
+            )
+          }
         >
-          <div className="flex items-center justify-between">
-            <span className="text-pink-400 font-bold text-[11px]">PINKY (Pink / Speedy)</span>
-            <span className="text-[9px] text-pink-300">Ambush</span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left
-            (arcade overflow bug)!
-          </p>
-          <div className="text-[10px] text-pink-300">
-            Target: {formatTarget(engine.ghostStates.PINKY.target)}
-          </div>
-        </div>
-
-        {/* Inky */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.INKY ? "border-cyan-900/80" : "border-neutral-800 opacity-60"
-          }`}
+          Direct pursuer. Targets Pac-Man's own tile. Speeds up when dots &le; {elroyDots.elroy1}{" "}
+          (Cruise Elroy) and keeps chasing during scatter!
+        </GhostCard>
+        <GhostCard
+          ghost="PINKY"
+          title="PINKY (Pink / Speedy)"
+          active={ghostFilters.PINKY}
+          target={formatTarget(engine.ghosts.PINKY.target)}
+          badge={<span className="text-[9px] text-pink-300">Ambush</span>}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-cyan-400 font-bold text-[11px]">INKY (Cyan / Bashful)</span>
-            <span className="text-[9px] text-cyan-300">Pincer Vector</span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it
-            to trap player!
-          </p>
-          <div className="text-[10px] text-cyan-300">
-            Target: {formatTarget(engine.ghostStates.INKY.target)}
-          </div>
-        </div>
-
-        {/* Clyde */}
-        <div
-          className={`p-2 rounded-lg bg-neutral-900/80 border flex flex-col gap-1 transition-opacity ${
-            ghostFilters.CLYDE ? "border-amber-900/80" : "border-neutral-800 opacity-60"
-          }`}
+          Flanker. Targets 4 tiles ahead of Pac-Man. When Pac-Man faces UP, targets 4 up + 4 left
+          (arcade overflow bug)!
+        </GhostCard>
+        <GhostCard
+          ghost="INKY"
+          title="INKY (Cyan / Bashful)"
+          active={ghostFilters.INKY}
+          target={formatTarget(engine.ghosts.INKY.target)}
+          badge={<span className="text-[9px] text-cyan-300">Pincer Vector</span>}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-amber-400 font-bold text-[11px]">CLYDE (Orange / Pokey)</span>
+          Takes 2 tiles ahead of Pac-Man, draws vector from Blinky to that point, and doubles it to
+          trap player!
+        </GhostCard>
+        <GhostCard
+          ghost="CLYDE"
+          title="CLYDE (Orange / Pokey)"
+          active={ghostFilters.CLYDE}
+          target={formatTarget(engine.ghosts.CLYDE.target)}
+          badge={
             <span
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                engine.ghostStates.CLYDE.clydeWanderState === "CHASE"
+                !clydeFlees(engine.ghosts.CLYDE, engine.pacman)
                   ? "bg-emerald-900 text-emerald-300"
                   : "bg-amber-900 text-amber-300"
               }`}
             >
-              {engine.ghostStates.CLYDE.clydeWanderState === "CHASE" ? "CHASING" : "FLEEING"}
+              {clydeFlees(engine.ghosts.CLYDE, engine.pacman) ? "FLEEING" : "CHASING"}
             </span>
-          </div>
-          <p className="text-[10px] text-neutral-400 leading-tight">
-            When far (&ge; 8 tiles), switches between chasing and fleeing. When within 8 tiles,
-            always retreats to bottom-left!
-          </p>
-          <div className="text-[10px] text-amber-300">
-            Target: {formatTarget(engine.ghostStates.CLYDE.target)}
-          </div>
-        </div>
+          }
+        >
+          Chases Pac-Man's tile while 8 or more tiles away; closer than that, he heads for his
+          corner at the bottom left instead.
+        </GhostCard>
       </div>
 
-      {/* 1980 Z80 ROM Quirks Configuration */}
-      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-white font-bold text-[11px] tracking-wide">
-              👾 1980 Z80 ROM OVERFLOW QUIRKS
-            </span>
-            <span
-              className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                emulateRomQuirks
-                  ? "bg-purple-900 text-purple-200 border border-purple-700"
-                  : "bg-neutral-800 text-neutral-400"
-              }`}
-            >
-              {emulateRomQuirks ? "ACTIVE (AUTHENTIC)" : "OFF (NORMALIZED)"}
-            </span>
-          </div>
-          <button
-            onClick={handleToggleRomQuirks}
-            className={`px-2.5 py-1 rounded font-bold text-[10px] transition-colors cursor-pointer ${
-              emulateRomQuirks
-                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-md ring-1 ring-purple-300"
-                : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+      {/* The arcade's targeting overflow: set by the rules preset (Game Modes), shown here */}
+      <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-purple-900/50 flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-white font-bold text-[11px] tracking-wide">
+            👾 THE ARCADE'S TARGETING OVERFLOW
+          </span>
+          <span
+            className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+              engine.rules.emulateRomQuirks
+                ? "bg-purple-900 text-purple-200 border border-purple-700"
+                : "bg-neutral-800 text-neutral-400"
             }`}
           >
-            {emulateRomQuirks ? "Authentic Overflow" : "Normalized Math"}
-          </button>
+            {engine.rules.emulateRomQuirks ? "ON (ARCADE RULES)" : "OFF (MODERN RULES)"}
+          </span>
         </div>
         <p className="text-[10px] text-neutral-400 leading-tight">
-          When Pac-Man faces UP, the authentic 1980 Z80 assembly code shifts Pinky's target 4 tiles
-          UP + 4 tiles LEFT, and Inky's pivot 2 tiles UP + 2 tiles LEFT. Turn OFF for normalized
-          straight forward targeting.
+          When Pac-Man faces up, the original code also shifts Pinky's target 4 tiles left and
+          Inky's pivot 2 tiles left. The Arcade rules keep it, the Modern rules don't: pick them in
+          Game Modes.
         </p>
       </div>
 

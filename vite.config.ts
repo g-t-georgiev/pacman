@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { lanQrPluginInit } from "./lanQrPlugin.ts";
 import { lazyPlugins } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -201,12 +202,44 @@ export default defineConfig({
     ],
   },
   test: {
-    // Reuse workers across test files instead of one fresh worker per file (plan T14). Files
-    // then share loaded modules, so tests must clean up shared singletons (e.g. GameEvents
-    // listeners). Run `vp test --sequence.shuffle` to check nothing leaks between files.
-    isolate: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["tests/**/*.test.ts"],
+          exclude: ["tests/e2e/**"],
+          // Reuse workers across test files instead of one fresh worker per file (plan T14).
+          // Files then share loaded modules, so tests must clean up shared singletons (e.g.
+          // GameEvents listeners). Run `vp test --sequence.shuffle` to check nothing leaks.
+          isolate: false,
+        },
+      },
+      {
+        // The whole app in a real browser (plan T5): `vp test --project e2e`. Needs Chromium
+        // once: `vp exec playwright install chromium`.
+        extends: true,
+        // Pre-bundled up front: found mid-run, it would reload the test page
+        optimizeDeps: { include: ["vite-plus/test/browser/context", "react-dom/client"] },
+        test: {
+          name: "e2e",
+          include: ["tests/e2e/**/*.test.{ts,tsx}"],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
+    ],
   },
-  plugins: lazyPlugins(() => [react(), tailwindcss(), lanQrPluginInit()]),
+  // No LAN QR code for the browser tests' own server
+  plugins: lazyPlugins(() => [
+    react(),
+    tailwindcss(),
+    ...(process.env.VITEST ? [] : [lanQrPluginInit()]),
+  ]),
   resolve: {
     alias: {
       "@": resolve(__dirname, "."),

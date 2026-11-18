@@ -47,7 +47,7 @@ describe("Display options (Phase 5)", () => {
   it("reduced flashing: a steady maze color through the whole level-clear flash", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
-    agent.scenario({ playState: "PLAYING", dotsRemaining: 1 });
+    agent.scenario({ phase: "PLAYING", dotsRemaining: 1 });
     const last = e.maze.tiles.flatMap((row, r) =>
       row.flatMap((t, c) => (t === "DOT" || t === "ENERGIZER" ? [{ col: c, row: r }] : []))
     )[0];
@@ -69,7 +69,7 @@ describe("Display options (Phase 5)", () => {
 
   it("knows when frightened is in its last stretch (for the steady outline)", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING", frightened: true });
+    agent.scenario({ phase: "PLAYING", frightened: true });
     const e = agent.engine;
     expect(frightenedEnding(e)).toBe(false);
     agent.runUntil(() => frightenedEnding(e), 1200);
@@ -78,7 +78,7 @@ describe("Display options (Phase 5)", () => {
 
   it("display options are not sim settings: replays don't depend on them", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     agent.advance(60);
     const replay = agent.saveReplay();
     agent.engine.settings.reducedFlash = true;

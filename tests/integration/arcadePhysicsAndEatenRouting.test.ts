@@ -4,12 +4,13 @@ import { TILE_SIZE } from "../../src/game/constants";
 import { Ghost } from "../../src/core/Ghost";
 import { MovementController } from "../../src/controllers/MovementController";
 import { getMazeData } from "../../src/game/mazes";
+import { actorsDiagnostics } from "../../src/diagnostics/actorData";
 
 describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () => {
   it("should trigger collision only when Pac-Man and Ghost occupy the exact same integer tile", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const blinky = engine.ghosts.BLINKY;
     blinky.location = "ACTIVE";
@@ -43,7 +44,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should replicate the authentic arcade pass-through glitch when crossing boundaries on the same frame", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const blinky = engine.ghosts.BLINKY;
     blinky.location = "ACTIVE";
@@ -78,7 +79,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should freeze Pac-Man movement for 1 frame when eating a normal dot", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Set dot at (10, 11)
     engine.maze.tiles[11][10] = "DOT";
@@ -102,7 +103,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should freeze Pac-Man movement for 3 frames when eating an energizer", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Set energizer at (10, 11)
     engine.maze.tiles[11][10] = "ENERGIZER";
@@ -248,9 +249,9 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should evaluate updated diagnostic rules and include tile coords and freeze frames in telemetry", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
-    const diagData = engine.getActorsDiagnostics();
+    const diagData = actorsDiagnostics(engine);
     // Pac-Man and Blinky start on the 13/14 seam (x = 112), which is in col 14
     expect(diagData.pacman.tileCol).toBe(14);
     expect(diagData.pacman.tileRow).toBe(26);
@@ -266,15 +267,10 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
   });
 
-  it("should validate that eaten Inky, Clyde, Pinky, and Blinky correctly target designated pen slots at doorstep and pass diagnostic routing rules", () => {
+  it("eaten Inky and Clyde target their own slots in the house from the doorstep", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
-
-    const doorstepRule = engine.diagnosticController.rules.find(
-      (r) => r.id === "RULE_EATEN_EYES_DOORSTEP_ROUTING"
-    );
-    expect(doorstepRule).toBeDefined();
+    engine.enterPhase("PLAYING");
 
     // 1. INKY eaten eyes at doorstep (col 14, row 14)
     const inky = engine.ghosts.INKY;
@@ -293,10 +289,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     );
     expect(inky.target).toEqual({ col: 11, row: 17 });
 
-    // Doorstep diagnostic rule must recognize (11, 17) as valid designated pen slot
-    const inkyRes = doorstepRule!.evaluate(engine);
-    expect(inkyRes.pass).toBe(true);
-
     // 2. CLYDE eaten eyes at doorstep (col 13, row 14)
     const clyde = engine.ghosts.CLYDE;
     clyde.location = "ACTIVE";
@@ -312,9 +304,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       engine.maze
     );
     expect(clyde.target).toEqual({ col: 15, row: 17 });
-
-    const clydeRes = doorstepRule!.evaluate(engine);
-    expect(clydeRes.pass).toBe(true);
 
     // 3. Inky executes full descent to his seat on the 11/12 seam
     let finishedDescent = false;

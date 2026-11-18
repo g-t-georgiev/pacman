@@ -18,7 +18,7 @@ export const RESERVED_KEYS = new Set([" ", "Escape", "F1", ".", ">", "Tab", "Ent
 const PREF_BINDINGS = "pacman.keyBindings";
 
 /** Single characters compare case-insensitively (W = w); named keys as they are. */
-export function normalizeKey(key: string): string {
+function normalizeKey(key: string): string {
   return key.length === 1 ? key.toLowerCase() : key;
 }
 

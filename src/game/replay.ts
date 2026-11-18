@@ -1,4 +1,4 @@
-import type { Direction, GameSettings } from "../types";
+import type { Direction, RuleSettings } from "../types";
 import { GAME_STATE_VERSION, type GameState, hashGameState } from "./gameState";
 import type GameEngine from "./GameEngine";
 
@@ -11,13 +11,9 @@ import type GameEngine from "./GameEngine";
  * original exactly, or to show where it stopped matching.
  */
 
-/** Settings that change what a tick does (everything else is presentation). */
-export interface SimSettings {
-  emulateRomQuirks: boolean;
-  invincible: boolean;
-  turbo: boolean;
-  turboSpeedMultiplier: number;
-}
+/** The rules a replay was recorded with: the engine's `rules` (plan P1). Its field name in a
+ * replay file stays `settings` (file format 2). */
+export type SimSettings = RuleSettings;
 
 /**
  * The game rules' version: bump it with every intended change to what a tick does (the same
@@ -26,6 +22,9 @@ export interface SimSettings {
  * says so before it plays instead of only diverging.
  */
 export const RULES_VERSION = 1;
+
+/** The replay file format this build writes (2 added `made`); format 1 files still load. */
+export const REPLAY_FORMAT_VERSION = 2;
 
 /** File format 2 adds `made`; format 1 files (no versions) still load. */
 export interface Replay {
@@ -61,18 +60,13 @@ export const KEYFRAME_TICKS = 60;
 /** ...keeping the last two minutes. */
 export const MAX_KEYFRAMES = 121;
 
-export function simSettingsOf(settings: GameSettings): SimSettings {
-  const { emulateRomQuirks, invincible, turbo, turboSpeedMultiplier } = settings;
-  return { emulateRomQuirks, invincible, turbo, turboSpeedMultiplier };
+/** A copy of the engine's rules: every rule is recorded, so a new one can't be forgotten here. */
+function simSettingsOf(rules: RuleSettings): SimSettings {
+  return { ...rules };
 }
 
 function sameSettings(a: SimSettings, b: SimSettings): boolean {
-  return (
-    a.emulateRomQuirks === b.emulateRomQuirks &&
-    a.invincible === b.invincible &&
-    a.turbo === b.turbo &&
-    a.turboSpeedMultiplier === b.turboSpeedMultiplier
-  );
+  return (Object.keys(a) as Array<keyof SimSettings>).every((key) => a[key] === b[key]);
 }
 
 interface Keyframe {
@@ -94,7 +88,7 @@ export class ReplayLog {
 
   /** Starts over from the engine's current state. */
   public reset(engine: GameEngine): void {
-    this.keyframes = [{ state: engine.getState(), settings: simSettingsOf(engine.settings) }];
+    this.keyframes = [{ state: engine.getState(), settings: simSettingsOf(engine.rules) }];
     this.inputs = [];
     this.checkpoints = [];
     this.head = engine.tick;
@@ -136,7 +130,7 @@ export class ReplayLog {
     const latest = this.keyframes[this.keyframes.length - 1];
     if (!latest) return this.reset(engine);
     // A sim setting changed between keyframes: older inputs would no longer replay the same way
-    if (!sameSettings(latest.settings, simSettingsOf(engine.settings))) return this.reset(engine);
+    if (!sameSettings(latest.settings, simSettingsOf(engine.rules))) return this.reset(engine);
 
     const tick = engine.tick;
     this.head = tick;
@@ -144,7 +138,7 @@ export class ReplayLog {
       this.checkpoints.push([tick, hashGameState(engine.getState())]);
     }
     if (tick - latest.state.tick >= KEYFRAME_TICKS) {
-      this.keyframes.push({ state: engine.getState(), settings: simSettingsOf(engine.settings) });
+      this.keyframes.push({ state: engine.getState(), settings: simSettingsOf(engine.rules) });
       if (this.keyframes.length > MAX_KEYFRAMES) {
         this.keyframes.shift();
         const from = this.keyframes[0].state.tick;
@@ -169,7 +163,7 @@ export class ReplayLog {
     if (checkpoints[checkpoints.length - 1]?.[0] !== now) checkpoints.push([now, endHash]);
     return {
       format: "pacman-replay",
-      version: 2,
+      version: REPLAY_FORMAT_VERSION,
       made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
       settings: { ...start.settings },
       start: structuredClone(start.state),
@@ -191,7 +185,7 @@ export function recordReplay(
 ): Replay {
   engine.replayLog.reset(engine);
   const start = engine.getState();
-  const settings = simSettingsOf(engine.settings);
+  const settings = simSettingsOf(engine.rules);
   const inputs: Array<[number, Direction]> = [];
   const checkpoints: Array<[number, number]> = [];
   for (let i = 0; i < ticks; i++) {
@@ -209,7 +203,7 @@ export function recordReplay(
   engine.drainEvents();
   return {
     format: "pacman-replay",
-    version: 2,
+    version: REPLAY_FORMAT_VERSION,
     made: { rules: RULES_VERSION, state: GAME_STATE_VERSION },
     settings,
     start,
@@ -225,7 +219,7 @@ export function recordReplay(
  */
 export function playReplay(engine: GameEngine, replay: Replay, onTick?: () => void): ReplayResult {
   checkReplayFile(replay);
-  Object.assign(engine.settings, replay.settings);
+  Object.assign(engine.rules, replay.settings);
   if (engine.pacman) engine.pacman.invincible = replay.settings.invincible;
   engine.setState(replay.start);
   engine.paused = false;

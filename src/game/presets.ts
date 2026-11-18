@@ -1,4 +1,4 @@
-import type { GameSettings } from "../types";
+import type { GameSettings, RuleSettings } from "../types";
 import type GameEngine from "./GameEngine";
 
 /**
@@ -8,7 +8,11 @@ import type GameEngine from "./GameEngine";
  */
 export type RulesPreset = "ARCADE" | "MODERN";
 
-type PresetSettings = Pick<GameSettings, "emulateRomQuirks" | "arcadeRefreshRate">;
+/** A preset sets one rule (recorded in replays) and the loop's refresh rate (not a rule). */
+type PresetSettings = {
+  rules: Pick<RuleSettings, "emulateRomQuirks">;
+  settings: Pick<GameSettings, "arcadeRefreshRate">;
+};
 
 export const RULES_PRESETS: Record<
   RulesPreset,
@@ -17,31 +21,17 @@ export const RULES_PRESETS: Record<
   ARCADE: {
     title: "Arcade",
     description: "As the original: Pinky's and Inky's targeting overflow, 60.606 Hz.",
-    settings: { emulateRomQuirks: true, arcadeRefreshRate: true },
+    settings: { rules: { emulateRomQuirks: true }, settings: { arcadeRefreshRate: true } },
   },
   MODERN: {
     title: "Modern",
     description: "Targeting without the overflow quirk, an even 60 Hz to match displays.",
-    settings: { emulateRomQuirks: false, arcadeRefreshRate: false },
+    settings: { rules: { emulateRomQuirks: false }, settings: { arcadeRefreshRate: false } },
   },
 };
 
-/** Applies a preset to the engine (settings and the ghost AI's copy of the quirk flag). */
+/** Applies a preset to the engine (the ghost AI reads its rules directly). */
 export function applyRulesPreset(engine: GameEngine, preset: RulesPreset): void {
-  Object.assign(engine.settings, RULES_PRESETS[preset].settings);
-  engine.ghostAiController.emulateRomQuirks = engine.settings.emulateRomQuirks;
-}
-
-/** Which preset the settings match, or CUSTOM after a toggle in the Lab changed one of them. */
-export function rulesPresetOf(settings: GameSettings): RulesPreset | "CUSTOM" {
-  for (const preset of Object.keys(RULES_PRESETS) as RulesPreset[]) {
-    const want = RULES_PRESETS[preset].settings;
-    if (
-      settings.emulateRomQuirks === want.emulateRomQuirks &&
-      settings.arcadeRefreshRate === want.arcadeRefreshRate
-    ) {
-      return preset;
-    }
-  }
-  return "CUSTOM";
+  Object.assign(engine.rules, RULES_PRESETS[preset].settings.rules);
+  Object.assign(engine.settings, RULES_PRESETS[preset].settings.settings);
 }

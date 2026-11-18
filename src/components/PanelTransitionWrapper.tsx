@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { type PanelId, getPanelConfig } from "../config/ui.config";
 
-export interface PanelTransitionWrapperProps {
+interface PanelTransitionWrapperProps {
   panelId: PanelId;
   isOpen: boolean;
   onClose: () => void;

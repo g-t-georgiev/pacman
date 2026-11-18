@@ -22,7 +22,7 @@ export type RoundPhase =
   | "GAME_OVER";
 
 /** Length of a phase that has no timer (JSON-safe, unlike Infinity). */
-export const UNTIMED = -1;
+const UNTIMED = -1;
 
 /** The maze toggles between white and its color this often while flashing. Estimate. */
 export const MAZE_FLASH_TOGGLE_FRAMES = 12;

@@ -1,2 +1,4 @@
 vp staged
 vpx ./scripts/check-golden.ts
+vpx ./scripts/versions.ts --check
+vp run test:regression

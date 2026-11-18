@@ -1,0 +1,39 @@
+# The same checks as the pre-commit hook, plus the full test suite and the build (plan T3).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          # The whole history and its tags: the release check reads the commits since the last tag
+          fetch-depth: 0
+      # Installs Vite+, Node.js and the project's package manager (bun), then `vp install`
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "26"
+          cache: true
+      # Format, lint and type check
+      - run: vp check
+      # The e2e tests run the app in Chromium (Vitest browser mode, plan T5)
+      - run: vp exec playwright install --with-deps chromium
+      # Unit, integration, fidelity, regression and golden replay tests, then the e2e tests
+      - run: vp test
+      # The golden replays still match this build (versions bumped when the rules change)
+      - run: vp run golden:check
+      - run: vp build
+      # A pull request into main must carry the version its changes need (vp run release on dev)
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: vp run release:check

@@ -5,16 +5,8 @@ import { SimRandom } from "../../src/core/SimRandom";
 import { hashGameState } from "../../src/game/gameState";
 import { CHECKPOINT_TICKS, KEYFRAME_TICKS } from "../../src/game/replay";
 import type { Direction } from "../../src/types";
-
-/** Headless driver on level `level`, playing, Pac-Man invincible so runs stay long. */
-function playing(level = 1): AgentDriver {
-  const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.engine.settings.invincible = true;
-  agent.scenario({ level, playState: "PLAYING" });
-  agent.engine.pacman.invincible = true;
-  agent.scenario({}); // restart the recording with invincibility in place
-  return agent;
-}
+import { playingInvincible as playing, live } from "../helpers";
+import { faceBlinky } from "../helpers";
 
 /** Steps `frames` frames with random input every 20 frames. */
 function playRandomly(agent: AgentDriver, frames: number, seed = 7): void {
@@ -44,15 +36,13 @@ describe("Pause is invisible to the sim", () => {
 
 describe("Score popups (F26)", () => {
   it("are cleared when a life is lost", () => {
-    const agent = playing();
-    const e = agent.engine;
-    e.settings.invincible = false;
-    e.pacman.invincible = false;
-    e.scorePopups.push({ id: "fruit", text: "100", x: 112, y: 164, life: 50, color: "#fff" });
-    const b = agent.view().ghosts.BLINKY;
-    agent.scenario({ pacman: { col: b.col - 1, row: b.row, dir: "RIGHT" } });
-    agent.runUntil((v) => v.phase === "READY", 400);
-    expect(e.scorePopups).toEqual([]);
+    const { engine, runner, agent } = live(1);
+    runner.popups.onEvents([{ type: "FRUIT_EATEN", points: 100, x: 112, y: 164 }]);
+    expect(runner.popups.count).toBe(1);
+    faceBlinky(agent);
+    for (let i = 0; i < 400 && engine.phase !== "READY"; i++) runner.tick();
+    expect(engine.phase).toBe("READY");
+    expect(runner.popups.count).toBe(0);
   });
 });
 
@@ -82,7 +72,7 @@ describe("Replay log (T4)", () => {
 
     // ...or stops early, at a tick of your choice
     const early = other.loadReplay(replay, replay.start.tick + 120);
-    expect(early.view.frame).toBeLessThan(agent.view().frame);
+    expect(early.view.lifeFrame).toBeLessThan(agent.view().lifeFrame);
     expect(other.engine.tick).toBe(replay.start.tick + 120);
   });
 
@@ -119,7 +109,7 @@ describe("Replay log (T4)", () => {
   it("starts over when a sim setting changes, so the recording stays replayable", () => {
     const agent = playing();
     playRandomly(agent, 700);
-    agent.engine.settings.emulateRomQuirks = false;
+    agent.engine.rules.emulateRomQuirks = false;
     agent.advance(1);
     const changedAt = agent.engine.tick;
     playRandomly(agent, 300);

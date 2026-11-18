@@ -100,7 +100,7 @@ export class DiagnosticController {
   /**
    * Evaluates active rules against current game engine state.
    */
-  public evaluateRules(engine: GameEngine, currLevelFrame: number): void {
+  public evaluateRules(engine: GameEngine, lifeFrame: number): void {
     this.frameCounter++;
     if (this.frameCounter % this.evalSampleRate !== 0) return;
 
@@ -116,7 +116,7 @@ export class DiagnosticController {
         this.log(
           "ASSERTION_FAIL",
           `[${rule.name}] ${result.message || "Rule violated"}`,
-          currLevelFrame
+          lifeFrame
         );
       }
     }

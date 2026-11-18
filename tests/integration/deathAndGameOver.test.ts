@@ -11,7 +11,7 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
     engine.initGame("PACMAN", 1);
     engine.lives = 1; // 1 life left so death causes Game Over
     engine.score = 500;
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const collectEvents = () => {
       for (const e of engine.drainEvents()) {
@@ -51,7 +51,7 @@ describe("Layer 2 Integration Tests: Death, Game Over & Free Ghost Movement", ()
   it("should ensure emerging ghosts continue moving along the corridor and do not freeze at tile (13, 14)", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Pinky emerges
     const pinky = engine.ghosts.PINKY;
