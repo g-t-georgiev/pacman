@@ -79,13 +79,9 @@ describe("GameLoopController, EventBus and Cruise Elroy Mechanics", () => {
     // Blinky must remain in CHASE
     expect(blinky.mode).toBe("CHASE");
 
-    // Evaluate diagnostic invariant
-    const rule = engine.diagnosticController.rules.find(
-      (r) => r.id === "RULE_BLINKY_ELROY_SCATTER_IMMUNITY"
-    );
-    expect(rule).toBeDefined();
-    const result = rule!.evaluate(engine);
-    expect(result.pass).toBe(true);
+    // ...so he targets Pac-Man's tile
+    const pac = engine.pacman.tileCoord;
+    expect(blinky.target).toEqual({ col: pac.col, row: pac.row });
   });
 
   it("Ghosts exit house and turn into the maze corridors rather than staying on row 14", () => {

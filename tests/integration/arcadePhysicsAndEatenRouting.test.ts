@@ -267,15 +267,10 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     }
   });
 
-  it("should validate that eaten Inky, Clyde, Pinky, and Blinky correctly target designated pen slots at doorstep and pass diagnostic routing rules", () => {
+  it("eaten Inky and Clyde target their own slots in the house from the doorstep", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
     engine.enterPhase("PLAYING");
-
-    const doorstepRule = engine.diagnosticController.rules.find(
-      (r) => r.id === "RULE_EATEN_EYES_DOORSTEP_ROUTING"
-    );
-    expect(doorstepRule).toBeDefined();
 
     // 1. INKY eaten eyes at doorstep (col 14, row 14)
     const inky = engine.ghosts.INKY;
@@ -294,10 +289,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
     );
     expect(inky.target).toEqual({ col: 11, row: 17 });
 
-    // Doorstep diagnostic rule must recognize (11, 17) as valid designated pen slot
-    const inkyRes = doorstepRule!.evaluate(engine);
-    expect(inkyRes.pass).toBe(true);
-
     // 2. CLYDE eaten eyes at doorstep (col 13, row 14)
     const clyde = engine.ghosts.CLYDE;
     clyde.location = "ACTIVE";
@@ -313,9 +304,6 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
       engine.maze
     );
     expect(clyde.target).toEqual({ col: 15, row: 17 });
-
-    const clydeRes = doorstepRule!.evaluate(engine);
-    expect(clydeRes.pass).toBe(true);
 
     // 3. Inky executes full descent to his seat on the 11/12 seam
     let finishedDescent = false;

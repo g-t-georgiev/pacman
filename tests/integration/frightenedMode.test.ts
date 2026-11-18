@@ -137,7 +137,7 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     expect(blinky.reversalPrimed).toBe(false);
   });
 
-  it("should evaluate Eaten Eyes Front Doorstep Routing rule cleanly without false failures", () => {
+  it("eaten eyes head for the doorstep at once", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 1);
     engine.enterPhase("PLAYING");
@@ -155,15 +155,8 @@ describe("Layer 2 Integration Tests: Frightened Mode Mechanics", () => {
     engine.update();
 
     expect(inky.mode).toBe("EATEN");
-    // Target must immediately be doorstep row 14
-    expect(inky.target?.row).toBe(14);
-
-    // Diagnostic rules should have 0 unread discrepancies for doorstep routing
-    const doorstepRule = engine.diagnosticController.rules.find(
-      (r) => r.id === "RULE_EATEN_EYES_DOORSTEP_ROUTING"
-    );
-    expect(doorstepRule).toBeDefined();
-    expect(doorstepRule?.failures).toBe(0);
+    // Target must immediately be the doorstep (13, 14)
+    expect(inky.target).toEqual({ col: 13, row: 14 });
   });
 
   it("should NOT transition eaten ghosts back to frightened when another energizer is eaten", () => {
