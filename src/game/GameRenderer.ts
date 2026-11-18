@@ -21,7 +21,7 @@ const px = (simPx: number) => simPx * RENDER_SCALE;
 
 /**
  * One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). Placeholder: the
- * energizer's look waits on footage (footage checklist, REFACTOR_PLAN.md).
+ * energizer's look waits on footage (docs/OPEN_ITEMS.md).
  */
 const ENERGIZER_PULSE_FRAMES = 45;
 

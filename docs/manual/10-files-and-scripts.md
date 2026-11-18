@@ -209,9 +209,10 @@ tests), and `helpers.ts`.
 
 ## docs/
 
-| File                    | What it is                                                   |
-| :---------------------- | :----------------------------------------------------------- |
-| `docs/manual/`          | This manual, one file per chapter                            |
-| `docs/REFACTOR_PLAN.md` | The project's plan: phases, decisions, the footage checklist |
-| `docs/CLEANUP_PLAN.md`  | The clean-up pass: what was found and done                   |
-| `docs/AGENT_DRIVER.md`  | A pointer to [Agent driver and API](./08-agent-api.md)       |
+| File                            | What it is                                                                         |
+| :------------------------------ | :--------------------------------------------------------------------------------- |
+| `docs/manual/`                  | This manual, one file per chapter                                                  |
+| `docs/OPEN_ITEMS.md`            | What is still open: footage questions, decisions, missing sources                  |
+| `docs/history/REFACTOR_PLAN.md` | The finished project plan: phases, decisions, the key to plan IDs in code comments |
+| `docs/history/CLEANUP_PLAN.md`  | The finished clean-up pass: what was found and done                                |
+| `docs/AGENT_DRIVER.md`          | A pointer to [Agent driver and API](./08-agent-api.md)                             |

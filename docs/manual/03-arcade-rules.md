@@ -288,8 +288,9 @@ those. Code: [rulesets.ts](../../src/game/rulesets.ts), [mazes.ts](../../src/gam
 
 ## Estimates and open questions
 
-These values have no published source. Each is marked "estimate" in the code and is on the
-**footage checklist** in `docs/REFACTOR_PLAN.md`, to check against the original game:
+These values have no published source. Each is marked "estimate" in the code and is in the
+[open items](../OPEN_ITEMS.md) (with the constant that sets it), to check against the original
+game:
 
 - **Round phases:** READY lengths (4 s at a game's start, 2 s otherwise), the death animation
   (1.5 s) and wait (1 s), the level-clear freeze (1 s) and maze flashes (4, 12 frames each).

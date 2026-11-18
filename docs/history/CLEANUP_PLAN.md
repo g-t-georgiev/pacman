@@ -1,7 +1,11 @@
 # Clean-up and Refactor Plan (Z1)
 
-> Draft for review (2026-11-12). Nothing here is done yet. Each item has an ID so you can strike,
-> reorder or comment ("drop D4", "do T1 before M1"). Found by an audit of `refactor-pass-1` at
+> **Completed (2026-11-18); archived.** Every item is done (T4 with the manual). Kept as the
+> record of the findings and fixes, and as the key to the plan IDs in code comments ("plan M1",
+> "(P2)"). What is still open lives in [`docs/OPEN_ITEMS.md`](../OPEN_ITEMS.md).
+
+> Originally a draft for review (2026-11-12). Each item has an ID so it could be struck,
+> reordered or commented ("drop D4", "do T1 before M1"). Found by an audit of `refactor-pass-1` at
 > `8094d4d`: file sizes, unused code and settings, duplicated sources of truth, presentation data
 > inside the simulation, naming, tests and tooling.
 

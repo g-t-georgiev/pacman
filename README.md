@@ -77,7 +77,7 @@ src/            the game: engine (game/), controllers, actors (core/), UI (compo
 tests/          unit, integration, fidelity, regression, golden replay and e2e (browser) tests
 scripts/        golden replays: update, check, trace
 docs/manual/    the manual, one Markdown file per chapter
-docs/           the project's plans (REFACTOR_PLAN.md, CLEANUP_PLAN.md)
+docs/           OPEN_ITEMS.md (what is still open); history/ (the finished plans)
 public/         the canvas font and the icon
 ```
 
@@ -87,8 +87,9 @@ Every file is described in [Files and scripts](docs/manual/10-files-and-scripts.
 
 Some values have no published source and are estimates until checked against the original game
 (round phase lengths, the energizer's look, when the start tune plays, the ghost house release
-overlap, sounds). They are listed in
-[Estimates and open questions](docs/manual/03-arcade-rules.md#estimates-and-open-questions).
+overlap, sounds). They are tracked, with the constant that sets each one, in
+[`docs/OPEN_ITEMS.md`](docs/OPEN_ITEMS.md), along with two rule decisions still to make. The
+finished project plans are kept in [`docs/history/`](docs/history/).
 
 ## Credits
 

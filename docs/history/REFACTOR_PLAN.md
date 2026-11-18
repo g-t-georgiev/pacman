@@ -1,7 +1,11 @@
 # Refactor Plan: Arcade Fidelity, Architecture, Debug Tooling
 
-> Draft for revision. Each item has an ID so you can strike, reorder, or comment
-> (for example "drop F7", "F3 before A1"). Sources: _The Pac-Man Dossier_ (Pittman, v1.0.27),
+> **Completed (2026-11-18); archived.** Kept as the record of what was done and why, and as the key
+> to the plan IDs in code comments ("plan A1", "(F28)", "(T11)"). What is still open lives in
+> [`docs/OPEN_ITEMS.md`](../OPEN_ITEMS.md); how the game works is in the [manual](../manual/).
+
+> Originally a draft for revision: each item has an ID so it could be struck, reordered or
+> commented (for example "drop F7", "F3 before A1"). Sources: _The Pac-Man Dossier_ (Pittman, v1.0.27),
 > _Understanding Pac-Man Ghost Behavior_ (Birch), and the Steam guide (a derivative of those two;
 > where it disagrees, the Dossier wins). Code refs are to `refactor-pass-1` @ `fa1bc42` (historical: the file and line numbers in finished
 > items describe the code as it was then, not now).
@@ -353,6 +357,9 @@ done after Z1, so the manual describes the cleaned-up code (or alongside it, cha
   every intended mechanics change.
 
 ## Open questions
+
+> As of 2026-11-18. The items still open moved to [`docs/OPEN_ITEMS.md`](../OPEN_ITEMS.md);
+> this section stays as the record of what was found.
 
 All four original questions are answered under **Decisions** above. Still open (each needs a
 source or footage; the code marks these values as estimates):

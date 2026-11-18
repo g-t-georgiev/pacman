@@ -50,8 +50,8 @@ See [Testing](./06-testing.md) for the rest of the commands.
 
 - A rule's **source** is named where it is given: "Dossier" means _The Pac-Man Dossier_, and
   "Table A.1" is its per-level table.
-- **Estimate** marks a value no published source gives: chosen from play and video, and on the
-  footage checklist to confirm.
+- **Estimate** marks a value no published source gives: chosen from play and video, and listed in
+  the [open items](../OPEN_ITEMS.md) to confirm.
 - File names like `src/game/GameEngine.ts` point to the code. In the game's page they show the
   path when you hover them.
 
