@@ -384,6 +384,9 @@ source or footage; the code marks these values as estimates):
   - Level clear: freeze 1 s (`LEVEL_CLEAR_FREEZE`), then 4 white flashes, 12 frames per
     toggle (`MAZE_FLASH_TOGGLE_FRAMES`, `MAZE_FLASH`).
   - 1UP blink: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`).
+  - The frightened warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
+  - The eyes' speed home: 2 px every frame (`GHOST_EATEN_SPEED_PCT`).
+  - How far waiting ghosts bob in the house: half a tile up and down (`HOUSE_BOB`).
   - Siren stage switch points: 20/40/60/80% of the dots eaten (`SIREN_STAGE_SHARE_EATEN`), and
     each siren's pitch range and sweep rate (`SIREN_STAGES`, `FRIGHTENED_SIREN`, `EYES_SIREN`).
   - Chomp pitch and length per dot; eat-ghost, fruit, extra life and death sounds by ear

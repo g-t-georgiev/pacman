@@ -45,8 +45,11 @@ export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
  * 3-frame stalls, not from separate entries.
  */
 
-/** Speed value for ghosts' eyes when eaten and return to the ghost house. */
-export const GHOST_EATEN_SPEED_PCT = 200; // Key into SPEED_MASKS for returning eyes (see speedMasks.ts)
+/**
+ * The eyes' speed on their way home: a key into SPEED_MASKS (2 px every frame). Estimate: the
+ * Dossier gives none.
+ */
+export const GHOST_EATEN_SPEED_PCT = 200;
 /** Speed inside the ghost house (bobbing and leaving). Not in the Dossier: an estimate. */
 export const GHOST_HOUSE_SPEED_PCT = 50;
 
@@ -115,7 +118,10 @@ export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
   { mode: "CHASE", frames: Infinity },
 ] as const;
 
-/** Frames per white/blue half-cycle of the frightened warning flash. */
+/**
+ * Frames per white/blue half-cycle of the frightened warning flash. Estimate: the Dossier gives
+ * the number of flashes per level (Table A.1), not their rhythm.
+ */
 export const FRIGHTENED_FLASH_TOGGLE_FRAMES = 14;
 
 /** Bonus fruit names; which one a level shows is in LEVEL_TABLE (levelTable.ts). */

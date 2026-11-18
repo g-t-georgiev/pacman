@@ -19,7 +19,10 @@ import { renderArcadeHud } from "./arcadeHud";
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
 
-/** One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). */
+/**
+ * One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). Placeholder: the
+ * energizer's look waits on footage (footage checklist, REFACTOR_PLAN.md).
+ */
 const ENERGIZER_PULSE_FRAMES = 45;
 
 export default class GameRenderer {

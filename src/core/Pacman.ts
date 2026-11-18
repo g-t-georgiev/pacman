@@ -5,7 +5,10 @@ import { CORNER_WINDOW_LOW, TILE_SIZE } from "../game/constants";
 import { getDirectionVector, getOppositeDirection } from "../game/ghostAiUtils";
 import { getSpeedConfigForLevel } from "../game/levelTable";
 
-/** Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center). */
+/**
+ * Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center).
+ * Estimate from footage: half open at a tile center, where a blocked Pac-Man stops.
+ */
 const MOUTH_FRAMES: ReadonlyArray<0 | 1 | 2> = [1, 1, 2, 2, 1, 1, 0, 0];
 
 /**
