@@ -19,7 +19,7 @@ function played(frames: number) {
   const runner = new GameRunner(engine);
   const agent = new AgentDriver(engine, runner);
   engine.rules.invincible = true;
-  agent.scenario({ level: 2, playState: "PLAYING" });
+  agent.scenario({ level: 2, phase: "PLAYING" });
   engine.pacman.invincible = true;
   agent.scenario({});
   const rng = new SimRandom();
@@ -120,7 +120,7 @@ describe("Shareable replay links (T12)", () => {
 describe("Replay versions", () => {
   it("a new replay records this build's rules and state versions, and has no note", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     agent.advance(30);
     const replay = agent.saveReplay();
     expect(replay.version).toBe(2);
@@ -130,7 +130,7 @@ describe("Replay versions", () => {
 
   it("says up front when a clip comes from other rules, another state shape, or no version", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     agent.advance(30);
     const replay = agent.saveReplay();
     expect(
@@ -148,7 +148,7 @@ describe("Replay versions", () => {
 
   it("format 1 files still play", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     agent.advance(120);
     const { made: _made, ...replay } = agent.saveReplay();
     expect(agent.verifyReplay({ ...replay, version: 1 }).matched).toBe(true);

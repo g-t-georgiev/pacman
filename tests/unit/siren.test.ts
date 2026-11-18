@@ -65,7 +65,7 @@ describe("Start tune (S2)", () => {
     expect(e.drainEvents().map((ev) => ev.type)).toContain("INTRO");
 
     const agent = new AgentDriver(e);
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     faceBlinky(agent);
     const { events } = agent.runUntil((v) => v.phase === "READY", 600);
     expect(events.map((ev) => ev.type)).not.toContain("INTRO");

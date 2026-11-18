@@ -12,7 +12,7 @@ import type { Direction, GameMode } from "../src/types";
 /** A game in play on `level` (READY skipped), events drained. */
 export function playing(level = 1, mode: GameMode = "PACMAN"): AgentDriver {
   const agent = new AgentDriver(new GameEngine(mode, 0));
-  agent.scenario({ level, playState: "PLAYING" });
+  agent.scenario({ level, phase: "PLAYING" });
   agent.events();
   return agent;
 }
@@ -21,7 +21,7 @@ export function playing(level = 1, mode: GameMode = "PACMAN"): AgentDriver {
 export function playingInvincible(level = 1): AgentDriver {
   const agent = new AgentDriver(new GameEngine("PACMAN", 0));
   agent.engine.rules.invincible = true;
-  agent.scenario({ level, playState: "PLAYING" });
+  agent.scenario({ level, phase: "PLAYING" });
   agent.engine.pacman.invincible = true;
   agent.scenario({}); // restart the recording with invincibility in place
   return agent;
@@ -32,7 +32,7 @@ export function live(level = 1): { engine: GameEngine; runner: GameRunner; agent
   const engine = new GameEngine("PACMAN", 0);
   const runner = new GameRunner(engine);
   const agent = new AgentDriver(engine, runner);
-  agent.scenario({ level, playState: "PLAYING" });
+  agent.scenario({ level, phase: "PLAYING" });
   return { engine, runner, agent };
 }
 

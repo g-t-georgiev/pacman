@@ -27,7 +27,7 @@ describe("Release clears the turn (joystick feel)", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
     e.settings.releaseClearsBuffer = releaseClears;
-    agent.scenario({ playState: "PLAYING", pacman: { col: 10, row: 26, dir: "LEFT" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 10, row: 26, dir: "LEFT" } });
     e.setInputDirection("UP");
     agent.step(1);
     e.releaseInputDirection("UP");
@@ -53,7 +53,7 @@ describe("Release clears the turn (joystick feel)", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
     e.settings.releaseClearsBuffer = true;
-    agent.scenario({ playState: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
+    agent.scenario({ phase: "PLAYING", pacman: { col: 21, row: 26, dir: "LEFT" } });
     e.setInputDirection("LEFT");
     agent.step(1);
     const inputs = agent.saveReplay().inputs.length;

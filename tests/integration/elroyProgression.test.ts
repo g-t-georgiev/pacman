@@ -29,7 +29,7 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
   it("Cruise Elroy Blinky keeps chasing Pac-Man during a scatter wave", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const blinky = engine.ghosts.BLINKY;
     const pinky = engine.ghosts.PINKY;
@@ -89,7 +89,7 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
   it("suspends Elroy after a death until Clyde starts leaving the house (F13)", () => {
     const engine = new GameEngine("PACMAN", 10000);
     engine.initGame("PACMAN", 3); // level 3: every dot limit is 0
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     engine.dotsRemaining = 15; // deep in Elroy 2 territory
     let blinky = engine.ghosts.BLINKY;
 
@@ -97,10 +97,10 @@ describe("Layer 2 Integration Tests: Blinky Cruise Elroy Progression", () => {
     expect(blinky.elroyStage).toBe(2);
 
     // Lose a life: run the death sequence
-    engine.playState = "DYING";
+    engine.enterPhase("DEATH_FREEZE");
     for (let f = 0; f < 400 && engine.playState === "DYING"; f++) engine.update();
     expect(engine.playState).toBe("READY");
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     blinky = engine.ghosts.BLINKY; // actors are recreated on respawn
 
     // Global counter: nobody leaves until 7 dots (or the idle timer), so Clyde stays in

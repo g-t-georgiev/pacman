@@ -107,7 +107,7 @@ describe("Rewind from keyframes plus re-simulation (T7)", () => {
 
   it("rewinding out of a game over brings the round back", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-    agent.scenario({ level: 1, playState: "PLAYING" });
+    agent.scenario({ level: 1, phase: "PLAYING" });
     const e = agent.engine;
     e.lives = 1;
     agent.scenario({}); // record from here

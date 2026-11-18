@@ -13,7 +13,7 @@ function play(level: number, frames: number): AgentDriver {
   const engine = new GameEngine("PACMAN", 0);
   const agent = new AgentDriver(engine);
   engine.rules.invincible = true;
-  agent.scenario({ level, playState: "PLAYING" });
+  agent.scenario({ level, phase: "PLAYING" });
   engine.pacman.invincible = true;
   agent.recordSpeeds();
   const rng = new SimRandom();
@@ -22,7 +22,7 @@ function play(level: number, frames: number): AgentDriver {
     if (f % 40 === 0) agent.input(dirs[rng.nextInt(4)]);
     agent.advance(1);
     if (engine.phase === "MAZE_FLASH" || engine.phase === "GAME_OVER") {
-      agent.scenario({ level, playState: "PLAYING" });
+      agent.scenario({ level, phase: "PLAYING" });
       engine.pacman.invincible = true;
     }
   }

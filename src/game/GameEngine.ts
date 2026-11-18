@@ -18,7 +18,6 @@ import { SimRandom } from "../core/SimRandom";
 import {
   MAZE_FLASH_TOGGLE_FRAMES,
   PHASE_PLAY_STATE,
-  PLAY_STATE_ENTRY_PHASE,
   READY_FRAMES_GAME_START,
   type RoundPhase,
   RoundSequencer,
@@ -63,21 +62,6 @@ export default class GameEngine {
   /** The coarse state the UI shows, derived from the round phase and the pause flag. */
   public get playState(): PlayState {
     return this.paused ? "PAUSED" : PHASE_PLAY_STATE[this.sequencer.phase];
-  }
-
-  /**
-   * Setting a coarse state from outside (UI, tests, the agent driver): "PAUSED" pauses, anything
-   * else unpauses and, if the coarse state differs, starts that state's first phase.
-   */
-  public set playState(playState: PlayState) {
-    if (playState === "PAUSED") {
-      this.paused = true;
-      return;
-    }
-    this.paused = false;
-    if (PHASE_PLAY_STATE[this.sequencer.phase] !== playState) {
-      this.sequencer.enter(PLAY_STATE_ENTRY_PHASE[playState]);
-    }
   }
 
   /** The rules a tick follows (plan P1); recorded in replays. */
@@ -212,7 +196,10 @@ export default class GameEngine {
     this.emit({ type: "SCORE_CHANGED", score: this.score, highScore: this.highScore });
   }
 
-  /** Starts a round phase, telling the UI when the coarse play state changes. For sim modules. */
+  /**
+   * Starts a round phase, telling the UI when the coarse play state changes. For the sim's modules
+   * and for setting up a game from outside (tests, scenarios); `playState` is read-only (N2).
+   */
   public enterPhase(phase: RoundPhase, frames?: number): void {
     const before = this.playState;
     this.sequencer.enter(phase, frames);

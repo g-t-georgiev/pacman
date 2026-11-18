@@ -40,7 +40,7 @@ describe("Fixed bugs (regression)", () => {
   it("2026-11-12: setting playState or starting a game released the agent's hold", () => {
     const { engine, runner, agent } = live();
     agent.pause();
-    agent.scenario({ playState: "PLAYING" });
+    agent.scenario({ phase: "PLAYING" });
     engine.initGame("PACMAN", 1);
     const tick = engine.tick;
     for (let i = 0; i < 30; i++) runner.tick();

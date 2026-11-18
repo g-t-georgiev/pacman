@@ -9,7 +9,7 @@ interface RestartPanelProps {
   level: number;
   mode: GameMode;
   isGameOver: boolean;
-  onRestartRound: () => void;
+  onRestartLevel: () => void;
   onNewGame: () => void;
   onChangeMode: () => void;
   onClose: () => void;
@@ -21,7 +21,7 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
   level,
   mode,
   isGameOver,
-  onRestartRound,
+  onRestartLevel,
   onNewGame,
   onChangeMode,
   onClose,
@@ -91,7 +91,7 @@ export const RestartPanel: React.FC<RestartPanelProps> = ({
         </button>
 
         <button
-          onClick={onRestartRound}
+          onClick={onRestartLevel}
           className="w-full py-2.5 px-4 rounded-xl bg-neutral-850 hover:bg-neutral-800 border border-neutral-750 font-semibold text-neutral-200 hover:text-white transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
           <span>🔄 Restart Level {level}</span>

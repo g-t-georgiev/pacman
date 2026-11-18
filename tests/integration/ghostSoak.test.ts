@@ -16,7 +16,7 @@ describe("Ghost movement soak", () => {
     const engine = new GameEngine("PACMAN", 0);
     const agent = new AgentDriver(engine);
     engine.rules.invincible = true;
-    agent.scenario({ level, playState: "PLAYING" });
+    agent.scenario({ level, phase: "PLAYING" });
     engine.pacman.invincible = true;
 
     const rng = new SimRandom();
@@ -32,7 +32,7 @@ describe("Ghost movement soak", () => {
       if (frame % 45 === 0) agent.input(dirs[rng.nextInt(4)]);
       // Keep the round going: refill nothing, just restart the level when it is cleared
       if (engine.playState === "LEVEL_CLEAR" && engine.phase === "MAZE_FLASH") {
-        agent.scenario({ level, playState: "PLAYING" });
+        agent.scenario({ level, phase: "PLAYING" });
         engine.pacman.invincible = true;
         prev.clear();
       }

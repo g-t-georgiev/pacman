@@ -201,7 +201,7 @@ describe("Ghost state machine in the engine", () => {
   function playing(level = 1): GameEngine {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", level);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     return engine;
   }
 
@@ -307,7 +307,7 @@ describe("Ghost state machine in the engine", () => {
 describe("Restart level (fresh start at the current level)", () => {
   it("equals a new game at that level except the score: no global counter or Elroy suspension left", () => {
     const restarted = new AgentDriver(new GameEngine("PACMAN", 0));
-    restarted.scenario({ level: 3, playState: "PLAYING" });
+    restarted.scenario({ level: 3, phase: "PLAYING" });
     const e = restarted.engine;
     restarted.advance(400); // some dots, ghosts out
     faceBlinky(restarted);

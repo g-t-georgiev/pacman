@@ -238,7 +238,7 @@ export const ArcadeCabinet: React.FC = () => {
     redraw();
   };
 
-  const handleRestartRound = () => {
+  const handleRestartLevel = () => {
     if (!engineRef.current) return;
     gameOver.cancelDelayedPanel();
     engineRef.current.restartLevel(engineRef.current.level);
@@ -376,7 +376,7 @@ export const ArcadeCabinet: React.FC = () => {
           level={level}
           mode={currentMode}
           isGameOver={gameOver.isGameOver}
-          onRestartRound={handleRestartRound}
+          onRestartLevel={handleRestartLevel}
           onNewGame={handleNewGame}
           onChangeMode={() => {
             panels.setShowRestartPanel(false);

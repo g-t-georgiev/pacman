@@ -3,6 +3,9 @@
 `src/agent/AgentDriver.ts` lets an agent (or you, at the browser console) play and inspect the
 game frame by frame, the way Playwright drives a web page. Every call returns plain JSON.
 
+> **Renamed (2026-11-18, plan N1/N2):** `scenario({ phase })` replaces `scenario({ playState })`,
+> and `view().lifeFrame` replaces `view().frame`. The old names still work for one version.
+
 ## Where it runs
 
 - **Browser, dev builds:** `window.pacmanAgent` wraps the live game. `pause()` holds it (the
@@ -109,7 +112,7 @@ into a wall are counted in `blockedFrames`, not as speed samples.
 ```js
 const a = window.pacmanAgent;
 a.pause();
-a.scenario({ level: 3, playState: "PLAYING", dotsRemaining: 15 });
+a.scenario({ level: 3, phase: "PLAYING", dotsRemaining: 15 });
 
 // Kill Pac-Man on Blinky, then check Cruise Elroy is suspended until Clyde leaves
 const b = a.view().ghosts.BLINKY;

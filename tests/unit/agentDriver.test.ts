@@ -4,7 +4,7 @@ import { AgentDriver } from "../../src/agent/AgentDriver";
 
 function driver(level = 1): AgentDriver {
   const agent = new AgentDriver(new GameEngine("PACMAN", 0));
-  agent.scenario({ level, playState: "PLAYING" });
+  agent.scenario({ level, phase: "PLAYING" });
   agent.events(); // drop the level-start events
   return agent;
 }
@@ -14,7 +14,8 @@ describe("AgentDriver (headless)", () => {
     const agent = driver();
     const { frames, view } = agent.step(10);
     expect(frames).toBe(10);
-    expect(view.frame).toBe(10);
+    expect(view.lifeFrame).toBe(10);
+    expect(view.frame).toBe(view.lifeFrame); // deprecated alias, one version
     expect(view.playState).toBe("PLAYING");
   });
 

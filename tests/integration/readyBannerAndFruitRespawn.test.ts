@@ -72,7 +72,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.level).toBe(5);
 
     // Simulate play and life lost
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     engine.lives = 1;
     engine.dotsRemaining = 100;
 
@@ -101,7 +101,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
   it("should immediately discard active bonus fruit when Pac-Man dies and ensure it does not reappear after respawn", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Spawn bonus fruit (as would happen at 70 dots)
     engine.spawnFruit();
@@ -146,7 +146,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
   it("should ensure fruit is not available when clicking Restart Level or Start New Game after fruit was active", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 3);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Fruit active in Level 3
     engine.spawnFruit();
@@ -159,7 +159,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.playState).toBe("READY");
 
     // Player plays, fruit active again
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     engine.spawnFruit();
     expect(engine.fruit?.active).toBe(true);
 

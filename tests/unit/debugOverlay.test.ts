@@ -5,7 +5,7 @@ import { GameRunner } from "../../src/game/GameRunner";
 describe("Frame stepping while paused (T3)", () => {
   function pausedRunner(): GameRunner {
     const engine = new GameEngine("PACMAN", 0);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     engine.paused = true;
     return new GameRunner(engine);
   }

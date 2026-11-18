@@ -72,7 +72,7 @@ describe("Replay log (T4)", () => {
 
     // ...or stops early, at a tick of your choice
     const early = other.loadReplay(replay, replay.start.tick + 120);
-    expect(early.view.frame).toBeLessThan(agent.view().frame);
+    expect(early.view.lifeFrame).toBeLessThan(agent.view().lifeFrame);
     expect(other.engine.tick).toBe(replay.start.tick + 120);
   });
 

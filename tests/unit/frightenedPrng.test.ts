@@ -124,7 +124,7 @@ describe("Frightened direction choice", () => {
 describe("Frightened ghosts have no target (F18)", () => {
   it("calculateTarget returns null, and the engine's ghosts drop their target on the next tile", () => {
     const engine = new GameEngine("PACMAN", 0);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
     const blinky = engine.ghosts.BLINKY;
     engine.triggerFrightenedMode();
     const pacman = engine.pacman;

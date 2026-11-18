@@ -65,7 +65,7 @@ describe("The runner's holds win over engine calls (T11)", () => {
   it("setting playState or starting a new game does not release a hold", () => {
     const { runner, agent, engine } = live();
     agent.pause();
-    agent.scenario({ playState: "PLAYING" }); // clears the engine's own flag...
+    agent.scenario({ phase: "PLAYING" }); // clears the engine's own flag...
     engine.initGame("PACMAN", 1); // ...and so does a new game
     const tick = engine.tick;
     for (let i = 0; i < 30; i++) runner.tick(); // the real-time loop

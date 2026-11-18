@@ -10,7 +10,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should trigger collision only when Pac-Man and Ghost occupy the exact same integer tile", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const blinky = engine.ghosts.BLINKY;
     blinky.location = "ACTIVE";
@@ -44,7 +44,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should replicate the authentic arcade pass-through glitch when crossing boundaries on the same frame", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const blinky = engine.ghosts.BLINKY;
     blinky.location = "ACTIVE";
@@ -79,7 +79,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should freeze Pac-Man movement for 1 frame when eating a normal dot", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Set dot at (10, 11)
     engine.maze.tiles[11][10] = "DOT";
@@ -103,7 +103,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should freeze Pac-Man movement for 3 frames when eating an energizer", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     // Set energizer at (10, 11)
     engine.maze.tiles[11][10] = "ENERGIZER";
@@ -249,7 +249,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should evaluate updated diagnostic rules and include tile coords and freeze frames in telemetry", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const diagData = actorsDiagnostics(engine);
     // Pac-Man and Blinky start on the 13/14 seam (x = 112), which is in col 14
@@ -270,7 +270,7 @@ describe("Arcade Faithful Physics, Integer Tile Collision & Eaten Descent", () =
   it("should validate that eaten Inky, Clyde, Pinky, and Blinky correctly target designated pen slots at doorstep and pass diagnostic routing rules", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
-    engine.playState = "PLAYING";
+    engine.enterPhase("PLAYING");
 
     const doorstepRule = engine.diagnosticController.rules.find(
       (r) => r.id === "RULE_EATEN_EYES_DOORSTEP_ROUTING"

@@ -1,3 +1,4 @@
+import { PLAY_STATE_ENTRY_PHASE } from "../game/RoundSequencer";
 import { Measurements } from "../game/measurements";
 import type { LatencyStats } from "../game/latencyMeter";
 import GameEngine from "../game/GameEngine";
@@ -25,6 +26,9 @@ import type {
 
 /** Everything an agent usually needs to know about one frame, as plain JSON. */
 export interface AgentView {
+  /** Frames since this life (or level) began: the speed masks run on it. */
+  lifeFrame: number;
+  /** @deprecated Use `lifeFrame` (kept for one version, plan N1). */
   frame: number;
   playState: PlayState;
   /** Who holds the game (browser): "user", "panel", "agent". Empty while it runs. */
@@ -89,6 +93,9 @@ export interface Placement {
 
 export interface Scenario {
   level?: number;
+  /** Start this round phase (e.g. PLAYING skips READY); PAUSED is not a phase (use pause()). */
+  phase?: RoundPhase;
+  /** @deprecated Use `phase` (kept for one version, plan N2): PLAYING, READY, DYING, ... map to their first phase; PAUSED holds the engine. */
   playState?: PlayState;
   /**
    * Removes dots from the maze (plain dots first, in reading order, then energizers) until this
@@ -259,7 +266,16 @@ export class AgentDriver {
     if (s.frightened) e.triggerFrightenedMode();
     if (s.prngIndex !== undefined) e.prng.state = s.prngIndex;
     if (s.randomSeed !== undefined) e.simRandom.reset(s.randomSeed);
-    if (s.playState) e.playState = s.playState;
+    if (s.phase) {
+      e.paused = false;
+      if (e.phase !== s.phase) e.enterPhase(s.phase);
+    } else if (s.playState === "PAUSED") {
+      e.paused = true;
+    } else if (s.playState) {
+      const entry = PLAY_STATE_ENTRY_PHASE[s.playState];
+      e.paused = false;
+      if (e.playState !== s.playState) e.enterPhase(entry);
+    }
     e.replayLog.reset(e); // the edits above are not inputs: recordings start from here
     this.render();
     return this.view();
@@ -444,6 +460,7 @@ export class AgentDriver {
     }
     const pacTile = p.tileCoord;
     return {
+      lifeFrame: e.lifeFrame,
       frame: e.lifeFrame,
       playState: e.playState,
       pausedBy: this.runner?.pausedBy ?? (e.paused ? ["user"] : []),
