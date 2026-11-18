@@ -8,6 +8,8 @@ import { type KeyBindings, directionForKey } from "../utils/keyBindings";
 
 /** What the keys do besides moving; read through a ref so the handler is registered once. */
 export interface InputActions {
+  /** The manual is open: its page has the keyboard (search, scrolling), the game none. */
+  docsOpen: () => boolean;
   anyPanelOpen: () => boolean;
   labOpen: () => boolean;
   togglePause: () => void;
@@ -37,6 +39,7 @@ export function useGameInput(
       const engine = engineRef.current;
       if (!engine) return;
       const act = actionsRef.current;
+      if (act.docsOpen()) return;
 
       // No page scrolling on the arrow keys or Space
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {

@@ -13,7 +13,8 @@ import { ARCADE_REFRESH_HZ, SIM_FPS } from "./constants";
 import { actorsDiagnostics } from "../diagnostics/actorData";
 
 /** Why the game is held: the player (pause key or button), an open panel, or the agent driver. */
-export type PauseReason = "user" | "panel" | "agent" | "replay";
+/** Who holds the game: the player, an open panel, the agent driver, the replay viewer, the manual. */
+export type PauseReason = "user" | "panel" | "agent" | "replay" | "docs";
 
 /**
  * The shell around the pure simulation. It owns everything with side effects: the real-time

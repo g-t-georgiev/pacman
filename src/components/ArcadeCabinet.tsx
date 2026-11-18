@@ -29,6 +29,8 @@ import { OptionsPanel } from "./OptionsPanel";
 import { RestartPanel } from "./RestartPanel";
 import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
+import { DocsPage, openDocs } from "./DocsPage";
+import { CHAPTERS, parseDocsHash, type DocsRoute } from "../docs/manual";
 import { useGameEvent } from "../hooks/useGameEvent";
 import { setSetting, settingsChanged, useSettingsVersion } from "../hooks/useEngineSettings";
 import { usePanels } from "../hooks/usePanels";
@@ -91,7 +93,26 @@ export const ArcadeCabinet: React.FC = () => {
     settingsChanged();
   };
 
+  // The manual (DOC1): open while the URL is a docs link (#docs/...), holding the game
+  const [docsRoute, setDocsRoute] = useState<DocsRoute | null>(() => parseDocsHash(location.hash));
+  const docsOpenRef = useRef(docsRoute !== null);
+  docsOpenRef.current = docsRoute !== null;
+  useEffect(() => {
+    const onHash = () => setDocsRoute(parseDocsHash(location.hash));
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  useEffect(() => {
+    runnerRef.current?.setPaused("docs", docsRoute !== null);
+    refresh();
+  }, [docsRoute]);
+  const closeDocs = () => {
+    history.replaceState(null, "", location.pathname + location.search);
+    setDocsRoute(null);
+  };
+
   const input = useGameInput(engineRef, runnerRef, bindingsRef, {
+    docsOpen: () => docsOpenRef.current,
     anyPanelOpen: () => panels.anyPanelOpenRef.current,
     labOpen: () => panels.labRef.current !== null,
     togglePause: panels.togglePause,
@@ -125,6 +146,7 @@ export const ArcadeCabinet: React.FC = () => {
     engine.replayLog.reset(engine); // the recording starts with these settings
     const runner = new GameRunner(engine);
     runnerRef.current = runner;
+    if (docsOpenRef.current) runner.setPaused("docs", true); // opened on a docs link
 
     // Touch devices get the on-screen D-pad
     if ("ontouchstart" in window || navigator.maxTouchPoints > 0) setShowDpad(true);
@@ -278,6 +300,13 @@ export const ArcadeCabinet: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => openDocs({ chapter: CHAPTERS[0]?.slug ?? "", anchor: null })}
+            className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="The manual: how to play, how it works, tools and API (the game waits)"
+          >
+            <span>📖 Manual</span>
+          </button>
           <button
             onClick={() => panels.setShowMenu(true)}
             className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -491,6 +520,9 @@ export const ArcadeCabinet: React.FC = () => {
           }}
         />
       )}
+
+      {/* The manual, over everything; the game waits behind it */}
+      {docsRoute && <DocsPage route={docsRoute} onClose={closeDocs} />}
 
       {/* Footer Info */}
       <footer className="w-full max-w-4xl py-2 px-3 border-t border-neutral-900 text-center text-[11px] text-neutral-500 font-mono">

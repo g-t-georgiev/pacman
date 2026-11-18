@@ -23,6 +23,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "highlight.js": "^11.12.0",
+    "marked": "^18.2.1",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
