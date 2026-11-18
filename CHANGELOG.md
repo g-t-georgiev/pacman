@@ -3,6 +3,14 @@
 Every release of Pac-Man Arcade Lab, newest first. Written by `vp run release` from
 the commit messages; see the manual, "Replays, rewind and versions" > "Releases".
 
+## 0.1.1 (2026-11-18)
+
+<details><summary>Why this version</summary>
+
+- patch: 52428c3 edits the manual
+
+</details>
+
 ## 0.1.0 (2026-11-18)
 
 The first versioned release: everything before it is the starting point.
