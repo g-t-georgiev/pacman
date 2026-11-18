@@ -28,7 +28,7 @@ game frame by frame, the way Playwright drives a web page. Every call returns pl
 | `step(n)`                | Advance exactly `n` frames. Returns `{ frames, events, view }`.                                |
 | `runUntil(pred, max)`    | Step until `pred(view)` is true. Returns `{ reached, frames, events, view }`.                  |
 | `trace(n, pick)`         | Step `n` frames, sampling `pick(view)` after each one.                                         |
-| `scenario({...})`        | Set up a situation: level, play state, dots left, wave, frightened, positions.                 |
+| `scenario({...})`        | Set up a situation: level, phase, dots left, wave, frightened, positions.                      |
 | `save()` / `load(state)` | Capture / restore the complete `GameState`.                                                    |
 | `hash()`                 | Hash of the complete state. Equal hashes mean identical games.                                 |
 | `view()`                 | Frame, play state, round phase, score, lives, wave, timers, actors, house state.               |

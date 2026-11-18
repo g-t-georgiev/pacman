@@ -17,17 +17,38 @@ import { getSpeedConfigForLevel } from "../game/levelTable";
 import { isTunnelSlowZone } from "../game/mazeAnalysis";
 
 /**
- * A ghost. Its state is split into independent parts (plan A1):
+ * A ghost (plan N3: its whole state machine in one place). The state is split into independent
+ * parts; everything else is derived from them.
  *
- * - `location`: the life-cycle state machine (HOUSE -> LEAVING -> ACTIVE -> EYES -> ENTERING -> HOUSE).
- * - `frightened`: set for every non-eyes ghost when an energizer is eaten, cleared when the
- *   frightened timer ends or the ghost is eaten. Ghosts inside the house turn blue too (seen in
- *   the arcade; F8).
- * - `wave`: the global scatter/chase wave, which is also the mode to return to after frightened.
- * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on entering their next
- *   tile; a ghost that was inside during a mode change keeps it and turns around once outside.
+ * Where it is, `location` (the life cycle):
  *
- * `mode` and `inHouse` are derived from these and are read-only.
+ *     HOUSE --release--> LEAVING --past the door--> ACTIVE --eaten--> EYES --at the door--> ENTERING
+ *       ^                                                                                       |
+ *       +---------------------------------------- in its slot ----------------------------------+
+ *
+ *   Blinky starts ACTIVE; the others start in the HOUSE and are released by HouseController.
+ *   ENTERING goes through `enteringHousePhase`: APPROACH_SEAM (to the door's column),
+ *   DESCENDING_DOOR, MOVING_TO_SLOT, then back to NONE in the HOUSE.
+ *
+ * What it does:
+ *
+ * - `wave`: the global scatter/chase wave, also the mode to return to after frightened.
+ * - `frightened`: set on every non-eyes ghost by an energizer (in the house too: F8), cleared
+ *   when the frightened time ends or the ghost is eaten.
+ * - `mode` (derived, read-only): EATEN while eyes, else FRIGHTENED, else the wave.
+ * - `elroyStage` (Blinky only): Cruise Elroy 0/1/2, set by the engine every frame.
+ *
+ * How it moves (Dossier "Looking Ahead"; F14):
+ *
+ * - `target`: the tile it heads for (null while frightened: turns come from the PRNG).
+ * - `plannedDir` / `nextDir`: on entering a tile it decides the turn for the next tile
+ *   (`plannedDir`); at a tile center it turns to `nextDir`, which then takes `plannedDir`.
+ * - `lastDecisionTile`: the tile that decision was made for (debug overlay, no double decisions).
+ * - `lastOccupiedTile`: the tile it was last in, to notice entering a new one.
+ * - `reversalPrimed`: a latch set on every mode change. Active ghosts reverse on entering their
+ *   next tile; a ghost inside during a change keeps it and turns around once outside (F7).
+ *
+ * `inHouse` and `isEyes` are derived from `location`.
  */
 export class Ghost extends Actor {
   public type: GhostType;
@@ -47,12 +68,14 @@ export class Ghost extends Actor {
    */
   public plannedDir: Direction = "NONE";
 
-  // Tile-to-tile lookahead and reversal latch
+  /** A reversal to obey on entering the next tile (set by every mode change). */
   public reversalPrimed: boolean = false;
+  /** The tile the last turn decision was made for. */
   public lastDecisionTile?: TileCoord;
+  /** The tile the ghost was last in (entering a new one triggers the next decision). */
   public lastOccupiedTile?: TileCoord;
 
-  /** Sub-phase while the eyes enter the house (EYES at the door, then ENTERING). */
+  /** Sub-phase while the eyes enter the house: APPROACH_SEAM, DESCENDING_DOOR, MOVING_TO_SLOT. */
   public enteringHousePhase: GhostsToHousePhase = "NONE";
 
   constructor(
