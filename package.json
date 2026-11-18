@@ -1,22 +1,50 @@
 {
-  "name": "Pac-Man",
-  "version": "1.0.0",
-  "description": "A classic arcade-style Pac-Man game built using JavaScript and the HTML5 Canvas API. Navigate the maze, collect pellets, avoid ghosts, and beat your high score!",
-  "main": "src/main.js",
+  "name": "pacman-arcade-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "vp dev --port=3000 --host=0.0.0.0",
+    "build": "vp build",
+    "clean": "rm -rf dist",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint . --fix",
+    "fmt": "vp fmt .",
+    "fmt:check": "vp fmt --check .",
+    "test": "vp test",
+    "golden:update": "vpx ./scripts/update-golden.ts",
+    "golden:check": "vpx ./scripts/check-golden.ts",
+    "golden:trace": "vpx ./scripts/play-trace.ts",
+    "docs:versions": "vpx ./scripts/versions.ts",
+    "docs:check": "vpx ./scripts/versions.ts --check",
+    "release": "vpx ./scripts/release.ts",
+    "release:check": "vpx ./scripts/release.ts --check",
+    "release:tag": "vpx ./scripts/release.ts --tag",
+    "test:regression": "vp test --project unit tests/regression",
+    "test:unit": "vp test --project unit",
+    "test:e2e": "vp test --project e2e",
+    "prepare": "vp config"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/g-t-georgiev/pacman.git"
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "highlight.js": "^11.12.0",
+    "marked": "^18.2.1",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/g-t-georgiev/pacman/issues"
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/browser-playwright": "5.0.5",
+    "playwright": "^1.65.1",
+    "qrcode": "^1.5.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite-plus": "1.4.0"
   },
-  "homepage": "https://github.com/g-t-georgiev/pacman#readme"
+  "packageManager": "bun@1.4.4"
 }
