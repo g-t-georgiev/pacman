@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import type { AgentDriver } from "../../src/agent/AgentDriver";
+import { AgentDriver } from "../../src/agent/AgentDriver";
 import { HouseController } from "../../src/controllers/HouseController";
 import { sendGhostsHome } from "../../src/game/practiceActions";
 import { faceBlinky, playing, randomInput } from "../helpers";
@@ -178,5 +178,31 @@ describe("Fixed bugs (regression)", () => {
     const inside = Object.values(agent.engine.ghosts).filter((g) => g.inHouse);
     expect(inside.length).toBeGreaterThan(0);
     for (const g of inside) expect(g.mode).toBe("FRIGHTENED");
+  });
+
+  it("2026-11-19: the ghosts waiting in the house bobbed in step instead of Pinky up, Inky and Clyde down", () => {
+    for (const mode of ["PACMAN", "MS_PACMAN"] as const) {
+      // A level start: every waiting ghost faces its own way from the first frame
+      const agent = new AgentDriver(new GameEngine(mode, 0));
+      agent.scenario({ level: 1 });
+      const dirs = () => {
+        const g = agent.view().ghosts;
+        return [g.PINKY.dir, g.INKY.dir, g.CLYDE.dir];
+      };
+      expect(dirs(), mode).toEqual(["UP", "DOWN", "DOWN"]);
+
+      // ...and moves that way when play starts (Inky and Clyde wait on level 1; Pinky leaves)
+      const y = () => [agent.view().ghosts.INKY.y, agent.view().ghosts.CLYDE.y];
+      agent.scenario({ phase: "PLAYING" });
+      const [inky0, clyde0] = y();
+      agent.step(4);
+      expect(y()[0], mode).toBeGreaterThan(inky0);
+      expect(y()[1], mode).toBeGreaterThan(clyde0);
+
+      // A new life starts the same way
+      faceBlinky(agent);
+      agent.runUntil((v) => v.phase === "READY", 600);
+      expect(dirs(), `${mode} after a death`).toEqual(["UP", "DOWN", "DOWN"]);
+    }
   });
 });

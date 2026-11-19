@@ -40,6 +40,10 @@ Current value, then the constant that sets it.
       toggle (`MAZE_FLASH_TOGGLE_FRAMES`, `MAZE_FLASH`).
 - [ ] **Blinks.** 1UP: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`). The frightened
       warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
+- [ ] **Which way the waiting ghosts start.** Now Pinky up, Inky and Clyde down, at every level
+      start and new life (`initialDir` in `mazes.ts`), as seen in play (2026-11-19); before, all
+      three went up in step. Another recollection has it the other way round (Pinky down, Inky and
+      Clyde up); no published source says. Check on footage: the first frames after READY.
 - [ ] **Speeds without a source.** The eyes going home: 2 px every frame
       (`GHOST_EATEN_SPEED_PCT`). Inside the house: 50% (`GHOST_HOUSE_SPEED_PCT`). How far waiting
       ghosts bob: half a tile (`HOUSE_BOB`).
