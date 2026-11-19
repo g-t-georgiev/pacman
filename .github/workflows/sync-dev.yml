@@ -1,0 +1,68 @@
+# After every push to main (a release merged from dev), bring dev up to date with main, so
+# main never has commits dev lacks (the merge commits of dev → main pull requests). Usually a
+# fast-forward; if dev moved on meanwhile, main is merged into dev.
+#
+# dev is protected, so this pushes with a deploy key allowed past that protection:
+#   1. Create an SSH key pair (ssh-keygen -t ed25519 -f dev-sync -N "").
+#   2. Settings → Deploy keys → Add: the public key, "Allow write access".
+#   3. Settings → Secrets and variables → Actions → New secret DEV_SYNC_KEY: the private key.
+#   4. dev's protection (Settings → Rules, or Branches) → bypass list: add "Deploy keys".
+# Without the secret this job only leaves a notice.
+name: Sync dev
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is the deploy key set up?
+        id: key
+        env:
+          KEY: ${{ secrets.DEV_SYNC_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::notice::DEV_SYNC_KEY isn't set: dev was not synced with main. See .github/workflows/sync-dev.yml for the setup, or open a pull request from main into dev."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.key.outputs.ok == 'true'
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          ssh-key: ${{ secrets.DEV_SYNC_KEY }}
+
+      - name: Bring dev up to main
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          git fetch origin dev
+          if git merge-base --is-ancestor origin/dev HEAD; then
+            if [ "$(git rev-parse origin/dev)" = "$(git rev-parse HEAD)" ]; then
+              echo "dev is already main."
+            else
+              git push origin HEAD:dev
+              echo "dev fast-forwarded to main."
+            fi
+          elif git merge-base --is-ancestor HEAD origin/dev; then
+            echo "dev already contains main."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git checkout -B dev origin/dev
+            git merge --no-edit origin/main -m "Merge main into dev (sync after a release)"
+            git push origin dev
+            echo "main merged into dev."
+          fi

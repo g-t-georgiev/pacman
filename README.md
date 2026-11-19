@@ -8,7 +8,8 @@ TypeScript, React and the Canvas 2D API on a deterministic simulation.
 Two modes: **Pac-Man** and **Ms. Pac-Man**.
 
 **Play it:** [g-t-georgiev.github.io/pacman](https://g-t-georgiev.github.io/pacman/) (the latest release on
-`main`, published by GitHub Pages).
+`main`). Every branch has its own build too, at `/pacman/<branch>/`: see the
+[list of builds](https://g-t-georgiev.github.io/pacman/branches/).
 
 ## The manual
 

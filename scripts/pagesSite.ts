@@ -11,6 +11,7 @@
 //   vpx ./scripts/pagesSite.ts publish --site <dir> --dist dist --branch <b> --sha <sha>
 //   vpx ./scripts/pagesSite.ts remove --site <dir> --branch <b>    (a deleted branch)
 import {
+  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -178,7 +179,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     return v;
   };
   if (command === "base") {
-    console.log(basePath(rest[0], root));
+    const base = basePath(rest[0], root);
+    console.log(base);
+    // In GitHub Actions, also as the step's output
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `base=${base}\n`);
   } else if (command === "publish") {
     const m = publish(
       need("--site"),

@@ -18,5 +18,11 @@ export const VERSIONS = {
   replayFormat: REPLAY_FORMAT_VERSION,
 } as const;
 
+/**
+ * The branch a preview build was made from (GitHub Pages builds every branch: see
+ * .github/workflows/pages.yml); empty for the released game and local builds.
+ */
+export const BUILD_BRANCH = (import.meta.env.VITE_BUILD_BRANCH as string | undefined) ?? "";
+
 /** "v0.1.0" */
 export const APP_VERSION_LABEL = `v${version}`;
