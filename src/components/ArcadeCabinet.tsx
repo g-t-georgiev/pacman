@@ -31,7 +31,7 @@ import { VirtualDpad } from "./VirtualDpad";
 import { DiagnosticConsole } from "../diagnostics/components/DiagnosticConsole";
 import { type DocsRoute, openDocs, parseDocsHash } from "../docs/route";
 import { DocsErrorBoundary } from "./DocsErrorBoundary";
-import { APP_VERSION_LABEL, VERSIONS } from "../version";
+import { APP_VERSION_LABEL, BUILD_BRANCH, VERSIONS } from "../version";
 import { keepArcadeFont } from "../utils/fontLoader";
 
 // The manual is loaded when it is first opened: the game's bundle doesn't carry it
@@ -564,6 +564,7 @@ export const ArcadeCabinet: React.FC = () => {
           title={`Game ${APP_VERSION_LABEL} · rules version ${VERSIONS.rules} · saved state version ${VERSIONS.state} · replay format ${VERSIONS.replayFormat}`}
         >
           · {APP_VERSION_LABEL} · rules {VERSIONS.rules}
+          {BUILD_BRANCH && <span className="text-amber-500"> · preview: {BUILD_BRANCH}</span>}
         </span>
       </footer>
     </div>

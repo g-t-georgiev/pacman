@@ -1,12 +1,11 @@
 {
   "name": "pacman-arcade-lab",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "vp dev --port=3000 --host=0.0.0.0",
     "build": "vp build",
-    "build:pages": "vp build --base /pacman/",
     "clean": "rm -rf dist",
     "lint": "vp lint .",
     "lint:fix": "vp lint . --fix",

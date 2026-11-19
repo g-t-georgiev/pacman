@@ -184,11 +184,36 @@ Then push and open the pull request from `dev` into `main`:
   If you forgot, the check fails and says to run `vp run release`.
 - **After the merge**, CI tags the version (`v1.2.3`) on `main`, and publishes a GitHub Release
   with its changelog notes for a minor or major version. A patch version gets the tag only.
-- **Also after every push to `main`**, the game is built and published on GitHub Pages
-  ([g-t-georgiev.github.io/pacman](https://g-t-georgiev.github.io/pacman/)), so the site always
-  shows the latest release.
+- **And `dev` catches up:** the merge leaves a merge commit on `main` that `dev` doesn't have.
+  The Sync dev workflow brings `dev` up to `main` right after (a fast-forward, or a merge if
+  `dev` moved on meanwhile), so the next pull request starts with nothing on `main` that `dev`
+  lacks. It needs a deploy key allowed past `dev`'s protection (the setup is at the top of
+  `.github/workflows/sync-dev.yml`); without it, a pull request from `main` into `dev` does the
+  same.
 
 Every release is tagged, so a replay or a bug report that names a version can be played on
 exactly that build: `git checkout v1.2.3`. The notes of every release are in `CHANGELOG.md`.
 Code: [release.ts](../../scripts/release.ts), [releaseBump.ts](../../scripts/releaseBump.ts),
 [release.yml](../../.github/workflows/release.yml).
+
+## The live site and branch previews
+
+Every branch is built and published on GitHub Pages, each at its own address, on every push:
+
+| Address                                                                                   | Build                                                  |
+| :---------------------------------------------------------------------------------------- | :----------------------------------------------------- |
+| [g-t-georgiev.github.io/pacman](https://g-t-georgiev.github.io/pacman/)                   | `main`: the released game                              |
+| `g-t-georgiev.github.io/pacman/<branch>/`                                                 | any other branch: `/pacman/dev/`, `/pacman/feature-x/` |
+| [g-t-georgiev.github.io/pacman/branches](https://g-t-georgiev.github.io/pacman/branches/) | the list of every build, with its commit and time      |
+
+- A branch's name becomes its folder: lowercase, with anything but letters, digits, dots and
+  dashes turned into a dash (`refactor/pass-2` → `/pacman/refactor-pass-2/`).
+- A preview shows its branch in the footer ("preview: dev"); the released game doesn't.
+- Deleting a branch takes its build off the site.
+- The whole site is kept in the `gh-pages` branch, as one commit that each run replaces, and
+  published with GitHub's Pages actions. Don't push to it by hand.
+
+The workflow is [pages.yml](../../.github/workflows/pages.yml); the site's layout and its list
+page come from [pagesSite.ts](../../scripts/pagesSite.ts). It needs Settings → Pages → Source
+"GitHub Actions", and Settings → Environments → github-pages → Deployment branches "No
+restriction", so that any branch may publish its build.

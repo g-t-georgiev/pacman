@@ -32,14 +32,20 @@ const option = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 
-/** The newest version tag reachable from HEAD. */
+/**
+ * The newest version tag, by version number. Not just the ones reachable from HEAD: release tags
+ * sit on main's merge commits, which dev only contains once it has caught up with main (the Sync
+ * dev workflow), and until then `git describe` on dev would find an older release.
+ * `git log <tag>..HEAD` still lists exactly the commits that tag's release didn't have.
+ */
 function lastTag(): string {
-  try {
-    return git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*");
-  } catch {
+  const tags = git("tag", "--list", "v[0-9]*.[0-9]*.[0-9]*", "--sort=-v:refname");
+  const newest = tags.split("\n").find((t) => /^v\d+\.\d+\.\d+$/.test(t.trim()));
+  if (!newest) {
     console.error("No version tag yet (v1.2.3). Tag the first version: git tag -a v0.1.0 -m 0.1.0");
     process.exit(2);
   }
+  return newest.trim();
 }
 
 /** The game's version numbers in a commit (or the working tree). */

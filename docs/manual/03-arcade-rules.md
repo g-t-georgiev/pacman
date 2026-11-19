@@ -200,7 +200,8 @@ Blinky starts outside; Pinky, Inky and Clyde wait inside and leave by these rule
 - A ghost whose limit is met leaves at once, even while another one is still on its way out. With
   limits of 0, several ghosts are released on consecutive frames and walk out overlapping (see
   the open question below).
-- **Moving in the house.** Waiting ghosts bob up and down. To leave, a ghost lines up with the
+- **Moving in the house.** Waiting ghosts bob up and down, not in step: at every level start
+  and new life Pinky starts upward, Inky and Clyde downward (_estimate_, from play). To leave, a ghost lines up with the
   door's center, then goes up and out, to the left. Eyes come back to the door, go down to the
   middle of the house, and move to their slot (Inky left, Clyde right, the others in the middle);
   then the ghost leaves again as soon as the house rules let it (normally at once).
@@ -301,7 +302,7 @@ game:
 - **Speeds:** the eyes (2 px per frame), inside the house (50%), and the speed masks' bit
   layouts (their totals are sourced).
 - **Timing details:** the frightened flash rhythm (14 frames per half-cycle), the 1UP blink (16
-  frames), the house bobbing (half a tile).
+  frames), the house bobbing (half a tile) and which way each ghost starts it.
 - **The siren:** where it steps up (now at 20/40/60/80% of the dots eaten) and its pitches.
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
 - **House release overlap:** from level 2, Inky (and from level 3, Clyde) can be released a

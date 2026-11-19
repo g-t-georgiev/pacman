@@ -3,6 +3,26 @@
 Every release of Pac-Man Arcade Lab, newest first. Written by `vp run release` from
 the commit messages; see the manual, "Replays, rewind and versions" > "Releases".
 
+## 0.2.0 (2026-11-19)
+
+### Fixes
+
+- the release script compares with the newest version tag, not the newest one dev contains (e5acdd6)
+- the ghosts waiting in the house no longer bob in step (8ee897f)
+- the pause button shows in every build, not only in dev builds (137cdfa)
+
+<details><summary>Why this version</summary>
+
+- patch: e5acdd6 is a fix
+- patch: 8ee897f is a fix
+- patch: 8ee897f edits the manual
+- patch: 137cdfa is a fix
+- patch: 137cdfa edits the manual
+- patch: 62868d0 edits the manual
+- minor: rules version 1 → 2: the game plays differently
+
+</details>
+
 ## 0.1.1 (2026-11-18)
 
 <details><summary>Why this version</summary>

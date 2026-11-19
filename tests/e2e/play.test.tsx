@@ -57,6 +57,20 @@ describe("e2e: the game loads and plays", () => {
     expect(agent.view().pausedBy).toEqual([]);
   });
 
+  it("the ⏸ button pauses and resumes, and says who holds the game", async () => {
+    // Bug seen 2026-11-19: the button was dev-only, so the published game had no pause button
+    const agent = await playingApp();
+    await page.getByRole("button", { name: "Pause" }).click();
+    expect(agent.view().pausedBy).toEqual(["user"]);
+    expect(await framesOver(agent, 300)).toBe(0);
+    const resume = page.getByRole("button", { name: "Resume" });
+    await expect.element(resume).toBeVisible();
+    expect(resume.element().getAttribute("title")).toMatch(/^Paused by: user/);
+    await resume.click();
+    expect(agent.view().pausedBy).toEqual([]);
+    expect(await framesOver(agent, 300)).toBeGreaterThan(5);
+  });
+
   it("a panel holds the game until it closes", async () => {
     const agent = await playingApp();
     await userEvent.keyboard("l"); // the Lab
