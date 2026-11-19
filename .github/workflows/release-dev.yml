@@ -7,12 +7,14 @@
 # Pushes with the SYNC_TOKEN secret (see sync-dev.yml); without it, with the workflow's own
 # token, which works only while dev is unprotected.
 name: Release on dev
+# The runs list says which kind each run was
+run-name: ${{ inputs.dry_run && 'Release on dev (dry run, nothing released)' || 'Release on dev' }}
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Only show the next version and why (nothing is committed)"
+        description: "Dry run: only show the next version and why. Untick to make the release."
         type: boolean
         default: true
       version:
@@ -55,8 +57,22 @@ jobs:
           if [ -n "$VERSION" ]; then args+=(--version "$VERSION"); fi
           set -o pipefail
           vp run release -- "${args[@]}" | tee "$RUNNER_TEMP/release.log"
+          next=$(sed -n 's/^Next version: \([0-9][0-9.]*[0-9]\).*/\1/p' "$RUNNER_TEMP/release.log" | head -1)
+          if [ "$DRY_RUN" = "true" ]; then
+            heading="Dry run: nothing released"
+            if [ -n "$next" ]; then
+              echo "::notice title=Dry run: nothing was released::The next version would be $next. To make it, run this workflow again with \"Dry run\" unticked."
+            else
+              echo "::notice title=Dry run: nothing to release::No fix, feature or manual change since the last release."
+            fi
+          elif [ -n "$next" ]; then
+            heading="Released $next"
+          else
+            heading="Nothing to release"
+            echo "::notice title=Nothing to release::No fix, feature or manual change since the last release."
+          fi
           {
-            echo "### Release on dev"
+            echo "### Release on dev: $heading"
             echo '```'
             grep -v '^\$ ' "$RUNNER_TEMP/release.log"
             echo '```'
