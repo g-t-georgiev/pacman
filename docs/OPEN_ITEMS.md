@@ -39,8 +39,9 @@ the order of the work ("Step" below). Tick each one when its step is in.
 - [x] **Energizer look** (step 4, done). Seen: a plain on/off blink, about 10 frames each, in play
       and during the death freeze; steady during READY. Ours was a pulse in size; now the blink
       (`ENERGIZER_BLINK_FRAMES`).
-- [ ] **The siren's first stage** (step 5). Seen: about 400–900 Hz, 0.4 s a sweep. Ours tops out
-      at 640 Hz (`SIREN_STAGES`).
+- [x] **The siren** (step 5, done). Seen: five stages from 440–1000 Hz (0.42 s a sweep) up to
+      900–1680 Hz (0.27 s), stepping up at about 41/71/82/92% of the dots eaten. Ours was 360–640
+      up to 540–940 Hz at 20/40/60/80% (`SIREN_STAGES`, `SIREN_STAGE_SHARE_EATEN`).
 
 ## Waiting on footage of the original
 
@@ -52,9 +53,8 @@ Current value, then the constant that sets it.
 - [ ] **Blinks.** 1UP: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`). The frightened
       warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
 - [ ] **The eyes' speed going home.** 2 px every frame (`GHOST_EATEN_SPEED_PCT`).
-- [ ] **The later sirens.** Where the siren steps up: 20/40/60/80% of the dots eaten
-      (`SIREN_STAGE_SHARE_EATEN`); the later stages' pitch and sweep (`SIREN_STAGES`), and the
-      frightened and eyes sirens (`FRIGHTENED_SIREN`, `EYES_SIREN`).
+- [ ] **The frightened and eyes sirens.** Their pitch and rhythm (`FRIGHTENED_SIREN`,
+      `EYES_SIREN`). The recordings have both, under other sounds.
 - [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
       life, death (`SoundEngine.ts`).
 - [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per

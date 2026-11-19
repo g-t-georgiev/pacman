@@ -307,6 +307,25 @@ rows 10 and 20), whose colors change from level to level; her fruit bounces. The
 Pac-Man has four mazes and differences in the ghosts' behavior; this build doesn't reproduce
 those. Code: [rulesets.ts](../../src/game/rulesets.ts), [mazes.ts](../../src/game/mazes.ts).
 
+## The siren
+
+The background siren rises in five stages as the maze empties, each a straight sweep up and down
+in pitch, faster and higher than the last. Measured on footage of the original's level 1
+([footage, 2026-11-19](../footage/2026-11-19.md)), good to about 30 Hz; the switch points are
+shares of the maze's dots, so Ms. Pac-Man's mazes step up the same way:
+
+| Stage | Starts at (share of the dots eaten) | Pitch       | One up-and-down sweep |
+| ----- | ----------------------------------- | ----------- | --------------------- |
+| 1     | the level's start                   | 440–1000 Hz | 0.42 s                |
+| 2     | 41% (between 34% and 48%)           | 495–1180 Hz | 0.35 s                |
+| 3     | 71% (between 70% and 73%)           | 620–1320 Hz | 0.33 s                |
+| 4     | 82% (between 79% and 84%)           | 760–1510 Hz | 0.30 s                |
+| 5     | 92% (about)                         | 900–1680 Hz | 0.27 s                |
+
+It plays only during play. While ghosts are blue it gives way to the frightened siren, and while
+eyes are on their way home to the eyes siren. Code: [siren.ts](../../src/game/siren.ts),
+[SoundEngine.ts](../../src/audio/SoundEngine.ts).
+
 ## Estimates and open questions
 
 These values have no published source. Each is marked "estimate" in the code and is in the
@@ -317,6 +336,6 @@ game:
   layouts (their totals are sourced).
 - **Timing details:** the frightened flash rhythm (14 frames per half-cycle) and the 1UP blink (16
   frames).
-- **The siren:** where it steps up (now at 20/40/60/80% of the dots eaten) and its pitches.
+- **The frightened and eyes sirens:** their pitch and rhythm.
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.

@@ -32,14 +32,17 @@ type WaveName = keyof typeof WAVES;
 /** The death sound's length: about 1.5 s on footage of the original (docs/footage/2026-11-19.md). */
 const DEATH_SOUND_SECONDS = 1.5;
 
-/** Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s). */
-
+/**
+ * Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s),
+ * a straight sweep in Hz. Measured on footage of the original, good to about 30 Hz and 0.01 s
+ * (docs/footage/2026-11-19.md).
+ */
 const SIREN_STAGES: ReadonlyArray<{ lo: number; hi: number; period: number }> = [
-  { lo: 360, hi: 640, period: 0.42 },
-  { lo: 400, hi: 700, period: 0.38 },
-  { lo: 440, hi: 770, period: 0.34 },
-  { lo: 490, hi: 850, period: 0.3 },
-  { lo: 540, hi: 940, period: 0.26 },
+  { lo: 440, hi: 1000, period: 0.42 },
+  { lo: 495, hi: 1180, period: 0.35 },
+  { lo: 620, hi: 1320, period: 0.33 },
+  { lo: 760, hi: 1510, period: 0.3 },
+  { lo: 900, hi: 1680, period: 0.27 },
 ];
 /** Frightened: a low, fast, rising warble. Eyes: a high, faster, falling one. */
 const FRIGHTENED_SIREN = { lo: 180, hi: 520, rate: 7.5 };
