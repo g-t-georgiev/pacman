@@ -71,8 +71,13 @@ Current value, then the constant that sets it.
 - [ ] **Does Clyde leave at 32?** The Dossier (and notes that follow it) say the shared counter is
       _switched off_ at 32 when Clyde is inside, not that it _releases_ him: he then leaves by his
       own count (at once from level 3; on levels 1 and 2 only when his frozen count reaches 60 or
-      50, or by the no-dot timer). Check on footage: after a death on level 1, does Clyde come out
-      at the 32nd dot?
+      50, or by the no-dot timer). The Dossier is explicit: the personal limits decide "including
+      Clyde who is still in the house at this time". A secondary source disagrees:
+      [mrpacman.com](https://mrpacman.com/blog/pacman-ghost-house-rules/) says Clyde leaves at 32
+      and the counter switches off when he does. Both agree from level 3 (Clyde's limit is 0, so he
+      leaves at once either way); they differ only on levels 1 and 2. We keep the Dossier, the more
+      precise source, until footage says otherwise. Check on footage: after a death on level 1,
+      with Clyde still inside, does he come out at the 32nd dot?
 - [ ] **Does the no-dot timer restart after a death?** The sources say it restarts when it fires and
       (implicitly) with every dot; none says what a death does. We restart it (`onLifeLost`), so no
       time is left over from before the death. Check on footage: right after a respawn, with
