@@ -192,10 +192,14 @@ Blinky starts outside; Pinky, Inky and Clyde wait inside and leave by these rule
    count takes over. Limits: level 1 Pinky 0, Inky 30, Clyde 60; level 2 0, 0, 50; from level 3
    all 0. They reset only at a new level.
 2. **The global dot counter.** After a death, the personal counters stop (they aren't reset) and
-   one shared counter starts: Pinky leaves at 7 dots, Inky at 17. At 32, if Clyde is still
-   inside, the shared counter switches off and the personal counters take over again.
+   one shared counter starts: Pinky leaves at 7 dots, Inky at 17. At 32 it doesn't release
+   Clyde: if he is still inside, the shared counter switches itself off and the personal counters
+   take over again, so Clyde leaves once his own (frozen) count reaches his level's limit (at once
+   from level 3, where it is 0). If Clyde is already out at 32, the shared counter never switches
+   off and keeps counting for the rest of the level.
 3. **The no-dot timer.** If Pac-Man eats no dot for 4 seconds (3 from level 5), the first ghost
-   waiting is sent out. The timer restarts with every dot, and after a death.
+   waiting is sent out. The timer restarts when it fires and with every dot; it also restarts
+   after a death (our choice: the Dossier doesn't say).
 
 - A ghost whose limit is met leaves at once, even while another one is still on its way out. With
   limits of 0, several ghosts are released on consecutive frames and walk out overlapping (see
@@ -204,7 +208,13 @@ Blinky starts outside; Pinky, Inky and Clyde wait inside and leave by these rule
   and new life Pinky starts upward, Inky and Clyde downward (_estimate_, from play). To leave, a ghost lines up with the
   door's center, then goes up and out, to the left. Eyes come back to the door, go down to the
   middle of the house, and move to their slot (Inky left, Clyde right, the others in the middle);
-  then the ghost leaves again as soon as the house rules let it (normally at once).
+  then the ghost is waiting again, and the same rules decide when it leaves.
+- **Ghosts held in the house.** That last point has a known consequence. If Clyde was already out
+  when the shared counter reached 32, it never switches off, and it releases only at exactly 7, 17
+  and 32, which have passed: a ghost eaten after that stays in the house until Pac-Man stops
+  eating for long enough for the no-dot timer to send it out. The same happens to a ghost whose
+  own count is still under its limit (Clyde on level 1, if the timer sent him out early). This
+  follows from the arcade's rules; it isn't a bug.
 
 Code: [HouseController.ts](../../src/controllers/HouseController.ts),
 [MovementController.ts](../../src/controllers/MovementController.ts).

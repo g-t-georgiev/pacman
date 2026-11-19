@@ -57,12 +57,26 @@ Current value, then the constant that sets it.
 
 ## Waiting on your decision
 
-- [ ] **The global dot counter at 32.** The game follows the Dossier: after a death, the shared
-      counter releases Pinky at 7 and Inky at 17; at 32, if Clyde is still inside, it switches off
-      and the personal counters take over again (`HouseController`). Keep it, or change it?
+- [x] **The global dot counter at 32: keep the Dossier rule** (decided 2026-11-19). After a death,
+      the shared counter releases Pinky at 7 and Inky at 17; at 32, if Clyde is still inside, it
+      switches itself off and the personal counters take over again; if Clyde is already out, it
+      keeps counting for the rest of the level, and ghosts eaten later can be held in the house
+      until the no-dot timer sends them out (`HouseController`). Still unsure, see below.
 - [ ] **Timer units.** The Dossier's seconds are read as 60 frames each ("1/60 s" = one frame),
       while the Arcade preset runs 60.606 frames per second, so a "second" is 0.99 real seconds.
       Unverified: keep this reading, or treat them as real seconds?
+
+## Still unsure, to check on footage or in a reliable source
+
+- [ ] **Does Clyde leave at 32?** The Dossier (and notes that follow it) say the shared counter is
+      _switched off_ at 32 when Clyde is inside, not that it _releases_ him: he then leaves by his
+      own count (at once from level 3; on levels 1 and 2 only when his frozen count reaches 60 or
+      50, or by the no-dot timer). Check on footage: after a death on level 1, does Clyde come out
+      at the 32nd dot?
+- [ ] **Does the no-dot timer restart after a death?** The sources say it restarts when it fires and
+      (implicitly) with every dot; none says what a death does. We restart it (`onLifeLost`), so no
+      time is left over from before the death. Check on footage: right after a respawn, with
+      Pac-Man not eating, does the first ghost leave after a full 4 s?
 
 ## Waiting on a source
 
