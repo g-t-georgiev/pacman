@@ -107,7 +107,7 @@ This README describes **Pac-Man Arcade Lab 0.2.1**.
 | :------------------------------------------- | :------------------------------------ |
 | Game                                         | 0.2.1                                 |
 | Manual (in the game and in `docs/manual/`)   | 0.2.1: it describes this game version |
-| Rules: what a frame does (replays record it) | 2                                     |
+| Rules: what a frame does (replays record it) | 5                                     |
 | Saved state: its shape (replays record it)   | 6                                     |
 | Replay files: their format                   | 2                                     |
 | Vite+: dev server, build, lint, format       | 1.4.0                                 |

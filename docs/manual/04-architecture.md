@@ -73,9 +73,10 @@ fruit, spawning) and in the controllers:
 finer **phase** drives the engine:
 
 ```text
+PLAYER_ONE ─▶ READY   (a new game)
 READY ─▶ PLAYING ◀─▶ GHOST_EATEN_PAUSE
             ├─▶ DEATH_FREEZE ─▶ DEATH_ANIM ─▶ DEATH_WAIT ─▶ READY  (or GAME_OVER)
-            └─▶ LEVEL_CLEAR_FREEZE ─▶ MAZE_FLASH ─▶ READY (next level)
+            └─▶ LEVEL_CLEAR_FREEZE ─▶ MAZE_FLASH ─▶ LEVEL_BLANK ─▶ READY (next level)
 ```
 
 Only PLAYING runs the game; every other phase is a countdown. `playState` is read-only; the

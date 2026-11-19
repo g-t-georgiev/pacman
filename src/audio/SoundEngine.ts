@@ -1,4 +1,4 @@
-import { READY_FRAMES_GAME_START, PHASE_FRAMES } from "../game/RoundSequencer";
+import { GAME_START_FRAMES } from "../game/RoundSequencer";
 import { SIM_FPS } from "../game/constants";
 
 /**
@@ -29,13 +29,20 @@ const WAVES = {
 };
 type WaveName = keyof typeof WAVES;
 
-/** Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s). */
+/** The death sound's length: about 1.5 s on footage of the original (docs/footage/2026-11-19.md). */
+const DEATH_SOUND_SECONDS = 1.5;
+
+/**
+ * Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s),
+ * a straight sweep in Hz. Measured on footage of the original, good to about 30 Hz and 0.01 s
+ * (docs/footage/2026-11-19.md).
+ */
 const SIREN_STAGES: ReadonlyArray<{ lo: number; hi: number; period: number }> = [
-  { lo: 360, hi: 640, period: 0.42 },
-  { lo: 400, hi: 700, period: 0.38 },
-  { lo: 440, hi: 770, period: 0.34 },
-  { lo: 490, hi: 850, period: 0.3 },
-  { lo: 540, hi: 940, period: 0.26 },
+  { lo: 440, hi: 1000, period: 0.42 },
+  { lo: 495, hi: 1180, period: 0.35 },
+  { lo: 620, hi: 1320, period: 0.33 },
+  { lo: 760, hi: 1510, period: 0.3 },
+  { lo: 900, hi: 1680, period: 0.27 },
 ];
 /** Frightened: a low, fast, rising warble. Eyes: a high, faster, falling one. */
 const FRIGHTENED_SIREN = { lo: 180, hi: 520, rate: 7.5 };
@@ -225,7 +232,7 @@ export class SoundEngine {
       [B5, 2],
     ];
     const beats = melody.reduce((sum, [, b]) => sum + b, 0);
-    const length = READY_FRAMES_GAME_START / SIM_FPS - 0.15;
+    const length = GAME_START_FRAMES / SIM_FPS - 0.15;
     const beat = length / beats;
 
     let at = 0;
@@ -315,12 +322,12 @@ export class SoundEngine {
   }
 
   /**
-   * The death sound, the length of the death animation: wobbling chirps that fall in pitch, then
-   * two short falling blips.
+   * The death sound: wobbling chirps that fall in pitch, then two short falling blips. It is
+   * shorter than the animation (1.8 s), as on the original.
    */
   public playDeath(): Promise<void> {
     this.stopSiren();
-    const length = PHASE_FRAMES.DEATH_ANIM / SIM_FPS;
+    const length = DEATH_SOUND_SECONDS;
     if (!this.ready()) return Promise.resolve();
 
     const chirps = 11;

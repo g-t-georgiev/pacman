@@ -48,17 +48,17 @@ const { events, view } = agent.step(60);
 `scenario(s)` arranges a situation. With `level`, it starts that level fresh first; the other
 fields are applied on top. It starts a new recording (the edits aren't inputs).
 
-| Field                    | Meaning                                                                                          |
-| :----------------------- | :----------------------------------------------------------------------------------------------- |
-| `level`                  | Load this level (maze, timers, house, actors)                                                    |
-| `phase`                  | Enter this round phase: `"PLAYING"` skips READY; also `"READY"`, `"DEATH_FREEZE"`, ...           |
-| `dotsRemaining`          | Remove dots (plain first, in reading order, then energizers) until this many remain              |
-| `waveIndex`, `waveTimer` | Position in the scatter/chase schedule (index 0 = first scatter)                                 |
-| `frightened`             | Start frightened mode, as an energizer would                                                     |
-| `prngIndex`              | The frightened PRNG's position (0-8191)                                                          |
-| `randomSeed`             | Seed of the other random stream (fruit timer)                                                    |
-| `pacman`                 | `{ col, row, dir? }`: placed on the tile's center                                                |
-| `ghosts`                 | `{ BLINKY: { col, row, dir?, location?, frightened? }, ... }`; `location` defaults to `"ACTIVE"` |
+| Field                    | Meaning                                                                                                |
+| :----------------------- | :----------------------------------------------------------------------------------------------------- |
+| `level`                  | Load this level (maze, timers, house, actors)                                                          |
+| `phase`                  | Enter this round phase: `"PLAYING"` skips READY; also `"PLAYER_ONE"`, `"READY"`, `"DEATH_FREEZE"`, ... |
+| `dotsRemaining`          | Remove dots (plain first, in reading order, then energizers) until this many remain                    |
+| `waveIndex`, `waveTimer` | Position in the scatter/chase schedule (index 0 = first scatter)                                       |
+| `frightened`             | Start frightened mode, as an energizer would                                                           |
+| `prngIndex`              | The frightened PRNG's position (0-8191)                                                                |
+| `randomSeed`             | Seed of the other random stream (fruit timer)                                                          |
+| `pacman`                 | `{ col, row, dir? }`: placed on the tile's center                                                      |
+| `ghosts`                 | `{ BLINKY: { col, row, dir?, location?, frightened? }, ... }`; `location` defaults to `"ACTIVE"`       |
 
 | Call          | Returns     | What it does                                              |
 | :------------ | :---------- | :-------------------------------------------------------- |

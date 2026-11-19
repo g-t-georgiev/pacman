@@ -86,7 +86,7 @@ The preset and joystick feel are saved in this browser.
 **⚙️ Options → Display:**
 
 - **Reduce flashing.** No strobing: the maze stays a steady pale color on a level clear,
-  energizers stop pulsing, and frightened ghosts get a steady white outline instead of blinking
+  energizers stop blinking, and frightened ghosts get a steady white outline instead of blinking
   when their time runs out.
 - **Colorblind-safe colors.** Ghost colors that stay apart with red-green or blue-yellow color
   blindness, and a darker frightened blue.

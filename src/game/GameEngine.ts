@@ -10,7 +10,7 @@ import type {
   PlayState,
 } from "../types";
 import { getSpeedConfigForLevel } from "./levelTable";
-import { EXTRA_LIFE_SCORE } from "./constants";
+import { ENERGIZER_BLINK_FRAMES, EXTRA_LIFE_SCORE } from "./constants";
 import type { Pacman } from "../core/Pacman";
 import type { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
@@ -138,10 +138,15 @@ export default class GameEngine {
     return this.sequencer.state.framesLeft;
   }
 
-  /** Ghosts vanish once the death animation starts (through game over) and while the maze flashes. */
+  /**
+   * Ghosts vanish once the death animation starts (through game over) and while the maze flashes,
+   * and aren't shown yet in a new game's PLAYER ONE stage or the black screen before a level.
+   */
   public get ghostsVisible(): boolean {
     const phase = this.sequencer.phase;
     return (
+      this.boardVisible &&
+      phase !== "PLAYER_ONE" &&
       phase !== "DEATH_ANIM" &&
       phase !== "DEATH_WAIT" &&
       phase !== "MAZE_FLASH" &&
@@ -149,10 +154,33 @@ export default class GameEngine {
     );
   }
 
-  /** Pac-Man is hidden while a ghost's score is shown, and after the death animation. */
+  /**
+   * Pac-Man is hidden while a ghost's score is shown, after the death animation, and before he
+   * appears (PLAYER ONE, the black screen before a level).
+   */
   public get pacmanVisible(): boolean {
     const phase = this.sequencer.phase;
-    return phase !== "GHOST_EATEN_PAUSE" && phase !== "DEATH_WAIT" && phase !== "GAME_OVER";
+    return (
+      this.boardVisible &&
+      phase !== "PLAYER_ONE" &&
+      phase !== "GHOST_EATEN_PAUSE" &&
+      phase !== "DEATH_WAIT" &&
+      phase !== "GAME_OVER"
+    );
+  }
+
+  /** False during the black screen between a level's flashes and the next level's READY. */
+  public get boardVisible(): boolean {
+    return this.sequencer.phase !== "LEVEL_BLANK";
+  }
+
+  /**
+   * Whether the energizers are drawn this frame: they blink on game frames (so they hold still
+   * while paused), and stay on through PLAYER ONE and READY, as on the original.
+   */
+  public get energizersShown(): boolean {
+    if (PHASE_PLAY_STATE[this.sequencer.phase] === "READY") return true;
+    return Math.floor(this.tick / ENERGIZER_BLINK_FRAMES) % 2 === 0;
   }
 
   /** While the maze flashes after a level clear: whether the walls are white this frame. */
@@ -265,7 +293,7 @@ export default class GameEngine {
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
     this.emit({ type: "LEVEL_CHANGED", level: this.level });
     this.emit({ type: "INTRO" });
-    this.enterPhase("READY", READY_FRAMES_GAME_START);
+    this.enterPhase("PLAYER_ONE");
     this.replayLog.reset(this);
   }
 
@@ -352,6 +380,10 @@ export default class GameEngine {
       }
     }
 
+    // Through a death a fruit stays on the board and its time keeps running, so it can run out
+    // partway (seen on footage of the original: docs/footage/2026-11-19.md)
+    if (this.sequencer.phase.startsWith("DEATH_")) updateFruit(this);
+
     const ended = this.sequencer.tick();
     if (this.sequencer.phase === "DEATH_ANIM") {
       this.pacman.deathProgress = this.sequencer.progress;
@@ -362,6 +394,9 @@ export default class GameEngine {
   /** What happens when a timed phase runs out. */
   private onPhaseEnd(phase: RoundPhase): void {
     switch (phase) {
+      case "PLAYER_ONE":
+        this.enterPhase("READY", READY_FRAMES_GAME_START);
+        break;
       case "READY":
       case "GHOST_EATEN_PAUSE":
         this.enterPhase("PLAYING");
@@ -383,12 +418,16 @@ export default class GameEngine {
         break;
       case "MAZE_FLASH":
         this.loadLevel(this.level + 1);
+        this.enterPhase("LEVEL_BLANK");
+        break;
+      case "LEVEL_BLANK":
         this.enterPhase("READY");
         break;
     }
   }
 
   private loseLife(): void {
+    this.fruit = null; // the death is over: a fruit still there goes (and doesn't come back)
     this.lives--;
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
 

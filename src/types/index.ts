@@ -184,7 +184,7 @@ export interface GameSettings {
    * yet (keyboard and gamepad). Off: a queued turn waits until the next junction (Decision 5).
    */
   releaseClearsBuffer: boolean;
-  /** Accessibility: no strobing (level-clear maze flash, energizer pulse, frightened warning). */
+  /** Accessibility: no strobing (level-clear maze flash, energizer blink, frightened warning). */
   reducedFlash: boolean;
   /** Accessibility: ghost and frightened colors that stay apart under color vision deficiencies. */
   colorblindPalette: boolean;

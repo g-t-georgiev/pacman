@@ -19,11 +19,14 @@ import { renderArcadeHud } from "./arcadeHud";
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
 
+/** An energizer's radius in canvas pixels: nearly its whole tile. */
+const ENERGIZER_RADIUS = 7;
+
 /**
- * One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). Placeholder: the
- * energizer's look waits on footage (docs/OPEN_ITEMS.md).
+ * "PLAYER ONE" sits on the row above the ghost house, where Blinky starts. On the original it
+ * names whose turn starts (PLAYER TWO in a two-player game); this game has one player.
  */
-const ENERGIZER_PULSE_FRAMES = 45;
+const PLAYER_ONE_Y = 14 * TILE_SIZE;
 
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
@@ -50,6 +53,14 @@ export default class GameRenderer {
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     const { showGrid, crtFilter } = engine.settings;
+
+    // The black screen before a level's READY: only the score rows stay
+    if (!engine.boardVisible) {
+      renderArcadeHud(ctx, engine);
+      if (crtFilter) this.renderCRTFilter();
+      ctx.restore();
+      return;
+    }
 
     if (showGrid) renderIntersectionTiles(ctx, engine);
 
@@ -156,12 +167,10 @@ export default class GameRenderer {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
-          // Pulsing energizer on game frames (P3: it holds still while paused and slows with the
-          // practice speed); steady with reduced flashing. Its final look waits on footage.
-          const pulse = engine.settings.reducedFlash
-            ? 0.5
-            : (Math.sin((engine.tick * 2 * Math.PI) / ENERGIZER_PULSE_FRAMES) + 1) * 0.5;
-          const radius = 5 + pulse * 2.5;
+          // Blinks on and off on game frames (it holds still while paused and slows with the
+          // practice speed); always on with reduced flashing
+          if (!engine.energizersShown && !engine.settings.reducedFlash) continue;
+          const radius = ENERGIZER_RADIUS;
 
           ctx.fillStyle = maze.dotColor;
           ctx.beginPath();
@@ -208,6 +217,11 @@ export default class GameRenderer {
 
     if (engine.playState === "READY") {
       ctx.font = arcadeFont(16);
+      // A new game first shows "PLAYER ONE" where Blinky starts, before the actors appear
+      if (engine.phase === "PLAYER_ONE") {
+        ctx.fillStyle = "#00ffff";
+        ctx.fillText("PLAYER ONE", centerX, PLAYER_ONE_Y);
+      }
       ctx.fillStyle = "#ffff00";
       ctx.fillText("READY!", centerX, centerY);
     } else if (engine.playState === "GAME_OVER") {

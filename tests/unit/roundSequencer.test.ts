@@ -18,10 +18,15 @@ function phaseLength(engine: GameEngine): { frames: number; next: RoundPhase } {
 }
 
 describe("Round sequencer (A2)", () => {
-  it("READY is longer at game start than after a death", () => {
+  it("a new game: PLAYER ONE with no actors, then a longer READY with them, then play", () => {
     const engine = new GameEngine("PACMAN", 0);
-    expect(engine.phase).toBe("READY");
+    expect(engine.phase).toBe("PLAYER_ONE");
+    expect(engine.playState).toBe("READY");
+    expect([engine.pacmanVisible, engine.ghostsVisible]).toEqual([false, false]);
+    expect(phaseLength(engine)).toEqual({ frames: PHASE_FRAMES.PLAYER_ONE, next: "READY" });
+    expect([engine.pacmanVisible, engine.ghostsVisible]).toEqual([true, true]);
     expect(phaseLength(engine)).toEqual({ frames: READY_FRAMES_GAME_START, next: "PLAYING" });
+    expect(READY_FRAMES_GAME_START).toBeGreaterThan(PHASE_FRAMES.READY);
   });
 
   it("death: freeze with ghosts visible, then the animation, then a wait, then READY", () => {
@@ -123,7 +128,7 @@ describe("Round sequencer (A2)", () => {
     expect(e.sequencer.state.eatenPoints).toBe(400);
   });
 
-  it("level clear: freeze, maze flash with ghosts hidden, then READY on the next level", () => {
+  it("level clear: freeze, maze flash with ghosts hidden, a black screen, then READY on the next level", () => {
     const agent = playing();
     const e = agent.engine;
     agent.scenario({ dotsRemaining: 1 });
@@ -145,8 +150,12 @@ describe("Round sequencer (A2)", () => {
       e.update();
     }
     expect(whiteFrames).toBeGreaterThan(0);
-    expect(e.phase).toBe("READY");
+    expect(e.phase).toBe("LEVEL_BLANK");
     expect(e.level).toBe(2);
+    expect([e.boardVisible, e.pacmanVisible, e.ghostsVisible]).toEqual([false, false, false]);
+    expect(phaseLength(e)).toEqual({ frames: PHASE_FRAMES.LEVEL_BLANK, next: "READY" });
+    expect([e.boardVisible, e.pacmanVisible, e.ghostsVisible]).toEqual([true, true, true]);
+    expect(e.phaseFramesLeft).toBe(PHASE_FRAMES.READY);
   });
 });
 

@@ -6,22 +6,25 @@ import { playing } from "../helpers";
 import { faceBlinky } from "../helpers";
 
 describe("Siren (S1)", () => {
-  it("steps through five stages as the maze empties", () => {
-    expect([0, 47, 48, 96, 144, 192, 239, 240].map((eaten) => sirenStage(eaten, 240))).toEqual([
-      0, 0, 1, 2, 3, 4, 4, 4,
-    ]);
+  it("steps through five stages as the maze empties, where the original does", () => {
+    // Pac-Man's 244 dots: the steps at 41%, 71%, 82% and 92% eaten (footage 2026-11-19)
+    const eaten = [0, 100, 101, 173, 174, 200, 201, 224, 225, 244];
+    expect(eaten.map((n) => sirenStage(n, 244))).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
   it("follows the dots in play", () => {
     const agent = playing();
     const e = agent.engine;
     expect(e.getSirenState()).toEqual({ kind: "NORMAL", stage: 0 });
-    agent.scenario({ dotsRemaining: Math.floor(e.totalDots * 0.3) });
+    agent.scenario({ dotsRemaining: Math.floor(e.totalDots * 0.12) });
     expect(e.getSirenState()).toEqual({ kind: "NORMAL", stage: 3 });
   });
 
-  it("is off outside play: READY, paused, the ghost-eaten pause, deaths", () => {
+  it("is off outside play: PLAYER ONE, READY, paused, the ghost-eaten pause, deaths", () => {
     const fresh = new GameEngine("PACMAN", 0);
+    expect(fresh.phase).toBe("PLAYER_ONE");
+    expect(fresh.getSirenState()).toEqual({ kind: "OFF" });
+    while (fresh.phase === "PLAYER_ONE") fresh.update();
     expect(fresh.phase).toBe("READY");
     expect(fresh.getSirenState()).toEqual({ kind: "OFF" });
 

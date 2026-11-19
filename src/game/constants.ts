@@ -50,8 +50,18 @@ export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
  * Dossier gives none.
  */
 export const GHOST_EATEN_SPEED_PCT = 200;
-/** Speed inside the ghost house (bobbing and leaving). Not in the Dossier: an estimate. */
-export const GHOST_HOUSE_SPEED_PCT = 50;
+/**
+ * Speed inside the ghost house (bobbing and leaving). Not in the Dossier: measured on footage of
+ * the original, a full bob every 0.53 s on levels 1 and 2, about 0.5 px per frame
+ * (docs/footage/2026-11-19.md).
+ */
+export const GHOST_HOUSE_SPEED_PCT = 40;
+
+/**
+ * Energizers blink: this many frames on, then as many off (about 0.17 s each, measured on footage
+ * of the original: docs/footage/2026-11-19.md). They stay on, without blinking, during READY.
+ */
+export const ENERGIZER_BLINK_FRAMES = 10;
 
 /**
  * Scatter / Chase timing table (durations in seconds, stored in frames).

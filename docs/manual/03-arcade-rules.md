@@ -57,7 +57,8 @@ every life and level.
 - **Tunnels.** Ghosts slow to the tunnel speed in a tunnel row within 6 tiles of either edge;
   Pac-Man doesn't.
 - **Eyes** (an eaten ghost going home) move 2 pixels every frame. _Estimate._
-- **Inside the ghost house** ghosts move at 50%. _Estimate._
+- **Inside the ghost house** ghosts move at 40%, about half a pixel a frame (measured on footage
+  of the original).
 - **Turbo** (an option, not an arcade rule) multiplies everyone's steps by 1.6.
 
 ## Cornering
@@ -147,7 +148,9 @@ Code: the schedules in [constants.ts](../../src/game/constants.ts),
 
 ## Frightened mode
 
-An energizer turns the ghosts blue (Dossier, "Frightened Mode"):
+The energizers blink: 10 frames on, 10 off, through play and deaths alike; they stay on, without
+blinking, through PLAYER ONE and READY (seen on footage of the original). An energizer turns the
+ghosts blue (Dossier, "Frightened Mode"):
 
 - Every ghost that isn't already eyes becomes frightened (inside the house too) and reverses.
 - Frightened ghosts have **no target**. At each tile they pick a direction from a random-number
@@ -192,19 +195,30 @@ Blinky starts outside; Pinky, Inky and Clyde wait inside and leave by these rule
    count takes over. Limits: level 1 Pinky 0, Inky 30, Clyde 60; level 2 0, 0, 50; from level 3
    all 0. They reset only at a new level.
 2. **The global dot counter.** After a death, the personal counters stop (they aren't reset) and
-   one shared counter starts: Pinky leaves at 7 dots, Inky at 17. At 32, if Clyde is still
-   inside, the shared counter switches off and the personal counters take over again.
+   one shared counter starts: Pinky leaves at 7 dots, Inky at 17. At 32 it doesn't release
+   Clyde: if he is still inside, the shared counter switches itself off and the personal counters
+   take over again, so Clyde leaves once his own (frozen) count reaches his level's limit (at once
+   from level 3, where it is 0). If Clyde is already out at 32, the shared counter never switches
+   off and keeps counting for the rest of the level.
 3. **The no-dot timer.** If Pac-Man eats no dot for 4 seconds (3 from level 5), the first ghost
-   waiting is sent out. The timer restarts with every dot, and after a death.
+   waiting is sent out. The timer restarts when it fires and with every dot; it also restarts
+   after a death (the Dossier doesn't say; footage of the original shows it).
 
 - A ghost whose limit is met leaves at once, even while another one is still on its way out. With
-  limits of 0, several ghosts are released on consecutive frames and walk out overlapping (see
-  the open question below).
-- **Moving in the house.** Waiting ghosts bob up and down, not in step: at every level start
-  and new life Pinky starts upward, Inky and Clyde downward (_estimate_, from play). To leave, a ghost lines up with the
+  limits of 0, several ghosts are released on consecutive frames and walk out overlapping, as
+  they do on the original (seen on footage).
+- **Moving in the house.** Waiting ghosts bob half a tile up and down. At every level start and
+  new life Pinky faces down, and Inky and Clyde face up and bob up first, in step (as on footage
+  of the original). To leave, a ghost lines up with the
   door's center, then goes up and out, to the left. Eyes come back to the door, go down to the
   middle of the house, and move to their slot (Inky left, Clyde right, the others in the middle);
-  then the ghost leaves again as soon as the house rules let it (normally at once).
+  then the ghost is waiting again, and the same rules decide when it leaves.
+- **Ghosts held in the house.** That last point has a known consequence. If Clyde was already out
+  when the shared counter reached 32, it never switches off, and it releases only at exactly 7, 17
+  and 32, which have passed: a ghost eaten after that stays in the house until Pac-Man stops
+  eating for long enough for the no-dot timer to send it out. The same happens to a ghost whose
+  own count is still under its limit (Clyde on level 1, if the timer sent him out early). This
+  follows from the arcade's rules; it isn't a bug.
 
 Code: [HouseController.ts](../../src/controllers/HouseController.ts),
 [MovementController.ts](../../src/controllers/MovementController.ts).
@@ -220,19 +234,23 @@ here as in the arcade.
 
 ## A round, start to finish
 
-| Phase                   | Length    | What happens                                                                                  |
-| :---------------------- | :-------- | :-------------------------------------------------------------------------------------------- |
-| READY                   | 4 s / 2 s | Everyone in place. 4 s with the start tune on a new game; 2 s after a death or a level clear. |
-| Play                    | —         |                                                                                               |
-| Ghost eaten             | 1 s       | Everything stops but other eyes; the points are shown.                                        |
-| Death: freeze           | 1 s       | Pac-Man and the ghosts stop where they are.                                                   |
-| Death: animation        | 1.5 s     | The ghosts are gone; Pac-Man folds up.                                                        |
-| Death: wait             | 1 s       | Then READY, or GAME OVER with no lives left.                                                  |
-| Level clear: freeze     | 1 s       |                                                                                               |
-| Level clear: maze flash | 4 flashes | Then READY on the next level.                                                                 |
+| Phase                     | Length        | What happens                                                                                                                                |
+| :------------------------ | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| PLAYER ONE                | 2.2 s         | A new game (and Restart Level) only: the maze, "PLAYER ONE" above the house and READY!, but nobody on the board yet. The start tune begins. |
+| READY                     | 1.9 s / 1.8 s | Everyone in place. 1.9 s after PLAYER ONE, as the tune ends; 1.8 s after a death or a level clear, silent.                                  |
+| Play                      | —             |                                                                                                                                             |
+| Ghost eaten               | 1 s           | Everything stops but other eyes; the points are shown.                                                                                      |
+| Death: freeze             | 1 s           | Pac-Man and the ghosts stop where they are.                                                                                                 |
+| Death: animation          | 1.8 s         | The ghosts are gone; Pac-Man folds up, then a small burst. The sound is shorter, 1.5 s.                                                     |
+| Death: wait               | 0.85 s        | The empty maze. Then READY, or GAME OVER with no lives left.                                                                                |
+| Level clear: freeze       | 1.9 s         | Everything stops, the ghosts still shown.                                                                                                   |
+| Level clear: maze flash   | 4 flashes     | The ghosts are gone; 12 frames per toggle.                                                                                                  |
+| Level clear: black screen | 0.4 s         | Then READY on the next level.                                                                                                               |
 
-The ghost-eaten pause and the death freeze come from the Dossier; the other lengths are
-estimates. Code: [RoundSequencer.ts](../../src/game/RoundSequencer.ts).
+The ghost-eaten pause comes from the Dossier; the other lengths were measured on footage of the
+original ([footage, 2026-11-19](../footage/2026-11-19.md)). On the original, "PLAYER ONE" names
+whose turn starts (PLAYER TWO in a two-player game); this game has one player. Code:
+[RoundSequencer.ts](../../src/game/RoundSequencer.ts).
 
 **Pac-Man's mouth.** He starts each life as a full circle and only opens his mouth once he
 moves. While moving, his mouth follows his position: one chomp per 8 pixels. When a wall stops
@@ -250,7 +268,9 @@ him he freezes half open.
 - **Lives.** 3 per game; one extra at 10,000 points.
 - **Fruit** appears below the ghost house after the 70th and the 170th dot of a level, and stays
   9 to 10 seconds (the exact time comes from the game's random stream; Dossier, "The Basics").
-  A fruit still showing when Pac-Man dies is gone.
+  A fruit still showing when Pac-Man dies stays on the board through the death, its time still
+  running (so it can run out partway), and goes when the death is over; it doesn't come back
+  (seen on footage of the original).
 
 | Level | Fruit      | Points | Level | Fruit    | Points |
 | ----: | :--------- | -----: | ----: | :------- | -----: |
@@ -287,25 +307,35 @@ rows 10 and 20), whose colors change from level to level; her fruit bounces. The
 Pac-Man has four mazes and differences in the ghosts' behavior; this build doesn't reproduce
 those. Code: [rulesets.ts](../../src/game/rulesets.ts), [mazes.ts](../../src/game/mazes.ts).
 
+## The siren
+
+The background siren rises in five stages as the maze empties, each a straight sweep up and down
+in pitch, faster and higher than the last. Measured on footage of the original's level 1
+([footage, 2026-11-19](../footage/2026-11-19.md)), good to about 30 Hz; the switch points are
+shares of the maze's dots, so Ms. Pac-Man's mazes step up the same way:
+
+| Stage | Starts at (share of the dots eaten) | Pitch       | One up-and-down sweep |
+| ----- | ----------------------------------- | ----------- | --------------------- |
+| 1     | the level's start                   | 440–1000 Hz | 0.42 s                |
+| 2     | 41% (between 34% and 48%)           | 495–1180 Hz | 0.35 s                |
+| 3     | 71% (between 70% and 73%)           | 620–1320 Hz | 0.33 s                |
+| 4     | 82% (between 79% and 84%)           | 760–1510 Hz | 0.30 s                |
+| 5     | 92% (about)                         | 900–1680 Hz | 0.27 s                |
+
+It plays only during play. While ghosts are blue it gives way to the frightened siren, and while
+eyes are on their way home to the eyes siren. Code: [siren.ts](../../src/game/siren.ts),
+[SoundEngine.ts](../../src/audio/SoundEngine.ts).
+
 ## Estimates and open questions
 
 These values have no published source. Each is marked "estimate" in the code and is in the
 [open items](../OPEN_ITEMS.md) (with the constant that sets it), to check against the original
 game:
 
-- **Round phases:** READY lengths (4 s at a game's start, 2 s otherwise), the death animation
-  (1.5 s) and wait (1 s), the level-clear freeze (1 s) and maze flashes (4, 12 frames each).
-- **When the start tune plays:** on a new game and on Restart Level only, now. Whether the
-  original also plays it at each level start is open.
-- **The energizer's look:** a pulse in size now; the original's blink or color cycle is to be
-  checked.
-- **Speeds:** the eyes (2 px per frame), inside the house (50%), and the speed masks' bit
+- **Speeds:** the eyes (2 px per frame) and the speed masks' bit
   layouts (their totals are sourced).
-- **Timing details:** the frightened flash rhythm (14 frames per half-cycle), the 1UP blink (16
-  frames), the house bobbing (half a tile) and which way each ghost starts it.
-- **The siren:** where it steps up (now at 20/40/60/80% of the dots eaten) and its pitches.
+- **Timing details:** the frightened flash rhythm (14 frames per half-cycle) and the 1UP blink (16
+  frames).
+- **The frightened and eyes sirens:** their pitch and rhythm.
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
-- **House release overlap:** from level 2, Inky (and from level 3, Clyde) can be released a
-  frame or two after Pinky and walk out overlapping her. That follows the Dossier's rules; it
-  felt early in play, and is to be checked on the original.
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.

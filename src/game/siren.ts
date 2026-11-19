@@ -3,10 +3,12 @@ import type { SirenState } from "./simEvents";
 /**
  * Which background siren plays (S1). The arcade has a normal siren and four faster, higher
  * "spurt" sirens ("Normal Move", "Spurt Move #1-#4" on Namco's sound effects album), stepping up
- * as the maze empties. No published source gives the switch points: these are estimates, evenly
- * spaced by the share of the maze's dots eaten (so Ms. Pac-Man's mazes work the same way).
+ * as the maze empties. No published source gives the switch points: these were measured on
+ * footage of Pac-Man's level 1 (docs/footage/2026-11-19.md), as shares of the maze's dots eaten
+ * so Ms. Pac-Man's mazes work the same way. Each is the middle of what the footage allows:
+ * 34-48%, 70-73%, 79-84% and about 92%.
  */
-export const SIREN_STAGE_SHARE_EATEN = [0.2, 0.4, 0.6, 0.8] as const; // estimate
+export const SIREN_STAGE_SHARE_EATEN = [0.41, 0.71, 0.82, 0.92] as const;
 
 /** Siren stage 0-4 for the dots eaten so far out of the maze's total. */
 export function sirenStage(dotsEaten: number, totalDots: number): number {
