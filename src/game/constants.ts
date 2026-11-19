@@ -58,6 +58,12 @@ export const GHOST_EATEN_SPEED_PCT = 200;
 export const GHOST_HOUSE_SPEED_PCT = 40;
 
 /**
+ * Energizers blink: this many frames on, then as many off (about 0.17 s each, measured on footage
+ * of the original: docs/footage/2026-11-19.md). They stay on, without blinking, during READY.
+ */
+export const ENERGIZER_BLINK_FRAMES = 10;
+
+/**
  * Scatter / Chase timing table (durations in seconds, stored in frames).
  *
  * Level 1:

@@ -19,11 +19,8 @@ import { renderArcadeHud } from "./arcadeHud";
 /** Sim pixels to canvas pixels. All tile drawing below already uses canvas-sized tiles. */
 const px = (simPx: number) => simPx * RENDER_SCALE;
 
-/**
- * One energizer pulse every 45 frames (0.75 s, as the old wall-clock pulse). Placeholder: the
- * energizer's look waits on footage (docs/OPEN_ITEMS.md).
- */
-const ENERGIZER_PULSE_FRAMES = 45;
+/** An energizer's radius in canvas pixels: nearly its whole tile. */
+const ENERGIZER_RADIUS = 7;
 
 /**
  * "PLAYER ONE" sits on the row above the ghost house, where Blinky starts. On the original it
@@ -170,12 +167,10 @@ export default class GameRenderer {
           ctx.fillStyle = maze.dotColor;
           ctx.fillRect(x + TILE_SIZE / 2 - 2, y + TILE_SIZE / 2 - 2, 4, 4);
         } else if (tile === "ENERGIZER") {
-          // Pulsing energizer on game frames (P3: it holds still while paused and slows with the
-          // practice speed); steady with reduced flashing. Its final look waits on footage.
-          const pulse = engine.settings.reducedFlash
-            ? 0.5
-            : (Math.sin((engine.tick * 2 * Math.PI) / ENERGIZER_PULSE_FRAMES) + 1) * 0.5;
-          const radius = 5 + pulse * 2.5;
+          // Blinks on and off on game frames (it holds still while paused and slows with the
+          // practice speed); always on with reduced flashing
+          if (!engine.energizersShown && !engine.settings.reducedFlash) continue;
+          const radius = ENERGIZER_RADIUS;
 
           ctx.fillStyle = maze.dotColor;
           ctx.beginPath();

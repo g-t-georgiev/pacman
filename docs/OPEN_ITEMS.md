@@ -36,9 +36,9 @@ the order of the work ("Step" below). Tick each one when its step is in.
       ours doesn't have.
 - [x] **The fruit during a death** (step 3, done). Seen: it stays, its timer running, until the
       death is over. Ours removed it at once.
-- [ ] **Energizer look** (step 4). Seen: a plain on/off blink, about 10 frames each, in play and
-      during the death freeze; steady during READY. Ours: a pulse in size
-      (`ENERGIZER_PULSE_FRAMES`, `GameRenderer.ts`).
+- [x] **Energizer look** (step 4, done). Seen: a plain on/off blink, about 10 frames each, in play
+      and during the death freeze; steady during READY. Ours was a pulse in size; now the blink
+      (`ENERGIZER_BLINK_FRAMES`).
 - [ ] **The siren's first stage** (step 5). Seen: about 400–900 Hz, 0.4 s a sweep. Ours tops out
       at 640 Hz (`SIREN_STAGES`).
 

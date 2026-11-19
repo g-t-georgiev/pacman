@@ -148,7 +148,9 @@ Code: the schedules in [constants.ts](../../src/game/constants.ts),
 
 ## Frightened mode
 
-An energizer turns the ghosts blue (Dossier, "Frightened Mode"):
+The energizers blink: 10 frames on, 10 off, through play and deaths alike; they stay on, without
+blinking, through PLAYER ONE and READY (seen on footage of the original). An energizer turns the
+ghosts blue (Dossier, "Frightened Mode"):
 
 - Every ghost that isn't already eyes becomes frightened (inside the house too) and reverses.
 - Frightened ghosts have **no target**. At each tile they pick a direction from a random-number
@@ -311,8 +313,6 @@ These values have no published source. Each is marked "estimate" in the code and
 [open items](../OPEN_ITEMS.md) (with the constant that sets it), to check against the original
 game:
 
-- **The energizer's look:** a pulse in size now; the original's blink or color cycle is to be
-  checked.
 - **Speeds:** the eyes (2 px per frame) and the speed masks' bit
   layouts (their totals are sourced).
 - **Timing details:** the frightened flash rhythm (14 frames per half-cycle) and the 1UP blink (16

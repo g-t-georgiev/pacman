@@ -10,7 +10,7 @@ import type {
   PlayState,
 } from "../types";
 import { getSpeedConfigForLevel } from "./levelTable";
-import { EXTRA_LIFE_SCORE } from "./constants";
+import { ENERGIZER_BLINK_FRAMES, EXTRA_LIFE_SCORE } from "./constants";
 import type { Pacman } from "../core/Pacman";
 import type { Ghost } from "../core/Ghost";
 import { PRNG } from "../core/PRNG";
@@ -172,6 +172,15 @@ export default class GameEngine {
   /** False during the black screen between a level's flashes and the next level's READY. */
   public get boardVisible(): boolean {
     return this.sequencer.phase !== "LEVEL_BLANK";
+  }
+
+  /**
+   * Whether the energizers are drawn this frame: they blink on game frames (so they hold still
+   * while paused), and stay on through PLAYER ONE and READY, as on the original.
+   */
+  public get energizersShown(): boolean {
+    if (PHASE_PLAY_STATE[this.sequencer.phase] === "READY") return true;
+    return Math.floor(this.tick / ENERGIZER_BLINK_FRAMES) % 2 === 0;
   }
 
   /** While the maze flashes after a level clear: whether the walls are white this frame. */
