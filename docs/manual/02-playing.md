@@ -13,7 +13,7 @@ Above the screen is the button bar:
 | TURBO   | Turbo speed (T)                                                                     |
 | LAB     | The Lab panel: Learn, Practice and Debug tabs (L, P)                                |
 | CRT     | A scanline and glow filter over the screen                                          |
-| ⏸ / ▶   | Pause and resume (Space); shown in dev builds                                       |
+| ⏸ / ▶   | Pause and resume (Space); the tooltip says what holds the game                      |
 | 🔊 / 🔇 | Sound on and off                                                                    |
 
 The top bar has **📖 Manual** (this page), **🎮 Game Modes** (mode and rules), **⚙️ Options**
