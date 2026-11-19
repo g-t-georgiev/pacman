@@ -2,7 +2,7 @@
 
 Everything here is in the game itself. The **Lab** panel (LAB in the button bar, or L / P) has
 three tabs: **Learn**, **Practice** and **Debug**. Dev builds (`vp dev`) add F1, frame stepping,
-the ⏸ button, the live invariant checks and the agent driver.
+the live invariant checks and the agent driver.
 
 ## Learn: the ghost AI explained
 

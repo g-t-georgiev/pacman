@@ -106,24 +106,21 @@ export const HUD: React.FC<HUDProps> = ({
           CRT
         </button>
 
-        {/* Pause / resume (dev builds; Space works everywhere). Shows who holds the game. */}
-        {import.meta.env.DEV && (
-          <button
-            onClick={onTogglePause}
-            className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
-              paused
-                ? "bg-amber-500 text-black"
-                : "bg-neutral-800 text-neutral-300 hover:text-white"
-            }`}
-            title={
-              paused
-                ? `Paused by: ${pausedBy.join(", ") || "game"} (Space to play)`
-                : "Pause (Space)"
-            }
-          >
-            {paused ? "▶" : "⏸"}
-          </button>
-        )}
+        {/* Pause / resume, like Space; in every build (it was dev-only until 0.1.1, so the
+            published game had none). The tooltip says who holds the game. */}
+        <button
+          onClick={onTogglePause}
+          aria-label={paused ? "Resume" : "Pause"}
+          aria-pressed={paused}
+          className={`px-2 py-1 rounded font-mono font-semibold transition-colors cursor-pointer ${
+            paused ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-300 hover:text-white"
+          }`}
+          title={
+            paused ? `Paused by: ${pausedBy.join(", ") || "game"} (Space to play)` : "Pause (Space)"
+          }
+        >
+          {paused ? "▶" : "⏸"}
+        </button>
 
         {/* Audio Toggle */}
         <button
