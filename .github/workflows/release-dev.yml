@@ -1,0 +1,92 @@
+# The release button: Actions → Release on dev → Run workflow (on the dev branch). Does what
+# `vp run release` does on your machine: works out the next version from the commits since the
+# last release, writes package.json, the versions in the README and manual, and a CHANGELOG.md
+# section, commits `chore(release): x.y.z` on dev and pushes it. Then open the pull request into
+# main as usual; merging it tags the release. Nothing here touches main.
+#
+# Pushes with the SYNC_TOKEN secret (see sync-dev.yml); without it, with the workflow's own
+# token, which works only while dev is unprotected.
+name: Release on dev
+# The runs list says which kind each run was
+run-name: ${{ inputs.dry_run && 'Release on dev (dry run, nothing released)' || 'Release on dev' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: only show the next version and why. Untick to make the release."
+        type: boolean
+        default: true
+      version:
+        description: "Choose the version yourself, e.g. 1.0.0 (empty: work it out)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-dev
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Releases are made on dev only
+    if: github.ref_name == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "26"
+          cache: true
+
+      - name: Make the release
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          args=()
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ -n "$VERSION" ]; then args+=(--version "$VERSION"); fi
+          set -o pipefail
+          vp run release -- "${args[@]}" | tee "$RUNNER_TEMP/release.log"
+          next=$(sed -n 's/^Next version: \([0-9][0-9.]*[0-9]\).*/\1/p' "$RUNNER_TEMP/release.log" | head -1)
+          if [ "$DRY_RUN" = "true" ]; then
+            heading="Dry run: nothing released"
+            if [ -n "$next" ]; then
+              echo "::notice title=Dry run: nothing was released::The next version would be $next. To make it, run this workflow again with \"Dry run\" unticked."
+            else
+              echo "::notice title=Dry run: nothing to release::No fix, feature or manual change since the last release."
+            fi
+          elif [ -n "$next" ]; then
+            heading="Released $next"
+          else
+            heading="Nothing to release"
+            echo "::notice title=Nothing to release::No fix, feature or manual change since the last release."
+          fi
+          {
+            echo "### Release on dev: $heading"
+            echo '```'
+            grep -v '^\$ ' "$RUNNER_TEMP/release.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push the release commit to dev
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/dev)" ]; then
+            echo "Nothing to release: no commit was made."
+          else
+            git push origin HEAD:dev || {
+              echo "::error::Couldn't push to dev. If dev is protected, save a token as the SYNC_TOKEN secret and put Repository admin on the ruleset's bypass list (see sync-dev.yml)."
+              exit 1
+            }
+            echo "Released: $(git log -1 --format=%s). Open the pull request from dev into main."
+          fi
