@@ -15,6 +15,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # A normal run takes a few minutes; nothing may hold CI for hours (the job limit is 6 h)
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -27,8 +29,21 @@ jobs:
           cache: true
       # Format, lint and type check
       - run: vp check
-      # The e2e tests run the app in Chromium (Vitest browser mode, plan T5)
-      - run: vp exec playwright install --with-deps chromium
+      # The e2e tests run the app in Chromium (Vitest browser mode, plan T5). The browser comes
+      # from Playwright's servers and is cached; its system libraries are already on the runner,
+      # so the apt step only adds optional fonts. Ubuntu's mirrors are sometimes down (503s, no
+      # route): then the apt step gives up after 3 minutes and the tests run with what is there.
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - name: Chromium for the e2e tests
+        timeout-minutes: 10
+        run: |
+          vp exec playwright install chromium
+          if ! timeout --kill-after=15 180 vp exec playwright install-deps chromium; then
+            echo "::warning::Couldn't install Playwright's system packages (Ubuntu's mirrors?); the tests run with what the runner has."
+          fi
       # Unit, integration, fidelity, regression and golden replay tests, then the e2e tests
       - run: vp test
       # The golden replays still match this build (versions bumped when the rules change)
