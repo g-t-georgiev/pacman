@@ -13,43 +13,47 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
    `RULES_VERSION` by itself.
 4. Tick the item here with the date and the source, or delete it.
 
+## Measured on footage, to apply
+
+Settled by the [footage of 2026-11-19](footage/2026-11-19.md), which has the measurements and
+the order of the work ("Step" below). Tick each one when its step is in.
+
+- [ ] **Which way the waiting ghosts start** (step 1). Seen: Inky and Clyde face up and move up
+      first, Pinky faces down. Ours has it the other way round since 0.2.0 (`initialDir` in
+      `mazes.ts`).
+- [ ] **How fast waiting ghosts bob** (step 1). Seen: 8 px from top to bottom (as ours,
+      `HOUSE_BOB`), a 0.53 s cycle, about 40%. Ours: 50% (`GHOST_HOUSE_SPEED_PCT`).
+- [ ] **READY lengths** (step 2). Seen: a new game shows about 2.2 s of "PLAYER ONE" with no
+      actors, then about 1.9 s with them; after a death or a clear, about 1.8 s with the actors.
+      Ours: 4 s (`READY_FRAMES_GAME_START`) and 2 s (`PHASE_FRAMES.READY`), and no "PLAYER ONE".
+- [ ] **When the start tune plays** (step 2: nothing changes but the READY lengths). Seen: only
+      at a new game; a level start after a clear is silent, as ours.
+- [ ] **Death** (step 2). Seen: freeze 1 s, animation about 1.8 s, empty maze about 0.85 s; the
+      sound about 1.5 s. Ours: 1 s (`DEATH_FREEZE`), 1.5 s (`DEATH_ANIM`), 1 s (`DEATH_WAIT`),
+      the sound as long as the animation.
+- [ ] **Level clear** (step 2). Seen: freeze about 1.9 s (ours 1 s, `LEVEL_CLEAR_FREEZE`); the 4
+      white flashes, 12 frames per toggle, are as ours; then about 0.4 s of black screen, which
+      ours doesn't have.
+- [ ] **The fruit during a death** (step 3). Seen: its timer keeps running. Ours pauses it.
+- [ ] **Energizer look** (step 4). Seen: a plain on/off blink, about 10 frames each, in play and
+      during the death freeze; steady during READY. Ours: a pulse in size
+      (`ENERGIZER_PULSE_FRAMES`, `GameRenderer.ts`).
+- [ ] **The siren's first stage** (step 5). Seen: about 400–900 Hz, 0.4 s a sweep. Ours tops out
+      at 640 Hz (`SIREN_STAGES`).
+
 ## Waiting on footage of the original
 
 No published source has these; they need someone to watch and listen to the original game.
 Current value, then the constant that sets it.
 
-- [ ] **Energizer look.** Now a smooth pulse in size (`ENERGIZER_PULSE_FRAMES`, `GameRenderer.ts`).
-      Decided: a different effect, once we know which. Check: what an energizer does during play
-      (blink on and off, or a color shift), its rhythm, and whether it changes during READY, while
-      paused or while the ghosts are blue.
-- [ ] **When the start tune plays.** Now on a new game and on Restart Level, with a 4 s READY; a
-      level after a clear and a life after a death start with a silent 2 s READY. Proposed: also at
-      every level start. Check: a new game, the start of level 2, a respawn; whether the tune
-      plays and how long READY lasts in each. (`startFresh` emits `INTRO`; a level start would emit
-      it too and use `READY_FRAMES_GAME_START`.)
-- [ ] **Ghost house release overlap.** From level 2 Inky (and from level 3 Clyde) is released a
-      frame or two after Pinky and they walk out overlapping, as the Dossier's rules give (Pinky
-      out 0.63 s into play, Inky and Clyde 1.10 s on level 3+). Felt too early in play. Check:
-      level 2+ starts on the original, or a reliable, legally usable source on release timing
-      inside the house.
-- [ ] **READY lengths.** 4 s at a game's start (`READY_FRAMES_GAME_START`), 2 s otherwise
-      (`PHASE_FRAMES.READY`).
-- [ ] **Death.** Freeze 1 s (`DEATH_FREEZE`), animation 1.5 s (`DEATH_ANIM`), blank wait 1 s
-      (`DEATH_WAIT`). The death sound lasts as long as the animation.
-- [ ] **Level clear.** Freeze 1 s (`LEVEL_CLEAR_FREEZE`), then 4 white flashes, 12 frames per
-      toggle (`MAZE_FLASH_TOGGLE_FRAMES`, `MAZE_FLASH`).
+- [x] **Ghost house release overlap** (footage 2026-11-19). On level 2 Pinky and Inky start
+      moving together and overlap on the way out, as ours does. Nothing to change.
 - [ ] **Blinks.** 1UP: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`). The frightened
       warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
-- [ ] **Which way the waiting ghosts start.** Now Pinky up, Inky and Clyde down, at every level
-      start and new life (`initialDir` in `mazes.ts`), as seen in play (2026-11-19); before, all
-      three went up in step. Another recollection has it the other way round (Pinky down, Inky and
-      Clyde up); no published source says. Check on footage: the first frames after READY.
-- [ ] **Speeds without a source.** The eyes going home: 2 px every frame
-      (`GHOST_EATEN_SPEED_PCT`). Inside the house: 50% (`GHOST_HOUSE_SPEED_PCT`). How far waiting
-      ghosts bob: half a tile (`HOUSE_BOB`).
-- [ ] **The siren.** Where it steps up: 20/40/60/80% of the dots eaten
-      (`SIREN_STAGE_SHARE_EATEN`); each siren's pitch range and sweep rate (`SIREN_STAGES`,
-      `FRIGHTENED_SIREN`, `EYES_SIREN`).
+- [ ] **The eyes' speed going home.** 2 px every frame (`GHOST_EATEN_SPEED_PCT`).
+- [ ] **The later sirens.** Where the siren steps up: 20/40/60/80% of the dots eaten
+      (`SIREN_STAGE_SHARE_EATEN`); the later stages' pitch and sweep (`SIREN_STAGES`), and the
+      frightened and eyes sirens (`FRIGHTENED_SIREN`, `EYES_SIREN`).
 - [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
       life, death (`SoundEngine.ts`).
 - [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per
@@ -68,7 +72,8 @@ Current value, then the constant that sets it.
 
 ## Still unsure, to check on footage or in a reliable source
 
-- [ ] **Does Clyde leave at 32?** The Dossier (and notes that follow it) say the shared counter is
+- [x] **Does Clyde leave at 32?** No (footage 2026-11-19): on level 1, after a death, Clyde
+      stayed inside for dozens of dots past 32, as the Dossier's rule gives. The Dossier (and notes that follow it) say the shared counter is
       _switched off_ at 32 when Clyde is inside, not that it _releases_ him: he then leaves by his
       own count (at once from level 3; on levels 1 and 2 only when his frozen count reaches 60 or
       50, or by the no-dot timer). The Dossier is explicit: the personal limits decide "including
@@ -78,7 +83,8 @@ Current value, then the constant that sets it.
       leaves at once either way); they differ only on levels 1 and 2. We keep the Dossier, the more
       precise source, until footage says otherwise. Check on footage: after a death on level 1,
       with Clyde still inside, does he come out at the 32nd dot?
-- [ ] **Does the no-dot timer restart after a death?** The sources say it restarts when it fires and
+- [x] **Does the no-dot timer restart after a death?** Yes (footage 2026-11-19): the first ghost
+      left a full ~4 s after play resumed. The sources say it restarts when it fires and
       (implicitly) with every dot; none says what a death does. We restart it (`onLifeLost`), so no
       time is left over from before the death. Check on footage: right after a respawn, with
       Pac-Man not eating, does the first ghost leave after a full 4 s?
