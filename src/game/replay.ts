@@ -21,7 +21,7 @@ export type SimSettings = RuleSettings;
  * whose hashes changed while this stayed the same). Replays record it, so a clip from other rules
  * says so before it plays instead of only diverging.
  */
-export const RULES_VERSION = 3;
+export const RULES_VERSION = 4;
 
 /** The replay file format this build writes (2 added `made`); format 1 files still load. */
 export const REPLAY_FORMAT_VERSION = 2;

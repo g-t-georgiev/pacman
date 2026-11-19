@@ -232,19 +232,23 @@ here as in the arcade.
 
 ## A round, start to finish
 
-| Phase                   | Length    | What happens                                                                                  |
-| :---------------------- | :-------- | :-------------------------------------------------------------------------------------------- |
-| READY                   | 4 s / 2 s | Everyone in place. 4 s with the start tune on a new game; 2 s after a death or a level clear. |
-| Play                    | —         |                                                                                               |
-| Ghost eaten             | 1 s       | Everything stops but other eyes; the points are shown.                                        |
-| Death: freeze           | 1 s       | Pac-Man and the ghosts stop where they are.                                                   |
-| Death: animation        | 1.5 s     | The ghosts are gone; Pac-Man folds up.                                                        |
-| Death: wait             | 1 s       | Then READY, or GAME OVER with no lives left.                                                  |
-| Level clear: freeze     | 1 s       |                                                                                               |
-| Level clear: maze flash | 4 flashes | Then READY on the next level.                                                                 |
+| Phase                     | Length        | What happens                                                                                                                                |
+| :------------------------ | :------------ | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| PLAYER ONE                | 2.2 s         | A new game (and Restart Level) only: the maze, "PLAYER ONE" above the house and READY!, but nobody on the board yet. The start tune begins. |
+| READY                     | 1.9 s / 1.8 s | Everyone in place. 1.9 s after PLAYER ONE, as the tune ends; 1.8 s after a death or a level clear, silent.                                  |
+| Play                      | —             |                                                                                                                                             |
+| Ghost eaten               | 1 s           | Everything stops but other eyes; the points are shown.                                                                                      |
+| Death: freeze             | 1 s           | Pac-Man and the ghosts stop where they are.                                                                                                 |
+| Death: animation          | 1.8 s         | The ghosts are gone; Pac-Man folds up, then a small burst. The sound is shorter, 1.5 s.                                                     |
+| Death: wait               | 0.85 s        | The empty maze. Then READY, or GAME OVER with no lives left.                                                                                |
+| Level clear: freeze       | 1.9 s         | Everything stops, the ghosts still shown.                                                                                                   |
+| Level clear: maze flash   | 4 flashes     | The ghosts are gone; 12 frames per toggle.                                                                                                  |
+| Level clear: black screen | 0.4 s         | Then READY on the next level.                                                                                                               |
 
-The ghost-eaten pause and the death freeze come from the Dossier; the other lengths are
-estimates. Code: [RoundSequencer.ts](../../src/game/RoundSequencer.ts).
+The ghost-eaten pause comes from the Dossier; the other lengths were measured on footage of the
+original ([footage, 2026-11-19](../footage/2026-11-19.md)). On the original, "PLAYER ONE" names
+whose turn starts (PLAYER TWO in a two-player game); this game has one player. Code:
+[RoundSequencer.ts](../../src/game/RoundSequencer.ts).
 
 **Pac-Man's mouth.** He starts each life as a full circle and only opens his mouth once he
 moves. While moving, his mouth follows his position: one chomp per 8 pixels. When a wall stops
@@ -305,10 +309,6 @@ These values have no published source. Each is marked "estimate" in the code and
 [open items](../OPEN_ITEMS.md) (with the constant that sets it), to check against the original
 game:
 
-- **Round phases:** READY lengths (4 s at a game's start, 2 s otherwise), the death animation
-  (1.5 s) and wait (1 s), the level-clear freeze (1 s) and maze flashes (4, 12 frames each).
-- **When the start tune plays:** on a new game and on Restart Level only, now. Whether the
-  original also plays it at each level start is open.
 - **The energizer's look:** a pulse in size now; the original's blink or color cycle is to be
   checked.
 - **Speeds:** the eyes (2 px per frame) and the speed masks' bit

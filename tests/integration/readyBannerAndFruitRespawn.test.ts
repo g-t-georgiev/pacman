@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import GameEngine from "../../src/game/GameEngine";
-import { PHASE_FRAMES, READY_FRAMES_GAME_START } from "../../src/game/RoundSequencer";
+import { PHASE_FRAMES } from "../../src/game/RoundSequencer";
 
 /** Runs frames until the play state changes (or the frame budget runs out). */
 function runWhile(engine: GameEngine, playState: string, maxFrames = 1000): void {
@@ -13,7 +13,8 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     engine.initGame("PACMAN", 1);
 
     expect(engine.playState).toBe("READY");
-    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START); // longer at game start
+    expect(engine.phase).toBe("PLAYER_ONE"); // a new game starts with PLAYER ONE
+    expect(engine.phaseFramesLeft).toBe(PHASE_FRAMES.PLAYER_ONE);
     expect(engine.lives).toBe(3);
     expect(engine.level).toBe(1);
 
@@ -24,7 +25,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
     engine.update();
 
-    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START - 1);
+    expect(engine.phaseFramesLeft).toBe(PHASE_FRAMES.PLAYER_ONE - 1);
     expect(engine.playState).toBe("READY");
     expect(engine.pacman.x).toBe(initialPacX);
     expect(engine.pacman.y).toBe(initialPacY);
@@ -83,7 +84,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.level).toBe(5);
     expect(engine.lives).toBe(3);
     expect(engine.playState).toBe("READY");
-    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START);
+    expect(engine.phaseFramesLeft).toBe(PHASE_FRAMES.PLAYER_ONE);
     expect(engine.drainEvents().some((e) => e.type === "LEVEL_CHANGED" && e.level === 5)).toBe(
       true
     );
@@ -180,6 +181,6 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     engine.initGame("PACMAN", 1);
     expect(engine.fruit).toBeNull();
     expect(engine.playState).toBe("READY");
-    expect(engine.phaseFramesLeft).toBe(READY_FRAMES_GAME_START);
+    expect(engine.phaseFramesLeft).toBe(PHASE_FRAMES.PLAYER_ONE);
   });
 });

@@ -1,4 +1,4 @@
-import { READY_FRAMES_GAME_START, PHASE_FRAMES } from "../game/RoundSequencer";
+import { GAME_START_FRAMES } from "../game/RoundSequencer";
 import { SIM_FPS } from "../game/constants";
 
 /**
@@ -29,7 +29,11 @@ const WAVES = {
 };
 type WaveName = keyof typeof WAVES;
 
+/** The death sound's length: about 1.5 s on footage of the original (docs/footage/2026-11-19.md). */
+const DEATH_SOUND_SECONDS = 1.5;
+
 /** Normal siren per stage: lowest and highest pitch (Hz) and the length of one up-down sweep (s). */
+
 const SIREN_STAGES: ReadonlyArray<{ lo: number; hi: number; period: number }> = [
   { lo: 360, hi: 640, period: 0.42 },
   { lo: 400, hi: 700, period: 0.38 },
@@ -225,7 +229,7 @@ export class SoundEngine {
       [B5, 2],
     ];
     const beats = melody.reduce((sum, [, b]) => sum + b, 0);
-    const length = READY_FRAMES_GAME_START / SIM_FPS - 0.15;
+    const length = GAME_START_FRAMES / SIM_FPS - 0.15;
     const beat = length / beats;
 
     let at = 0;
@@ -315,12 +319,12 @@ export class SoundEngine {
   }
 
   /**
-   * The death sound, the length of the death animation: wobbling chirps that fall in pitch, then
-   * two short falling blips.
+   * The death sound: wobbling chirps that fall in pitch, then two short falling blips. It is
+   * shorter than the animation (1.8 s), as on the original.
    */
   public playDeath(): Promise<void> {
     this.stopSiren();
-    const length = PHASE_FRAMES.DEATH_ANIM / SIM_FPS;
+    const length = DEATH_SOUND_SECONDS;
     if (!this.ready()) return Promise.resolve();
 
     const chirps = 11;

@@ -23,15 +23,15 @@ the order of the work ("Step" below). Tick each one when its step is in.
       `mazes.ts`).
 - [x] **How fast waiting ghosts bob** (step 1, done). Seen: 8 px from top to bottom (as ours,
       `HOUSE_BOB`), a 0.53 s cycle, about 40%. Ours was 50%; now 40% (`GHOST_HOUSE_SPEED_PCT`).
-- [ ] **READY lengths** (step 2). Seen: a new game shows about 2.2 s of "PLAYER ONE" with no
+- [x] **READY lengths** (step 2, done). Seen: a new game shows about 2.2 s of "PLAYER ONE" with no
       actors, then about 1.9 s with them; after a death or a clear, about 1.8 s with the actors.
       Ours: 4 s (`READY_FRAMES_GAME_START`) and 2 s (`PHASE_FRAMES.READY`), and no "PLAYER ONE".
-- [ ] **When the start tune plays** (step 2: nothing changes but the READY lengths). Seen: only
+- [x] **When the start tune plays** (step 2, done: nothing changes but the READY lengths). Seen: only
       at a new game; a level start after a clear is silent, as ours.
-- [ ] **Death** (step 2). Seen: freeze 1 s, animation about 1.8 s, empty maze about 0.85 s; the
+- [x] **Death** (step 2, done). Seen: freeze 1 s, animation about 1.8 s, empty maze about 0.85 s; the
       sound about 1.5 s. Ours: 1 s (`DEATH_FREEZE`), 1.5 s (`DEATH_ANIM`), 1 s (`DEATH_WAIT`),
       the sound as long as the animation.
-- [ ] **Level clear** (step 2). Seen: freeze about 1.9 s (ours 1 s, `LEVEL_CLEAR_FREEZE`); the 4
+- [x] **Level clear** (step 2, done). Seen: freeze about 1.9 s (ours 1 s, `LEVEL_CLEAR_FREEZE`); the 4
       white flashes, 12 frames per toggle, are as ours; then about 0.4 s of black screen, which
       ours doesn't have.
 - [ ] **The fruit during a death** (step 3). Seen: its timer keeps running. Ours pauses it.

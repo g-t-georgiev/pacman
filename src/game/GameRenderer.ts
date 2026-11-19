@@ -25,6 +25,12 @@ const px = (simPx: number) => simPx * RENDER_SCALE;
  */
 const ENERGIZER_PULSE_FRAMES = 45;
 
+/**
+ * "PLAYER ONE" sits on the row above the ghost house, where Blinky starts. On the original it
+ * names whose turn starts (PLAYER TWO in a two-player game); this game has one player.
+ */
+const PLAYER_ONE_Y = 14 * TILE_SIZE;
+
 export default class GameRenderer {
   private ctx: CanvasRenderingContext2D;
   /** Cached wall layers (A6): the current maze in its normal and flash colors. */
@@ -50,6 +56,14 @@ export default class GameRenderer {
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     const { showGrid, crtFilter } = engine.settings;
+
+    // The black screen before a level's READY: only the score rows stay
+    if (!engine.boardVisible) {
+      renderArcadeHud(ctx, engine);
+      if (crtFilter) this.renderCRTFilter();
+      ctx.restore();
+      return;
+    }
 
     if (showGrid) renderIntersectionTiles(ctx, engine);
 
@@ -208,6 +222,11 @@ export default class GameRenderer {
 
     if (engine.playState === "READY") {
       ctx.font = arcadeFont(16);
+      // A new game first shows "PLAYER ONE" where Blinky starts, before the actors appear
+      if (engine.phase === "PLAYER_ONE") {
+        ctx.fillStyle = "#00ffff";
+        ctx.fillText("PLAYER ONE", centerX, PLAYER_ONE_Y);
+      }
       ctx.fillStyle = "#ffff00";
       ctx.fillText("READY!", centerX, centerY);
     } else if (engine.playState === "GAME_OVER") {

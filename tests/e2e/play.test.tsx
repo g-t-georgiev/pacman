@@ -20,11 +20,12 @@ beforeEach(freshBrowser);
 afterEach(unmountApp);
 
 describe("e2e: the game loads and plays", () => {
-  it("loads, shows READY, then plays in real time", async () => {
+  it("loads, shows PLAYER ONE, then READY, then plays in real time", async () => {
     const agent = await mountApp();
     expect(document.querySelector("canvas")).not.toBeNull();
-    expect(agent.view().phase).toBe("READY");
-    // READY lasts a few seconds on a new game, then play starts on its own
+    expect(agent.view().phase).toBe("PLAYER_ONE");
+    // PLAYER ONE and READY last about 4 s on a new game, then play starts on its own
+    await expect.poll(() => agent.view().phase, { timeout: 4000, interval: 100 }).toBe("READY");
     await expect.poll(() => agent.view().phase, { timeout: 8000, interval: 100 }).toBe("PLAYING");
     const frames = await framesOver(agent, 500);
     expect(frames).toBeGreaterThan(20); // about 30 at 60 Hz

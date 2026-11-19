@@ -58,7 +58,7 @@ describe("Practice tools (Phase 5)", () => {
     expect(runner.practice.deathsHere(engine)).toHaveLength(1);
     engine.restartLevel(); // a fresh attempt: its first death counts again
     runner.flush();
-    for (let i = 0; i < 300 && engine.phase === "READY"; i++) runner.tick();
+    for (let i = 0; i < 300 && engine.playState === "READY"; i++) runner.tick();
     die();
     expect(runner.practice.deathsHere(engine)).toHaveLength(2);
   });

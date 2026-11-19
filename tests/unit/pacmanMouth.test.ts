@@ -4,12 +4,12 @@ import { AgentDriver } from "../../src/agent/AgentDriver";
 import { faceBlinky } from "../helpers";
 
 describe("Pac-Man's mouth (sprite frames)", () => {
-  it("is a closed circle through READY and until he first moves", () => {
+  it("is a closed circle through PLAYER ONE and READY, and until he first moves", () => {
     const agent = new AgentDriver(new GameEngine("PACMAN", 0));
     const e = agent.engine;
-    expect(e.phase).toBe("READY");
+    expect(e.phase).toBe("PLAYER_ONE");
     const frames = new Set<number>();
-    while (e.phase === "READY") {
+    while (e.playState === "READY") {
       frames.add(e.pacman.mouthFrame);
       e.update();
     }

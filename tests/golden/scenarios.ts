@@ -94,7 +94,9 @@ function levelClear(): Replay {
 function elroyChase(): Replay {
   const agent = playing(5);
   agent.scenario({ dotsRemaining: getElroyDotThresholds(5).elroy2 + 3 });
-  return recordReplay(agent.engine, 4800, randomInput(5, 18));
+  // The seed is one whose play reaches Elroy resuming (Clyde out after a death); a change to the
+  // round's timing can take that away, and the golden test then says so (seed 5 until rules 4)
+  return recordReplay(agent.engine, 4800, randomInput(3, 18));
 }
 
 export const GOLDEN_SCENARIOS: GoldenScenario[] = [
