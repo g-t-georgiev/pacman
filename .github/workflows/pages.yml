@@ -1,45 +1,91 @@
-# Publishes the game on GitHub Pages (https://g-t-georgiev.github.io/pacman/) after every push
-# to main: the production build, made for the /pacman/ path. Needs the repository's Pages
-# source set to "GitHub Actions" (Settings → Pages → Build and deployment).
+# One GitHub Pages build per branch (see the manual, "The live site and branch previews"):
+#   https://g-t-georgiev.github.io/pacman/            main: the released game
+#   https://g-t-georgiev.github.io/pacman/<branch>/   every other branch (dev, feature-x, ...)
+#   https://g-t-georgiev.github.io/pacman/branches/   a list of them
+# Every push builds its branch into its folder; deleting a branch removes its folder. The whole
+# site is kept in the gh-pages branch (storage only) and published with the Pages actions.
+# Needs: Settings → Pages → Source "GitHub Actions", and Settings → Environments →
+# github-pages → Deployment branches "No restriction" (so any branch can publish its build).
 name: Pages
 
 on:
   push:
-    branches: [main]
+    branches-ignore: [gh-pages]
+  delete:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
-# One deployment at a time; a newer push replaces a waiting one, never a running one
+# One site update at a time, in order: each run adds to what the previous one left
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  publish:
+    # A deleted tag is not a branch
+    if: github.event_name != 'delete' || github.event.ref_type == 'branch'
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # The branch to build, or the one that was deleted
+      BRANCH: ${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+      ROOT: /${{ github.event.repository.name }}/
+      SITE_REPO: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version: "26"
           cache: true
+
+      - name: Where the branch is served from
+        if: github.event_name != 'delete'
+        id: site
+        run: vpx ./scripts/pagesSite.ts base "$BRANCH" --root "$ROOT"
+
+      - name: Build the branch for that path
+        if: github.event_name != 'delete'
+        run: |
+          # Preview builds show their branch in the footer; main's (the release) doesn't
+          if [ "$BRANCH" != "main" ]; then export VITE_BUILD_BRANCH="$BRANCH"; fi
+          vp build --base "${{ steps.site.outputs.base }}"
+
+      - name: Fetch the site
+        run: |
+          if git ls-remote --exit-code --heads "$SITE_REPO" gh-pages > /dev/null; then
+            git clone --depth 1 --branch gh-pages "$SITE_REPO" site
+          else
+            mkdir site
+          fi
+
+      - name: Put the build on the site
+        if: github.event_name != 'delete'
+        run: vpx ./scripts/pagesSite.ts publish --site site --dist dist --branch "$BRANCH" --sha "$GITHUB_SHA" --root "$ROOT"
+
+      - name: Take the deleted branch's build off the site
+        if: github.event_name == 'delete'
+        run: vpx ./scripts/pagesSite.ts remove --site site --branch "$BRANCH" --root "$ROOT"
+
+      - name: Store the site in gh-pages (one commit, no history)
+        run: |
+          cd site
+          rm -rf .git
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Site after ${BRANCH} at ${GITHUB_SHA::7}"
+          git push -q --force "$SITE_REPO" gh-pages
+
       - uses: actions/configure-pages@v6.0.0
-      # The game is served from /pacman/, not the site's root
-      - run: vp run build:pages
       - uses: actions/upload-pages-artifact@v5.0.0
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v5.0.1

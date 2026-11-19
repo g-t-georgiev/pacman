@@ -5,24 +5,25 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 
 ## Top level
 
-| File                                       | What it is                                                                                                           |
-| :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
-| `index.html`                               | The page: the root element, fonts preload, meta tags                                                                 |
-| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                                        |
-| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server                    |
-| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                                |
-| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone                            |
-| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                                 |
-| `README.md`                                | The landing page: what it is, the manual's chapters, commands, versions                                              |
-| `CHANGELOG.md`                             | Every release's notes, newest first (written by `vp run release`)                                                    |
-| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the versions check, the regression suite        |
-| `.vite-hooks/commit-msg`                   | The commit-msg hook: the message must start with its type (`feat`, `fix`, ...)                                       |
-| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build; the release check on pull requests into main |
-| `.github/workflows/release.yml`            | After a merge into main: tag the version, and a GitHub Release for a minor or major one                              |
-| `.github/workflows/pages.yml`              | After every push to main: build the game for /pacman/ and publish it on GitHub Pages                                 |
-| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                              |
-| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)                |
-| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                         |
+| File                                       | What it is                                                                                                            |
+| :----------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| `index.html`                               | The page: the root element, fonts preload, meta tags                                                                  |
+| `package.json`                             | Dependencies and the scripts below; the package manager is bun, through Vite+                                         |
+| `vite.config.ts`                           | Vite+ config: formatter, linter rules, the two test projects (unit, e2e), plugins, the dev server                     |
+| `tsconfig.json`                            | TypeScript settings for `src`, `tests` and the config                                                                 |
+| `lanQrPlugin.ts`                           | A dev-server plugin that prints a QR code of the LAN address, to open the game on a phone                             |
+| `AGENTS.md`                                | Notes for AI coding agents about the Vite+ toolchain                                                                  |
+| `README.md`                                | The landing page: what it is, the manual's chapters, commands, versions                                               |
+| `CHANGELOG.md`                             | Every release's notes, newest first (written by `vp run release`)                                                     |
+| `.vite-hooks/pre-commit`                   | The pre-commit hook: format and lint staged files, the golden check, the versions check, the regression suite         |
+| `.vite-hooks/commit-msg`                   | The commit-msg hook: the message must start with its type (`feat`, `fix`, ...)                                        |
+| `.github/workflows/ci.yml`                 | CI: check, all tests (Chromium installed for e2e), golden check, build; the release check on pull requests into main  |
+| `.github/workflows/release.yml`            | After a merge into main: tag the version, and a GitHub Release for a minor or major one                               |
+| `.github/workflows/pages.yml`              | On every push: build the branch for its own path and publish the site (main at /pacman/, others at /pacman/<branch>/) |
+| `.github/workflows/sync-dev.yml`           | After a push to main: bring dev up to main (fast-forward, or a merge)                                                 |
+| `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                               |
+| `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)                 |
+| `public/favicon.svg`, `public/favicon.ico` | The tab icon                                                                                                          |
 
 ## Scripts
 
@@ -30,7 +31,6 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 | :----------------- | :---------------------------------------- | :------------------------------------------------------------------------------------- |
 | `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network                            |
 | `build`            | `vp build`                                | The production build in `dist/`                                                        |
-| `build:pages`      | `vp build --base /pacman/`                | The build for GitHub Pages, served from /pacman/ (CI)                                  |
 | `clean`            | `rm -rf dist`                             | Delete the build                                                                       |
 | `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                                         |
 | `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                                           |
@@ -65,6 +65,8 @@ The files in `scripts/`:
 - `releaseBump.ts`: how much a release bumps the version, from the commits and files (pure,
   unit-tested).
 - `check-commit-msg.ts`: the commit-msg hook's check.
+- `pagesSite.ts`: the GitHub Pages site with one build per branch: where each is served, putting
+  a build on the site or taking it off, the list page.
 
 ## src/
 
