@@ -178,7 +178,11 @@ vp run release -- --dry-run   # the next version, and why
 vp run release                # make it: package.json, the versions, CHANGELOG.md, one commit
 ```
 
-Then push and open the pull request from `dev` into `main`:
+Or without your machine: **Actions → Release on dev → Run workflow** (on `dev`). Leave "dry run"
+ticked to see the next version and why in the run's summary; untick it to make the release, which
+is committed and pushed to `dev` for you. You can also type a version to choose it yourself.
+
+Then push (if you released locally) and open the pull request from `dev` into `main`:
 
 - **On the pull request**, CI checks that the version covers the changes (`vp run release:check`).
   If you forgot, the check fails and says to run `vp run release`.
@@ -187,9 +191,17 @@ Then push and open the pull request from `dev` into `main`:
 - **And `dev` catches up:** the merge leaves a merge commit on `main` that `dev` doesn't have.
   The Sync dev workflow brings `dev` up to `main` right after (a fast-forward, or a merge if
   `dev` moved on meanwhile), so the next pull request starts with nothing on `main` that `dev`
-  lacks. It needs a deploy key allowed past `dev`'s protection (the setup is at the top of
-  `.github/workflows/sync-dev.yml`); without it, a pull request from `main` into `dev` does the
-  same.
+  lacks. It runs by hand too (Actions → Sync dev → Run workflow).
+
+**The token.** Sync dev and the release button push to `dev`. While `dev` is unprotected they
+use the workflow's own token. Once `dev` is protected (a ruleset), they need a token allowed past
+it, like a release bot at work:
+
+1. Create a fine-grained personal access token: this repository only, "Contents: Read and write".
+2. Settings → Secrets and variables → Actions → New repository secret `SYNC_TOKEN`: the token.
+3. In the ruleset protecting `dev` (and `main`), put **Repository admin** on the bypass list.
+
+Nothing ever pushes to `main` except your own pull-request merges.
 
 Every release is tagged, so a replay or a bug report that names a version can be played on
 exactly that build: `git checkout v1.2.3`. The notes of every release are in `CHANGELOG.md`.
