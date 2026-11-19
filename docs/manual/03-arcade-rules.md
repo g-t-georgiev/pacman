@@ -57,7 +57,8 @@ every life and level.
 - **Tunnels.** Ghosts slow to the tunnel speed in a tunnel row within 6 tiles of either edge;
   Pac-Man doesn't.
 - **Eyes** (an eaten ghost going home) move 2 pixels every frame. _Estimate._
-- **Inside the ghost house** ghosts move at 50%. _Estimate._
+- **Inside the ghost house** ghosts move at 40%, about half a pixel a frame (measured on footage
+  of the original).
 - **Turbo** (an option, not an arcade rule) multiplies everyone's steps by 1.6.
 
 ## Cornering
@@ -199,13 +200,14 @@ Blinky starts outside; Pinky, Inky and Clyde wait inside and leave by these rule
    off and keeps counting for the rest of the level.
 3. **The no-dot timer.** If Pac-Man eats no dot for 4 seconds (3 from level 5), the first ghost
    waiting is sent out. The timer restarts when it fires and with every dot; it also restarts
-   after a death (our choice: the Dossier doesn't say).
+   after a death (the Dossier doesn't say; footage of the original shows it).
 
 - A ghost whose limit is met leaves at once, even while another one is still on its way out. With
-  limits of 0, several ghosts are released on consecutive frames and walk out overlapping (see
-  the open question below).
-- **Moving in the house.** Waiting ghosts bob up and down, not in step: at every level start
-  and new life Pinky starts upward, Inky and Clyde downward (_estimate_, from play). To leave, a ghost lines up with the
+  limits of 0, several ghosts are released on consecutive frames and walk out overlapping, as
+  they do on the original (seen on footage).
+- **Moving in the house.** Waiting ghosts bob half a tile up and down. At every level start and
+  new life Pinky faces down, and Inky and Clyde face up and bob up first, in step (as on footage
+  of the original). To leave, a ghost lines up with the
   door's center, then goes up and out, to the left. Eyes come back to the door, go down to the
   middle of the house, and move to their slot (Inky left, Clyde right, the others in the middle);
   then the ghost is waiting again, and the same rules decide when it leaves.
@@ -309,13 +311,10 @@ game:
   original also plays it at each level start is open.
 - **The energizer's look:** a pulse in size now; the original's blink or color cycle is to be
   checked.
-- **Speeds:** the eyes (2 px per frame), inside the house (50%), and the speed masks' bit
+- **Speeds:** the eyes (2 px per frame) and the speed masks' bit
   layouts (their totals are sourced).
-- **Timing details:** the frightened flash rhythm (14 frames per half-cycle), the 1UP blink (16
-  frames), the house bobbing (half a tile) and which way each ghost starts it.
+- **Timing details:** the frightened flash rhythm (14 frames per half-cycle) and the 1UP blink (16
+  frames).
 - **The siren:** where it steps up (now at 20/40/60/80% of the dots eaten) and its pitches.
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
-- **House release overlap:** from level 2, Inky (and from level 3, Clyde) can be released a
-  frame or two after Pinky and walk out overlapping her. That follows the Dossier's rules; it
-  felt early in play, and is to be checked on the original.
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.

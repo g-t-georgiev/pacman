@@ -169,9 +169,9 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 13,
             y: 17,
             inHouse: true,
-            // Waiting ghosts don't bob in step: Pinky starts up, Inky and Clyde down (estimate,
-            // from play: docs/OPEN_ITEMS.md)
-            initialDir: "UP",
+            // Waiting ghosts: Pinky faces down, Inky and Clyde face up and bob up first, in step
+            // (seen on footage of the original: docs/footage/2026-11-19.md)
+            initialDir: "DOWN",
             candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
           },
@@ -179,7 +179,7 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 11,
             y: 17,
             inHouse: true,
-            initialDir: "DOWN",
+            initialDir: "UP",
             candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
           },
@@ -187,7 +187,7 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 15,
             y: 17,
             inHouse: true,
-            initialDir: "DOWN",
+            initialDir: "UP",
             candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
           },
@@ -240,9 +240,9 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 13,
             y: 17,
             inHouse: true,
-            // Waiting ghosts don't bob in step: Pinky starts up, Inky and Clyde down (estimate,
-            // from play: docs/OPEN_ITEMS.md)
-            initialDir: "UP",
+            // Waiting ghosts: Pinky faces down, Inky and Clyde face up and bob up first, in step
+            // (seen on footage of the original: docs/footage/2026-11-19.md)
+            initialDir: "DOWN",
             candidates: DEFAULT_SPAWN_CANDIDATES.PINKY,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.PINKY,
           },
@@ -250,7 +250,7 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 11,
             y: 17,
             inHouse: true,
-            initialDir: "DOWN",
+            initialDir: "UP",
             candidates: DEFAULT_SPAWN_CANDIDATES.INKY,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.INKY,
           },
@@ -258,7 +258,7 @@ function buildMaze(mode: GameMode, level: number): MazeData {
             x: 15,
             y: 17,
             inHouse: true,
-            initialDir: "DOWN",
+            initialDir: "UP",
             candidates: DEFAULT_SPAWN_CANDIDATES.CLYDE,
             respawnSlot: DEFAULT_SPAWN_CANDIDATES.CLYDE,
           },

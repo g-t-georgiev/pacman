@@ -44,6 +44,8 @@ describe("Ghost movement soak", () => {
     let reversals = 0;
     let eyesFrames = 0;
     let elroyScatterFrames = 0;
+    let lastScare = -Infinity;
+    let blinkyLastScared = -Infinity; // play frame Blinky was last frightened or eaten
 
     let f = 0; // play frames only (pauses and freezes don't count as being stuck)
     for (let frame = 0; frame < 20_000; frame++) {
@@ -53,6 +55,19 @@ describe("Ghost movement soak", () => {
         agent.scenario({ level, phase: "PLAYING", ...start });
         engine.pacman.invincible = true;
         prev.clear();
+      }
+      // Random input alone eats a ghost only by chance (any change to the rules' timing can take
+      // that away), so the eyes check is fed on purpose: now and then, when a ghost is next to
+      // Pac-Man, frightened mode starts and the normal rules usually let him eat it
+      const pac = engine.pacman.tileCoord;
+      const close = Object.values(engine.ghosts).some(
+        (g) =>
+          g.location === "ACTIVE" &&
+          Math.abs(g.tileCoord.col - pac.col) + Math.abs(g.tileCoord.row - pac.row) <= 1
+      );
+      if (close && engine.phase === "PLAYING" && frame - lastScare > 600) {
+        agent.scenario({ frightened: true });
+        lastScare = frame;
       }
       agent.advance(1);
       if (engine.phase !== "PLAYING") continue;
@@ -67,7 +82,10 @@ describe("Ghost movement soak", () => {
             overDoor ? SLOT[g.type] : DOORSTEP
           );
         }
-        if (g.type === "BLINKY" && g.elroyStage > 0 && g.mode === "SCATTER" && g.target) {
+        if (g.type === "BLINKY" && (g.frightened || g.location !== "ACTIVE")) blinkyLastScared = f;
+        // (After a fright he keeps his last target until his next decision, a tile or two later)
+        const calm = f - blinkyLastScared > 30;
+        if (g.type === "BLINKY" && calm && g.elroyStage > 0 && g.mode === "SCATTER" && g.target) {
           elroyScatterFrames++;
           // Elroy's target is set at his last decision, so it is a tile Pac-Man was on lately
           const pac = engine.pacman.tileCoord;

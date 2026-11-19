@@ -18,11 +18,11 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
 Settled by the [footage of 2026-11-19](footage/2026-11-19.md), which has the measurements and
 the order of the work ("Step" below). Tick each one when its step is in.
 
-- [ ] **Which way the waiting ghosts start** (step 1). Seen: Inky and Clyde face up and move up
-      first, Pinky faces down. Ours has it the other way round since 0.2.0 (`initialDir` in
+- [x] **Which way the waiting ghosts start** (step 1, done). Seen: Inky and Clyde face up and move up
+      first, Pinky faces down. Ours had it the other way round since 0.2.0 (`initialDir` in
       `mazes.ts`).
-- [ ] **How fast waiting ghosts bob** (step 1). Seen: 8 px from top to bottom (as ours,
-      `HOUSE_BOB`), a 0.53 s cycle, about 40%. Ours: 50% (`GHOST_HOUSE_SPEED_PCT`).
+- [x] **How fast waiting ghosts bob** (step 1, done). Seen: 8 px from top to bottom (as ours,
+      `HOUSE_BOB`), a 0.53 s cycle, about 40%. Ours was 50%; now 40% (`GHOST_HOUSE_SPEED_PCT`).
 - [ ] **READY lengths** (step 2). Seen: a new game shows about 2.2 s of "PLAYER ONE" with no
       actors, then about 1.9 s with them; after a death or a clear, about 1.8 s with the actors.
       Ours: 4 s (`READY_FRAMES_GAME_START`) and 2 s (`PHASE_FRAMES.READY`), and no "PLAYER ONE".
