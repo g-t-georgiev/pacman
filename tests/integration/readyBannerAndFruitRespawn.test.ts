@@ -99,7 +99,7 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.houseController.state.globalCounterActive).toBe(false);
   });
 
-  it("should immediately discard active bonus fruit when Pac-Man dies and ensure it does not reappear after respawn", () => {
+  it("keeps the fruit through a death, its time running, then removes it for good", () => {
     const engine = new GameEngine("PACMAN", 0);
     engine.initGame("PACMAN", 1);
     engine.enterPhase("PLAYING");
@@ -122,10 +122,16 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
     expect(engine.playState).toBe("DYING");
     expect(engine.phase).toBe("DEATH_FREEZE");
 
-    // In authentic arcade rules: the bonus fruit immediately vanishes upon death
-    expect(engine.fruit).toBeNull();
+    // As on the original (footage 2026-11-19): the fruit stays, and its time keeps running
+    const fruit = engine.fruit!;
+    expect(fruit.active).toBe(true);
+    const left = fruit.duration;
+    while (engine.phase !== "DEATH_WAIT") engine.update();
+    expect(engine.fruit).toBe(fruit);
+    expect(fruit.active).toBe(true);
+    expect(fruit.duration).toBeLessThan(left - 100);
 
-    // Run the death sequence to the respawn (lives 3 -> 2)
+    // It goes when the death is over (lives 3 -> 2)
     runWhile(engine, "DYING");
 
     // Now respawned into READY state
@@ -142,6 +148,26 @@ describe("Ready Banner Delay, Level Restart & Fruit Despawn Lifecycle", () => {
 
     // Fruit is still null and treated as already consummated
     expect(engine.fruit).toBeNull();
+  });
+
+  it("a fruit can run out during a death", () => {
+    const engine = new GameEngine("PACMAN", 0);
+    engine.initGame("PACMAN", 1);
+    engine.enterPhase("PLAYING");
+    engine.spawnFruit();
+    engine.fruit!.duration = 90; // runs out 1.5 s into the death
+    const blinky = engine.ghosts.BLINKY;
+    blinky.location = "ACTIVE";
+    blinky.wave = "CHASE";
+    blinky.x = engine.pacman.x;
+    blinky.y = engine.pacman.y;
+    engine.update();
+    expect(engine.phase).toBe("DEATH_FREEZE");
+    while (engine.phase !== "DEATH_ANIM") engine.update();
+    expect(engine.fruit?.active).toBe(true);
+    for (let i = 0; i < 40; i++) engine.update();
+    expect(engine.phase).toBe("DEATH_ANIM");
+    expect(engine.fruit?.active).toBe(false);
   });
 
   it("should ensure fruit is not available when clicking Restart Level or Start New Game after fruit was active", () => {

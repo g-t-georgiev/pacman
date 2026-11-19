@@ -266,7 +266,9 @@ him he freezes half open.
 - **Lives.** 3 per game; one extra at 10,000 points.
 - **Fruit** appears below the ghost house after the 70th and the 170th dot of a level, and stays
   9 to 10 seconds (the exact time comes from the game's random stream; Dossier, "The Basics").
-  A fruit still showing when Pac-Man dies is gone.
+  A fruit still showing when Pac-Man dies stays on the board through the death, its time still
+  running (so it can run out partway), and goes when the death is over; it doesn't come back
+  (seen on footage of the original).
 
 | Level | Fruit      | Points | Level | Fruit    | Points |
 | ----: | :--------- | -----: | ----: | :------- | -----: |

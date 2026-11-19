@@ -34,7 +34,8 @@ the order of the work ("Step" below). Tick each one when its step is in.
 - [x] **Level clear** (step 2, done). Seen: freeze about 1.9 s (ours 1 s, `LEVEL_CLEAR_FREEZE`); the 4
       white flashes, 12 frames per toggle, are as ours; then about 0.4 s of black screen, which
       ours doesn't have.
-- [ ] **The fruit during a death** (step 3). Seen: its timer keeps running. Ours pauses it.
+- [x] **The fruit during a death** (step 3, done). Seen: it stays, its timer running, until the
+      death is over. Ours removed it at once.
 - [ ] **Energizer look** (step 4). Seen: a plain on/off blink, about 10 frames each, in play and
       during the death freeze; steady during READY. Ours: a pulse in size
       (`ENERGIZER_PULSE_FRAMES`, `GameRenderer.ts`).

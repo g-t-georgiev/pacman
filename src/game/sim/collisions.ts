@@ -73,12 +73,9 @@ export function checkCollisions(engine: GameEngine): void {
       engine.sequencer.state.eatenPoints = points;
       engine.emit({ type: "GHOST_EATEN", ghost: g.type, points });
     } else if (!engine.rules.invincible && !engine.pacman.invincible) {
-      // Everything freezes with the ghosts visible, then the death animation starts (F21).
+      // Everything freezes with the ghosts visible, then the death animation starts (F21). A
+      // fruit on the board stays, its time running, until the death is over (GameEngine).
       engine.enterPhase("DEATH_FREEZE");
-      if (engine.fruit) {
-        engine.fruit.active = false;
-        engine.fruit = null;
-      }
     }
   }
 

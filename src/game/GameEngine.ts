@@ -371,6 +371,10 @@ export default class GameEngine {
       }
     }
 
+    // Through a death a fruit stays on the board and its time keeps running, so it can run out
+    // partway (seen on footage of the original: docs/footage/2026-11-19.md)
+    if (this.sequencer.phase.startsWith("DEATH_")) updateFruit(this);
+
     const ended = this.sequencer.tick();
     if (this.sequencer.phase === "DEATH_ANIM") {
       this.pacman.deathProgress = this.sequencer.progress;
@@ -414,6 +418,7 @@ export default class GameEngine {
   }
 
   private loseLife(): void {
+    this.fruit = null; // the death is over: a fruit still there goes (and doesn't come back)
     this.lives--;
     this.emit({ type: "LIVES_CHANGED", lives: this.lives });
 
