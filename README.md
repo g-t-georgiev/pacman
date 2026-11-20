@@ -118,7 +118,7 @@ This README describes **Pac-Man Arcade Lab 0.3.0**.
 | Tailwind CSS                                 | 4.3.5                                 |
 | marked and highlight.js: the manual's page   | 18.2.1 and 11.12.0                    |
 | Node.js: CI                                  | 26                                    |
-| bun: package manager                         | 1.4.4                                 |
+| bun: package manager                         | 1.4.5                                 |
 
 <!-- versions:end -->
 
