@@ -5,7 +5,9 @@ import { SIM_FPS } from "../game/constants";
  * Procedural sounds (S1/S2). The arcade used a 3-voice wavetable chip (32-step, 4-bit waveforms);
  * we approximate its character with our own small wavetables and pitch sweeps, matched by ear to
  * the original's behavior: when each sound plays, its rhythm, pitch range and shape. No samples or
- * data from the original are used. Every pitch and length below is an estimate.
+ * data from the original are used. The sirens' pitches and rhythms, and the death sound's length,
+ * were measured on footage of the original (docs/footage/2026-11-19.md); the other sounds' pitches
+ * and lengths are estimates.
  */
 
 type SirenKind = "NORMAL" | "FRIGHTENED" | "EYES" | "NONE";
@@ -44,9 +46,12 @@ const SIREN_STAGES: ReadonlyArray<{ lo: number; hi: number; period: number }> = 
   { lo: 760, hi: 1510, period: 0.3 },
   { lo: 900, hi: 1680, period: 0.27 },
 ];
-/** Frightened: a low, fast, rising warble. Eyes: a high, faster, falling one. */
-const FRIGHTENED_SIREN = { lo: 180, hi: 520, rate: 7.5 };
-const EYES_SIREN = { lo: 600, hi: 1300, rate: 12 };
+/**
+ * Frightened: a fast rising sweep, 7.5 a second. Eyes: a slower falling one from high up, about 4 a
+ * second. Pitches in Hz, measured on footage of the original (docs/footage/2026-11-19.md).
+ */
+const FRIGHTENED_SIREN = { lo: 470, hi: 2420, rate: 7.5 };
+const EYES_SIREN = { lo: 600, hi: 2650, rate: 3.8 };
 
 /** One frequency point of a sweep: seconds from the sound's start, Hz. */
 type Sweep = Array<[number, number]>;

@@ -46,8 +46,8 @@ export const CORNER_WINDOW_HIGH = TILE_SIZE - 1 - CORNER_WINDOW_LOW;
  */
 
 /**
- * The eyes' speed on their way home: a key into SPEED_MASKS (2 px every frame). Estimate: the
- * Dossier gives none.
+ * The eyes' speed on their way home: a key into SPEED_MASKS (2 px every frame). The Dossier gives
+ * none; footage of the original shows about 2 px per frame (docs/footage/2026-11-19.md).
  */
 export const GHOST_EATEN_SPEED_PCT = 200;
 /**
@@ -129,8 +129,9 @@ export const SCATTER_CHASE_LEVELS_5_PLUS: readonly ScatterChaseSchedule[] = [
 ] as const;
 
 /**
- * Frames per white/blue half-cycle of the frightened warning flash. Estimate: the Dossier gives
- * the number of flashes per level (Table A.1), not their rhythm.
+ * Frames per white/blue half-cycle of the frightened warning flash. The Dossier gives the number
+ * of flashes per level (Table A.1), not their rhythm; footage of the original shows 14 frames
+ * (docs/footage/2026-11-19.md).
  */
 export const FRIGHTENED_FLASH_TOGGLE_FRAMES = 14;
 

@@ -11,12 +11,38 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
    (and the rule's own section if it describes the value).
 3. If play changed, run `vp run golden:update`: it re-records the golden replays and bumps
    `RULES_VERSION` by itself.
-4. Tick the item here with the date and the source, or delete it.
+4. Tick the item with the date and the source, and move it to [Settled](#settled). If it came
+   from footage, record the measurement in a [`docs/footage/`](footage/) file.
 
-## Measured on footage, to apply
+## Waiting on footage of the original
 
-Settled by the [footage of 2026-11-19](footage/2026-11-19.md), which has the measurements and
-the order of the work ("Step" below). Tick each one when its step is in.
+No published source has these; they need someone to watch and listen to the original game.
+Current value, then the constant that sets it.
+
+- [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
+      life, death (`SoundEngine.ts`).
+- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per
+      chomp (8 now; `MOUTH_FRAMES`, `Pacman.ts`).
+- [ ] **Anything past level 2.** The recordings reach level 2 only: the speeds and timers of later
+      levels, the extra life at 10,000 points (and its sound), the intermissions.
+
+## Waiting on your decision
+
+- [ ] **Timer units.** The Dossier's seconds are read as 60 frames each ("1/60 s" = one frame),
+      while the Arcade preset runs 60.606 frames per second, so a "second" is 0.99 real seconds.
+      Unverified: keep this reading, or treat them as real seconds?
+
+## Waiting on a source
+
+- [ ] **The speed masks' bit layouts.** Their totals follow the Dossier's scale; which frames move
+      is evenly spread for now (`speedMasks.ts`). Swap in the real patterns if a verified
+      disassembly turns up.
+- [ ] **Ms. Pac-Man's own mechanics.** Her semi-random first scatter, moving fruit paths, other
+      mazes, and whether she has no-up tiles anywhere. Not implemented without a source.
+
+## Settled
+
+Closed items, kept for the record. The footage ones are measured in [`docs/footage/`](footage/).
 
 - [x] **Which way the waiting ghosts start** (step 1, done). Seen: Inky and Clyde face up and move up
       first, Pinky faces down. Ours had it the other way round since 0.2.0 (`initialDir` in
@@ -42,37 +68,22 @@ the order of the work ("Step" below). Tick each one when its step is in.
 - [x] **The siren** (step 5, done). Seen: five stages from 440–1000 Hz (0.42 s a sweep) up to
       900–1680 Hz (0.27 s), stepping up at about 41/71/82/92% of the dots eaten. Ours was 360–640
       up to 540–940 Hz at 20/40/60/80% (`SIREN_STAGES`, `SIREN_STAGE_SHARE_EATEN`).
-
-## Waiting on footage of the original
-
-No published source has these; they need someone to watch and listen to the original game.
-Current value, then the constant that sets it.
-
 - [x] **Ghost house release overlap** (footage 2026-11-19). On level 2 Pinky and Inky start
       moving together and overlap on the way out, as ours does. Nothing to change.
-- [ ] **Blinks.** 1UP: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`). The frightened
-      warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
-- [ ] **The eyes' speed going home.** 2 px every frame (`GHOST_EATEN_SPEED_PCT`).
-- [ ] **The frightened and eyes sirens.** Their pitch and rhythm (`FRIGHTENED_SIREN`,
-      `EYES_SIREN`). The recordings have both, under other sounds.
-- [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
-      life, death (`SoundEngine.ts`).
-- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per
-      chomp (8 now; `MOUTH_FRAMES`, `Pacman.ts`).
-
-## Waiting on your decision
-
+- [x] **Blinks** (footage 2026-11-19, measured 2026-11-20). 1UP: 16 frames per toggle, as ours, but
+      blinking from PLAYER ONE on, through deaths and level clears (ours only blinked in play; now
+      fixed). The frightened warning: 14 frames per half-cycle, as ours.
+- [x] **The eyes' speed going home** (footage 2026-11-19, measured 2026-11-20). About 2 px per
+      frame, as ours (`GHOST_EATEN_SPEED_PCT`).
+- [x] **The frightened and eyes sirens** (footage 2026-11-19, measured 2026-11-20). Frightened: a
+      rising sweep 470 → 2420 Hz, every 0.13 s (ours 180 → 520). Eyes: a falling sweep
+      2650 → 600 Hz, every 0.26 s (ours 1300 → 600, every 0.08 s). Now as measured
+      (`FRIGHTENED_SIREN`, `EYES_SIREN`).
 - [x] **The global dot counter at 32: keep the Dossier rule** (decided 2026-11-19). After a death,
       the shared counter releases Pinky at 7 and Inky at 17; at 32, if Clyde is still inside, it
       switches itself off and the personal counters take over again; if Clyde is already out, it
       keeps counting for the rest of the level, and ghosts eaten later can be held in the house
       until the no-dot timer sends them out (`HouseController`). Still unsure, see below.
-- [ ] **Timer units.** The Dossier's seconds are read as 60 frames each ("1/60 s" = one frame),
-      while the Arcade preset runs 60.606 frames per second, so a "second" is 0.99 real seconds.
-      Unverified: keep this reading, or treat them as real seconds?
-
-## Still unsure, to check on footage or in a reliable source
-
 - [x] **Does Clyde leave at 32?** No (footage 2026-11-19): on level 1, after a death, Clyde
       stayed inside for dozens of dots past 32, as the Dossier's rule gives. The Dossier (and notes that follow it) say the shared counter is
       _switched off_ at 32 when Clyde is inside, not that it _releases_ him: he then leaves by his
@@ -89,14 +100,6 @@ Current value, then the constant that sets it.
       (implicitly) with every dot; none says what a death does. We restart it (`onLifeLost`), so no
       time is left over from before the death. Check on footage: right after a respawn, with
       Pac-Man not eating, does the first ghost leave after a full 4 s?
-
-## Waiting on a source
-
-- [ ] **The speed masks' bit layouts.** Their totals follow the Dossier's scale; which frames move
-      is evenly spread for now (`speedMasks.ts`). Swap in the real patterns if a verified
-      disassembly turns up.
-- [ ] **Ms. Pac-Man's own mechanics.** Her semi-random first scatter, moving fruit paths, other
-      mazes, and whether she has no-up tiles anywhere. Not implemented without a source.
 
 ## Not planned
 

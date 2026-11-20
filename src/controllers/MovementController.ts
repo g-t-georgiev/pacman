@@ -10,7 +10,10 @@ const HOUSE_DOOR_X = 14 * TILE_SIZE;
 export const HOUSE_CENTER_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
 /** Centerline of the row just outside the door (row 14), where ghosts appear when leaving. */
 export const HOUSE_EXIT_Y = 14 * TILE_SIZE + TILE_SIZE / 2;
-/** How far waiting ghosts bob above and below the house centerline. Estimate (seen in play). */
+/**
+ * How far waiting ghosts bob above and below the house centerline: 8 px from top to bottom, as on
+ * footage of the original (docs/footage/2026-11-19.md).
+ */
 const HOUSE_BOB = TILE_SIZE / 2;
 import {
   chooseNextGhostDirection,

@@ -6,6 +6,7 @@
 //
 // Sources: package.json (the game's version, bun), the installed packages (the tools), the
 // rules / saved state / replay format constants, and the CI workflow (Node.js).
+import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { REPLAY_FORMAT_VERSION, RULES_VERSION } from "../src/game/replay";
@@ -149,8 +150,14 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     }
     console.log("Versions in the README and the manual are up to date.");
   } else {
-    for (const { file, block } of TARGETS)
-      writeFileSync(file, withBlock(read(file), block(), file));
+    // Only the files that changed, then formatted, so the tables keep their column padding
+    for (const { file, block } of TARGETS) {
+      if (outdated.includes(file)) writeFileSync(file, withBlock(read(file), block(), file));
+    }
+    if (outdated.length > 0) {
+      // One command string: the paths are this script's own (TARGETS), with no spaces
+      execSync(`vp fmt ${outdated.join(" ")}`, { stdio: "inherit" });
+    }
     console.log(outdated.length > 0 ? `Updated: ${outdated.join(", ")}` : "Already up to date.");
   }
 }

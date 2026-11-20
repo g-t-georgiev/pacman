@@ -63,16 +63,24 @@ describe("Arcade HUD in the maze's blank rows (T13)", () => {
     expect(r.row(1)).toBe(".....00........00..........."); // both end at their column (6, 16)
   });
 
-  it("1UP blinks while playing", () => {
+  it("1UP blinks through a game (PLAYER ONE, READY, play, deaths), steady after it", () => {
     const engine = new GameEngine("PACMAN", 0);
+    const blinks = () =>
+      [0, HUD_LAYOUT.oneUpBlinkFrames].map((tick) => {
+        engine.tick = tick;
+        const r = recordingContext();
+        renderArcadeHud(r.ctx, engine);
+        return r.row(0).startsWith("...1UP");
+      });
+    for (const phase of ["PLAYER_ONE", "READY", "PLAYING", "DEATH_ANIM", "MAZE_FLASH"] as const) {
+      engine.enterPhase(phase);
+      expect(blinks(), phase).toEqual([true, false]);
+    }
+    engine.enterPhase("GAME_OVER");
+    expect(blinks()).toEqual([true, true]);
     engine.enterPhase("PLAYING");
-    const shown = [0, HUD_LAYOUT.oneUpBlinkFrames].map((tick) => {
-      engine.tick = tick;
-      const r = recordingContext();
-      renderArcadeHud(r.ctx, engine);
-      return r.row(0).startsWith("...1UP");
-    });
-    expect(shown).toEqual([true, false]);
+    engine.paused = true;
+    expect(blinks()).toEqual([true, true]);
   });
 
   it("spare lives: the lives beyond the one in play, up to 5", () => {

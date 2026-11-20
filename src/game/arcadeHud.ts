@@ -30,7 +30,10 @@ export const HUD_LAYOUT = {
   /** PAUSED (not an arcade text): top right, where it never covers the fruit or an actor. */
   pausedCol: 21,
   pausedRow: 0,
-  /** 1UP blinks while playing, toggling this often (frames). Estimate. */
+  /**
+   * 1UP blinks from a game's PLAYER ONE on, through deaths and level clears, toggling this often
+   * (frames; seen on footage of the original: docs/footage/2026-11-19.md).
+   */
   oneUpBlinkFrames: 16,
 } as const;
 
@@ -72,9 +75,11 @@ export function renderArcadeHud(ctx: CanvasRenderingContext2D, engine: GameEngin
   ctx.textBaseline = "middle";
   ctx.fillStyle = TEXT;
 
-  // Top: 1UP (blinking while playing) and HIGH SCORE, scores right-aligned underneath
+  // Top: 1UP (blinking through a game, steady before it starts, after it ends and while paused)
+  // and HIGH SCORE, scores right-aligned underneath
   const blinkOff =
-    engine.phase === "PLAYING" &&
+    engine.phase !== "MENU" &&
+    engine.phase !== "GAME_OVER" &&
     !engine.paused &&
     Math.floor(engine.tick / L.oneUpBlinkFrames) % 2 === 1;
   if (!blinkOff) drawTiles(ctx, "1UP", L.oneUpCol, L.labelRow);
