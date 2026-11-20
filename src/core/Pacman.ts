@@ -6,8 +6,9 @@ import { getDirectionVector, getOppositeDirection } from "../game/ghostAiUtils";
 import { getSpeedConfigForLevel } from "../game/levelTable";
 
 /**
- * Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center).
- * Estimate from footage: half open at a tile center, where a blocked Pac-Man stops.
+ * Mouth frame per pixel inside the tile (0 = the tile's left/top edge, 4 = its center). A blocked
+ * Pac-Man stops on pixel 3 moving right or down (wide open) and on pixel 4 moving left or up
+ * (half open), as on footage of the original (docs/footage/2026-11-19.md).
  */
 const MOUTH_FRAMES: ReadonlyArray<0 | 1 | 2> = [1, 1, 2, 2, 1, 1, 0, 0];
 
@@ -131,9 +132,9 @@ export class Pacman extends Actor {
   /**
    * The mouth frame to draw: 0 closed, 1 half open, 2 wide open. Closed until he first moves;
    * then it follows his position inside the tile along the axis he faces (closed, half, open,
-   * half every 8 px), so it chomps only while he moves and holds its frame when he stops. At a
-   * tile center (where he stops against a wall) it is half open. Estimate from footage: the
-   * arcade's exact pixel-to-frame mapping is not documented.
+   * half every 8 px), so it chomps only while he moves and holds its frame when he stops. Against a
+   * wall it is wide open facing right or down and half open facing left or up, as on footage of
+   * the original (17 stops); the arcade's own pixel-to-frame table is not documented.
    */
   public get mouthFrame(): 0 | 1 | 2 {
     if (!this.hasMoved) return 0;

@@ -19,11 +19,6 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
 No published source has these; they need someone to watch and listen to the original game.
 Current value, then the constant that sets it.
 
-- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now; `MOUTH_FRAMES`,
-      `Pacman.ts`). The footage confirms 8 px per chomp and that the mouth follows his position (it
-      holds still during the energizer stall), and leans towards wide open at a tile center, one
-      pixel later than ours; but he never stops against a wall in it. Check: Pac-Man pushed against
-      a wall, facing it.
 - [ ] **Anything past level 2.** The recordings reach level 2 only: the speeds and timers of later
       levels, the extra life at 10,000 points and its sound (an estimate now), the intermissions.
 
@@ -49,6 +44,10 @@ Current value, then the constant that sets it.
 
 Closed items, kept for the record. The footage ones are measured in [`docs/footage/`](footage/).
 
+- [x] **Pac-Man's mouth** (footage 2026-11-20). 8 px per chomp, following his position, as ours.
+      Against a wall (17 stops in recording 4) he holds wide open facing right or down and half
+      open facing left or up, exactly what ours gives (`MOUTH_FRAMES`, `Pacman.ts`). New: through a
+      level clear he is a closed circle; ours now is too.
 - [x] **The other sounds** (footage 2026-11-19, measured 2026-11-20). The chomp alternates
       1090 → 530 and 410 → 1000 Hz, 0.11 s each; eating a ghost rises 130 → 1770 Hz in 0.55 s;
       eating a fruit dips 720 → 150 → 880 Hz in 0.43 s; the death wobbles down from 780 to 450 Hz

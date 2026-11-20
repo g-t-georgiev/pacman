@@ -257,7 +257,8 @@ whose turn starts (PLAYER TWO in a two-player game); this game has one player. C
 
 **Pac-Man's mouth.** He starts each life as a full circle and only opens his mouth once he
 moves. While moving, his mouth follows his position: one chomp per 8 pixels. When a wall stops
-him he freezes half open.
+him he freezes wide open facing right or down, and half open facing left or up. Through a level
+clear he is a closed circle (all seen on footage of the original).
 
 ## Scoring, lives and fruit
 
@@ -337,7 +338,6 @@ These values have no published source. Each is marked "estimate" in the code and
 game:
 
 - **Speeds:** the speed masks' bit layouts (their totals are sourced).
-- **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
 - **Two sounds:** the extra life, and the start tune's notes (its length is measured; the sirens,
   the chomp, eating a ghost or a fruit and the death are measured too).
 - **Timer units:** the arcade's "seconds" read as 60 frames each at 60.606 Hz. Almost certainly
