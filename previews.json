@@ -1,0 +1,28 @@
+{
+  "root": {
+    "branch": "main",
+    "sha": "71844d0fb03c5cb770dcd996f7eb24b8726434b6",
+    "date": "2026-11-19 12:33 UTC",
+    "files": [
+      "assets",
+      "favicon.ico",
+      "favicon.svg",
+      "fonts",
+      "index.html"
+    ]
+  },
+  "branches": [
+    {
+      "branch": "dev",
+      "sha": "93e82dd0b5c47993f58ab03eb3250934503f8239",
+      "date": "2026-11-20 17:45 UTC",
+      "slug": "dev"
+    },
+    {
+      "branch": "polish/open-items",
+      "sha": "a4312b8d0b8e49a86fa5d0b69830180674ecaee2",
+      "date": "2026-11-20 19:09 UTC",
+      "slug": "polish-open-items"
+    }
+  ]
+}
