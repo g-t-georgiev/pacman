@@ -337,6 +337,6 @@ game:
 
 - **Speeds:** the speed masks' bit layouts (their totals are sourced).
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
-- **The other sounds:** the chomp, eating a ghost or a fruit, the extra life and the death sound's
-  shape (the sirens are measured).
+- **Two sounds:** the extra life, and the start tune's notes (its length is measured; the sirens,
+  the chomp, eating a ghost or a fruit and the death are measured too).
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.

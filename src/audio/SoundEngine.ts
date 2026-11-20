@@ -5,9 +5,9 @@ import { SIM_FPS } from "../game/constants";
  * Procedural sounds (S1/S2). The arcade used a 3-voice wavetable chip (32-step, 4-bit waveforms);
  * we approximate its character with our own small wavetables and pitch sweeps, matched by ear to
  * the original's behavior: when each sound plays, its rhythm, pitch range and shape. No samples or
- * data from the original are used. The sirens' pitches and rhythms, and the death sound's length,
- * were measured on footage of the original (docs/footage/2026-11-19.md); the other sounds' pitches
- * and lengths are estimates.
+ * data from the original are used. The sirens, the chomp, eating a ghost or a fruit, and the
+ * death sound were measured on footage of the original (docs/footage/2026-11-19.md); the start
+ * tune's notes and the extra life are estimates.
  */
 
 type SirenKind = "NORMAL" | "FRIGHTENED" | "EYES" | "NONE";
@@ -280,85 +280,87 @@ export class SoundEngine {
     return new Promise((resolve) => setTimeout(resolve, length * 1000));
   }
 
-  /** One half of the chomp per dot, alternating a falling and a rising sweep ("wa", "ka"). */
+  /**
+   * One half of the chomp per dot, alternating a falling and a rising sweep ("wa", "ka"):
+   * 1090 → 530 Hz, then 410 → 1000 Hz, 0.11 s each (measured on footage of the original).
+   */
   public playWaka() {
     if (!this.ready()) return;
     const now = this.ctx!.currentTime;
     if (now - this.lastWakaTime < 0.06) return; // turbo: don't pile up
     this.lastWakaTime = now;
     this.wakaFlip = !this.wakaFlip;
-    const [from, to] = this.wakaFlip ? [880, 330] : [330, 880];
+    const [from, to] = this.wakaFlip ? [1090, 530] : [410, 1000];
     this.tone(
       "rasp",
       [
         [0, from],
-        [0.1, to],
-      ],
-      0.2
-    );
-  }
-
-  /** Eating a ghost: a rising sweep, about half a second (the eat pause is 1 s). */
-  public playEatGhost() {
-    if (!this.ready()) return;
-    this.tone(
-      "soft",
-      [
-        [0, 150],
-        [0.15, 330],
-        [0.5, 1150],
-      ],
-      0.22
-    );
-  }
-
-  /** Eating the fruit: a quick dip and rise. */
-  public playEatFruit() {
-    if (!this.ready()) return;
-    this.tone(
-      "soft",
-      [
-        [0, 900],
-        [0.17, 300],
-        [0.36, 950],
+        [0.11, to],
       ],
       0.2
     );
   }
 
   /**
-   * The death sound: wobbling chirps that fall in pitch, then two short falling blips. It is
-   * shorter than the animation (1.8 s), as on the original.
+   * Eating a ghost: one straight rising sweep, 130 → 1770 Hz in 0.55 s (the eat pause is 1 s;
+   * measured on footage of the original).
+   */
+  public playEatGhost() {
+    if (!this.ready()) return;
+    this.tone(
+      "soft",
+      [
+        [0, 130],
+        [0.55, 1770],
+      ],
+      0.22
+    );
+  }
+
+  /** Eating the fruit: a dip and rise, 720 → 150 → 880 Hz in 0.43 s (measured on footage). */
+  public playEatFruit() {
+    if (!this.ready()) return;
+    this.tone(
+      "soft",
+      [
+        [0, 720],
+        [0.22, 150],
+        [0.43, 880],
+      ],
+      0.2
+    );
+  }
+
+  /**
+   * The death sound, as on footage of the original (about 1.5 s, shorter than the 1.8 s
+   * animation): a tone that wobbles down and up five times, 0.25 s each, drifting down from about
+   * 780 Hz to 450 Hz; then two stepped rising sweeps, 200 → 2300 Hz in 0.17 s each.
    */
   public playDeath(): Promise<void> {
     this.stopSiren();
     const length = DEATH_SOUND_SECONDS;
     if (!this.ready()) return Promise.resolve();
 
-    const chirps = 11;
-    const chirpLength = (length * 0.77) / chirps;
-    for (let i = 0; i < chirps; i++) {
-      const lo = 620 * Math.pow(0.88, i);
-      const hi = lo * 1.6;
-      this.tone(
-        "buzz",
-        [
-          [0, lo],
-          [chirpLength * 0.6, hi],
-          [chirpLength, lo * 0.9],
-        ],
-        0.2,
-        i * chirpLength
-      );
+    // Down 0.12 s, up 0.13 s, each low and high about 57 Hz under the last
+    const wobble: Sweep = [[0, 780]];
+    let t = 0;
+    for (let i = 0; i < 5; i++) {
+      t += 0.12;
+      wobble.push([t, 677 - 57 * i]);
+      if (i < 4) {
+        t += 0.13;
+        wobble.push([t, 834 - 57 * i]);
+      }
     }
-    for (const at of [length * 0.83, length * 0.93]) {
+    this.tone("buzz", wobble, 0.2);
+    for (const at of [t, t + 0.19]) {
       this.tone(
         "soft",
         [
-          [0, 950],
-          [0.09, 180],
+          [0, 200],
+          [0.17, 2300],
         ],
-        0.22,
+        0.2,
         at
       );
     }

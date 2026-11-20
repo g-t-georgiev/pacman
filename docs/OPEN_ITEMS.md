@@ -19,12 +19,13 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
 No published source has these; they need someone to watch and listen to the original game.
 Current value, then the constant that sets it.
 
-- [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
-      life, death (`SoundEngine.ts`).
-- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per
-      chomp (8 now; `MOUTH_FRAMES`, `Pacman.ts`).
+- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now; `MOUTH_FRAMES`,
+      `Pacman.ts`). The footage confirms 8 px per chomp and that the mouth follows his position (it
+      holds still during the energizer stall), and leans towards wide open at a tile center, one
+      pixel later than ours; but he never stops against a wall in it. Check: Pac-Man pushed against
+      a wall, facing it.
 - [ ] **Anything past level 2.** The recordings reach level 2 only: the speeds and timers of later
-      levels, the extra life at 10,000 points (and its sound), the intermissions.
+      levels, the extra life at 10,000 points and its sound (an estimate now), the intermissions.
 
 ## Waiting on your decision
 
@@ -44,6 +45,11 @@ Current value, then the constant that sets it.
 
 Closed items, kept for the record. The footage ones are measured in [`docs/footage/`](footage/).
 
+- [x] **The other sounds** (footage 2026-11-19, measured 2026-11-20). The chomp alternates
+      1090 → 530 and 410 → 1000 Hz, 0.11 s each; eating a ghost rises 130 → 1770 Hz in 0.55 s;
+      eating a fruit dips 720 → 150 → 880 Hz in 0.43 s; the death wobbles down from 780 to 450 Hz
+      (five 0.25 s cycles), then sweeps up twice, 200 → 2300 Hz. Now as measured (`SoundEngine.ts`).
+      The extra life is not in the footage (see "Anything past level 2").
 - [x] **Which way the waiting ghosts start** (step 1, done). Seen: Inky and Clyde face up and move up
       first, Pinky faces down. Ours had it the other way round since 0.2.0 (`initialDir` in
       `mazes.ts`).
