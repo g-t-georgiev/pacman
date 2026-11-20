@@ -69,7 +69,7 @@ export function renderPlayer(ctx: CanvasRenderingContext2D, engine: GameEngine) 
 
   const radius = TILE_SIZE / 2 + 1;
   // Mouth half-angle (as a fraction of pi) per frame: closed circle, half open, wide open
-  const mouth = [0, 0.13, 0.27][engine.pacman.mouthFrame];
+  const mouth = [0, 0.13, 0.27][mouthFrameShown(engine)];
 
   if (engine.ruleset.playerLook === "PACMAN") {
     // Classic Pac-Man
@@ -222,6 +222,15 @@ export function renderGhostEyes(ctx: CanvasRenderingContext2D, dir: Direction) {
   ctx.arc(-3.5 + eyeOffsetX, -3 + eyeOffsetY, 1.8, 0, Math.PI * 2);
   ctx.arc(3.5 + eyeOffsetX, -3 + eyeOffsetY, 1.8, 0, Math.PI * 2);
   ctx.fill();
+}
+
+/**
+ * The mouth frame drawn: Pac-Man's own, except through a level clear (the freeze and the
+ * flashes), where he is a closed circle, as on footage of the original.
+ */
+export function mouthFrameShown(engine: GameEngine): 0 | 1 | 2 {
+  const clearing = engine.phase === "LEVEL_CLEAR_FREEZE" || engine.phase === "MAZE_FLASH";
+  return clearing ? 0 : engine.pacman.mouthFrame;
 }
 
 export function renderFruit(ctx: CanvasRenderingContext2D, engine: GameEngine) {

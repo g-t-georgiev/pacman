@@ -147,6 +147,12 @@ Identical traces mean the change didn't alter the game.
 The game itself has a version too: `0.1.0` and up, in `package.json`. The game shows it in the
 footer and this manual in its header; the README lists it with every tool's version.
 
+**Dependency updates** come from Dependabot ([dependabot.yml](../../.github/dependabot.yml)): once a
+week, one pull request per package into `dev` (Vite+ and its parts, React and its types, and
+Tailwind and its plugin go together), so a breaking change points at its package. Their commits
+are `chore(deps): ...`, so they don't bump the version; CI checks each one, and they get no Pages
+preview.
+
 ### How much it goes up
 
 The bump is worked out from what changed since the last release (the last `v1.2.3` tag):

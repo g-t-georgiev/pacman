@@ -18,8 +18,9 @@ energizers, the sirens. No code or data from the original ROMs is used.
 - **One simulation step is one arcade frame.** The real machine runs at 60.606 frames per second
   (Dossier, Appendix C); so does this game with the Arcade preset (60 even with Modern).
 - **Timers count frames.** The Dossier's seconds are treated as 60 frames each, so "1/60 s" is
-  one frame. (That the arcade's timers are frame counters is our reading of the Dossier: see
-  [Estimates](#estimates-and-open-questions).)
+  one frame. The machine's fixed 60.606 Hz video refresh was its only steady clock, so its timers
+  almost certainly count frames and the Dossier's seconds are rounded from them; no source says
+  so outright (see [Estimates](#estimates-and-open-questions)).
 - **Which tile an actor is in** depends only on its center point (Dossier, "What Tile Am I In?").
   Sprites are 16 × 16 pixels, two tiles across, so they overlap the walls beside a corridor; that
   is only drawing.
@@ -256,7 +257,8 @@ whose turn starts (PLAYER TWO in a two-player game); this game has one player. C
 
 **Pac-Man's mouth.** He starts each life as a full circle and only opens his mouth once he
 moves. While moving, his mouth follows his position: one chomp per 8 pixels. When a wall stops
-him he freezes half open.
+him he freezes wide open facing right or down, and half open facing left or up. Through a level
+clear he is a closed circle (all seen on footage of the original).
 
 ## Scoring, lives and fruit
 
@@ -336,7 +338,7 @@ These values have no published source. Each is marked "estimate" in the code and
 game:
 
 - **Speeds:** the speed masks' bit layouts (their totals are sourced).
-- **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
-- **The other sounds:** the chomp, eating a ghost or a fruit, the extra life and the death sound's
-  shape (the sirens are measured).
-- **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.
+- **Two sounds:** the extra life, and the start tune's notes (its length is measured; the sirens,
+  the chomp, eating a ghost or a fruit and the death are measured too).
+- **Timer units:** the arcade's "seconds" read as 60 frames each at 60.606 Hz. Almost certainly
+  right, but no source states it.

@@ -19,18 +19,18 @@ What is still open, and nothing else. The finished plans are in [`docs/history/`
 No published source has these; they need someone to watch and listen to the original game.
 Current value, then the constant that sets it.
 
-- [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
-      life, death (`SoundEngine.ts`).
-- [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per
-      chomp (8 now; `MOUTH_FRAMES`, `Pacman.ts`).
 - [ ] **Anything past level 2.** The recordings reach level 2 only: the speeds and timers of later
-      levels, the extra life at 10,000 points (and its sound), the intermissions.
+      levels, the extra life at 10,000 points and its sound (an estimate now), the intermissions.
 
 ## Waiting on your decision
 
-- [ ] **Timer units.** The Dossier's seconds are read as 60 frames each ("1/60 s" = one frame),
-      while the Arcade preset runs 60.606 frames per second, so a "second" is 0.99 real seconds.
-      Unverified: keep this reading, or treat them as real seconds?
+- [ ] **Timer units: almost certainly frames, kept open** (decided 2026-11-20). The Dossier's
+      seconds are read as 60 frames each ("1/60 s" = one frame), while the Arcade preset runs
+      60.606 frames per second, so a "second" is 0.99 real seconds. We keep counting frames: the
+      machine had a fixed 60.606 Hz video refresh and nothing steadier to measure time against,
+      so its timers almost certainly count frames, and the Dossier's seconds are rounded from
+      them. Left open only because no source states it outright, and footage can't settle a 1%
+      difference. Reopen if a source gives the timers in frames.
 
 ## Waiting on a source
 
@@ -44,6 +44,15 @@ Current value, then the constant that sets it.
 
 Closed items, kept for the record. The footage ones are measured in [`docs/footage/`](footage/).
 
+- [x] **Pac-Man's mouth** (footage 2026-11-20). 8 px per chomp, following his position, as ours.
+      Against a wall (17 stops in recording 4) he holds wide open facing right or down and half
+      open facing left or up, exactly what ours gives (`MOUTH_FRAMES`, `Pacman.ts`). New: through a
+      level clear he is a closed circle; ours now is too.
+- [x] **The other sounds** (footage 2026-11-19, measured 2026-11-20). The chomp alternates
+      1090 → 530 and 410 → 1000 Hz, 0.11 s each; eating a ghost rises 130 → 1770 Hz in 0.55 s;
+      eating a fruit dips 720 → 150 → 880 Hz in 0.43 s; the death wobbles down from 780 to 450 Hz
+      (five 0.25 s cycles), then sweeps up twice, 200 → 2300 Hz. Now as measured (`SoundEngine.ts`).
+      The extra life is not in the footage (see "Anything past level 2").
 - [x] **Which way the waiting ghosts start** (step 1, done). Seen: Inky and Clyde face up and move up
       first, Pinky faces down. Ours had it the other way round since 0.2.0 (`initialDir` in
       `mazes.ts`).
