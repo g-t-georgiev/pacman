@@ -57,6 +57,6 @@ describe("Energizer blink", () => {
       seen.add(e.energizersShown);
       e.update();
     }
-    expect([...seen].sort()).toEqual([false, true]);
+    expect(seen.size).toBe(2); // both on and off
   });
 });

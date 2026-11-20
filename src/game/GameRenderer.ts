@@ -54,9 +54,9 @@ export default class GameRenderer {
 
     const { showGrid, crtFilter } = engine.settings;
 
-    // The black screen before a level's READY: only the score rows stay
+    // The black screen before a level's READY: everything goes, the score rows too (as on the
+    // original)
     if (!engine.boardVisible) {
-      renderArcadeHud(ctx, engine);
       if (crtFilter) this.renderCRTFilter();
       ctx.restore();
       return;

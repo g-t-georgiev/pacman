@@ -2,7 +2,7 @@
 
 ## The screen
 
-Like the arcade, the scores live inside the maze's blank rows: `1UP` (blinking while you play)
+Like the arcade, the scores live inside the maze's blank rows: `1UP` (blinking through a game)
 and `HIGH SCORE` above the maze, your spare lives and the fruit of the recent levels below it.
 
 Above the screen is the button bar:

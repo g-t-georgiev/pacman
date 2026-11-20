@@ -50,11 +50,15 @@ Current value, then the constant that sets it.
 
 - [x] **Ghost house release overlap** (footage 2026-11-19). On level 2 Pinky and Inky start
       moving together and overlap on the way out, as ours does. Nothing to change.
-- [ ] **Blinks.** 1UP: 16 frames per toggle (`HUD_LAYOUT.oneUpBlinkFrames`). The frightened
-      warning: 14 frames per white/blue half-cycle (`FRIGHTENED_FLASH_TOGGLE_FRAMES`).
-- [ ] **The eyes' speed going home.** 2 px every frame (`GHOST_EATEN_SPEED_PCT`).
-- [ ] **The frightened and eyes sirens.** Their pitch and rhythm (`FRIGHTENED_SIREN`,
-      `EYES_SIREN`). The recordings have both, under other sounds.
+- [x] **Blinks** (footage 2026-11-19, measured 2026-11-20). 1UP: 16 frames per toggle, as ours, but
+      blinking from PLAYER ONE on, through deaths and level clears (ours only blinked in play; now
+      fixed). The frightened warning: 14 frames per half-cycle, as ours.
+- [x] **The eyes' speed going home** (footage 2026-11-19, measured 2026-11-20). About 2 px per
+      frame, as ours (`GHOST_EATEN_SPEED_PCT`).
+- [x] **The frightened and eyes sirens** (footage 2026-11-19, measured 2026-11-20). Frightened: a
+      rising sweep 470 → 2420 Hz, every 0.13 s (ours 180 → 520). Eyes: a falling sweep
+      2650 → 600 Hz, every 0.26 s (ours 1300 → 600, every 0.08 s). Now as measured
+      (`FRIGHTENED_SIREN`, `EYES_SIREN`).
 - [ ] **Other sounds by ear.** Chomp pitch and length per dot; eating a ghost or fruit, the extra
       life, death (`SoundEngine.ts`).
 - [ ] **Pac-Man's mouth.** The frame he stops on against a wall (half open now) and the pixels per

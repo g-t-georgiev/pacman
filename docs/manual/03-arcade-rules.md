@@ -56,7 +56,7 @@ every life and level.
   energizer (Dossier). That is why a corridor full of dots takes longer than an empty one.
 - **Tunnels.** Ghosts slow to the tunnel speed in a tunnel row within 6 tiles of either edge;
   Pac-Man doesn't.
-- **Eyes** (an eaten ghost going home) move 2 pixels every frame. _Estimate._
+- **Eyes** (an eaten ghost going home) move 2 pixels every frame (seen on footage of the original).
 - **Inside the ghost house** ghosts move at 40%, about half a pixel a frame (measured on footage
   of the original).
 - **Turbo** (an option, not an arcade rule) multiplies everyone's steps by 1.6.
@@ -158,7 +158,7 @@ ghosts blue (Dossier, "Frightened Mode"):
 - They move at the frightened speed, and Pac-Man at his frightened speed.
 - The time (Table A.1) runs from 6 s on level 1 down to 1 s, and is 0 on level 17 and from 19
   on: there an energizer only reverses the ghosts. Near the end the ghosts flash white a number
-  of times (5 or 3 by level).
+  of times (5 or 3 by level), 14 frames white, 14 blue (the rhythm seen on footage).
 - **Points** for eating ghosts double within one energizer: 200, 400, 800, 1,600. The next
   energizer starts again at 200. The game pauses for 1 second with the points shown where the
   ghost was; other eyes keep moving during that pause.
@@ -245,7 +245,7 @@ here as in the arcade.
 | Death: wait               | 0.85 s        | The empty maze. Then READY, or GAME OVER with no lives left.                                                                                |
 | Level clear: freeze       | 1.9 s         | Everything stops, the ghosts still shown.                                                                                                   |
 | Level clear: maze flash   | 4 flashes     | The ghosts are gone; 12 frames per toggle.                                                                                                  |
-| Level clear: black screen | 0.4 s         | Then READY on the next level.                                                                                                               |
+| Level clear: black screen | 0.4 s         | The whole screen, score rows too. Then READY on the next level.                                                                             |
 
 The ghost-eaten pause comes from the Dossier; the other lengths were measured on footage of the
 original ([footage, 2026-11-19](../footage/2026-11-19.md)). On the original, "PLAYER ONE" names
@@ -322,8 +322,9 @@ shares of the maze's dots, so Ms. Pac-Man's mazes step up the same way:
 | 4     | 82% (between 79% and 84%)           | 760–1510 Hz | 0.30 s                |
 | 5     | 92% (about)                         | 900–1680 Hz | 0.27 s                |
 
-It plays only during play. While ghosts are blue it gives way to the frightened siren, and while
-eyes are on their way home to the eyes siren. Code: [siren.ts](../../src/game/siren.ts),
+It plays only during play. While ghosts are blue it gives way to the frightened siren, a rising
+sweep from 470 to 2420 Hz, 7.5 times a second; while eyes are on their way home, to the eyes
+siren, a falling sweep from 2650 to 600 Hz, about 4 times a second (both from the same footage). Code: [siren.ts](../../src/game/siren.ts),
 [SoundEngine.ts](../../src/audio/SoundEngine.ts).
 
 ## Estimates and open questions
@@ -332,10 +333,6 @@ These values have no published source. Each is marked "estimate" in the code and
 [open items](../OPEN_ITEMS.md) (with the constant that sets it), to check against the original
 game:
 
-- **Speeds:** the eyes (2 px per frame) and the speed masks' bit
-  layouts (their totals are sourced).
-- **Timing details:** the frightened flash rhythm (14 frames per half-cycle) and the 1UP blink (16
-  frames).
-- **The frightened and eyes sirens:** their pitch and rhythm.
+- **Speeds:** the speed masks' bit layouts (their totals are sourced).
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.
