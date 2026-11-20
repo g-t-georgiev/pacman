@@ -1,12 +1,14 @@
 # The arcade rules
 
 This chapter is our own "Pac-Man Dossier": how the arcade game works, rule by rule, as this game
-plays it. Each rule names its **source**, or says it is an **estimate**, and points to the code
-that implements it.
+plays it. Each rule names its **source**, says it was **seen on footage** of the original, or
+says it is an **estimate**, and points to the code that implements it.
 
 The main source is _The Pac-Man Dossier_ by Jamey Pittman ("Dossier" below; "Table A.1" is its
 per-level table). The frightened ghosts' random numbers follow _Retro Game Mechanics Explained_.
-No code or data from the original ROMs is used.
+Where no published source gives a value, it was measured on recordings of the original game
+running in MAME ([footage](../footage/2026-11-19.md)): round timing, the ghost house, the
+energizers, the sirens. No code or data from the original ROMs is used.
 
 ## Units: tiles, pixels and frames
 
@@ -324,8 +326,8 @@ shares of the maze's dots, so Ms. Pac-Man's mazes step up the same way:
 
 It plays only during play. While ghosts are blue it gives way to the frightened siren, a rising
 sweep from 470 to 2420 Hz, 7.5 times a second; while eyes are on their way home, to the eyes
-siren, a falling sweep from 2650 to 600 Hz, about 4 times a second (both from the same footage). Code: [siren.ts](../../src/game/siren.ts),
-[SoundEngine.ts](../../src/audio/SoundEngine.ts).
+siren, a falling sweep from 2650 to 600 Hz, about 4 times a second (both from the same footage).
+Code: [siren.ts](../../src/game/siren.ts), [SoundEngine.ts](../../src/audio/SoundEngine.ts).
 
 ## Estimates and open questions
 
@@ -335,4 +337,6 @@ game:
 
 - **Speeds:** the speed masks' bit layouts (their totals are sourced).
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
+- **The other sounds:** the chomp, eating a ghost or a fruit, the extra life and the death sound's
+  shape (the sirens are measured).
 - **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.

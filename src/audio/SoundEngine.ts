@@ -5,7 +5,9 @@ import { SIM_FPS } from "../game/constants";
  * Procedural sounds (S1/S2). The arcade used a 3-voice wavetable chip (32-step, 4-bit waveforms);
  * we approximate its character with our own small wavetables and pitch sweeps, matched by ear to
  * the original's behavior: when each sound plays, its rhythm, pitch range and shape. No samples or
- * data from the original are used. Every pitch and length below is an estimate.
+ * data from the original are used. The sirens' pitches and rhythms, and the death sound's length,
+ * were measured on footage of the original (docs/footage/2026-11-19.md); the other sounds' pitches
+ * and lengths are estimates.
  */
 
 type SirenKind = "NORMAL" | "FRIGHTENED" | "EYES" | "NONE";

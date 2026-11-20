@@ -2,7 +2,9 @@
 
 A Pac-Man that plays like the 1980 arcade machine, and a workbench for studying how it does that.
 The mechanics follow _The Pac-Man Dossier_ and other published analyses, rule by rule, in the
-arcade's own units (8-pixel tiles, whole pixels, one step per arcade frame at 60.606 Hz). Built with
+arcade's own units (8-pixel tiles, whole pixels, one step per arcade frame at 60.606 Hz). What no
+published source gives (round timing, the ghost house's details, the energizers, the sirens) was
+measured on recordings of the original game. Built with
 TypeScript, React and the Canvas 2D API on a deterministic simulation.
 
 Two modes: **Pac-Man** and **Ms. Pac-Man**.
@@ -43,7 +45,7 @@ vp build             # the production build in dist/
 ## Checking it
 
 ```bash
-vp check               # format, lint, type check
+vp check               # format, lint, type check (also `vp run check`)
 vp test                # every test: the headless suites, then the browser tests
 vp run test:unit       # the headless suites only (a few seconds)
 vp run test:e2e        # the app in Chromium (first time: vp exec playwright install chromium)
@@ -55,8 +57,21 @@ vp run release -- --dry-run # the next version and why; `vp run release` makes i
 ```
 
 Every commit runs the format and lint, the golden check, the versions check and the regression
-suite (the pre-commit hook). Every push runs all checks, every test and the build
-([CI](.github/workflows/ci.yml)).
+suite (the pre-commit hook), and its message must follow Conventional Commits (the commit-msg
+hook). Every push runs all checks, every test and the build ([CI](.github/workflows/ci.yml)).
+
+On GitHub, Actions also:
+
+- **build every branch** into the live site, at `/pacman/<branch>/` (`main` at the root), and
+  remove a branch's build when the branch is deleted ([pages.yml](.github/workflows/pages.yml));
+- **release** on demand: _Release on dev_ works out the next version on `dev` (a dry run by
+  default), and merging `dev` into `main` tags it and, for a minor or major version, publishes a
+  GitHub Release ([release-dev.yml](.github/workflows/release-dev.yml),
+  [release.yml](.github/workflows/release.yml));
+- **keep `dev` in step with `main`** after each merge into `main`
+  ([sync-dev.yml](.github/workflows/sync-dev.yml)).
+
+The details are in [Replays, rewind and versions](docs/manual/05-replays-and-versions.md#releases).
 
 ## Features
 
@@ -81,20 +96,24 @@ suite (the pre-commit hook). Every push runs all checks, every test and the buil
 src/            the game: engine (game/), controllers, actors (core/), UI (components/, hooks/),
                 sound, the agent driver, diagnostics, the manual page (docs/)
 tests/          unit, integration, fidelity, regression, golden replay and e2e (browser) tests
-scripts/        golden replays: update, check, trace
+scripts/        golden replays (update, check, trace), the versions in the docs, releases,
+                the commit message check, the branch builds' site
 docs/manual/    the manual, one Markdown file per chapter
+docs/footage/   what recordings of the original game showed, and how it was applied
 docs/           OPEN_ITEMS.md (what is still open); history/ (the finished plans)
 public/         the canvas font and the icon
+.github/        CI, the branch builds (GitHub Pages), releases, keeping dev in step with main
 ```
 
 Every file is described in [Files and scripts](docs/manual/10-files-and-scripts.md).
 
 ## Open questions
 
-Some values have no published source and are estimates until checked against the original game
-(round phase lengths, the energizer's look, when the start tune plays, the ghost house release
-overlap, sounds). They are tracked, with the constant that sets each one, in
-[`docs/OPEN_ITEMS.md`](docs/OPEN_ITEMS.md), along with two rule decisions still to make. The
+Most values no published source gives have been measured on recordings of the original game
+([`docs/footage/`](docs/footage/)). A few are still estimates: some sounds by ear, Pac-Man's
+mouth against a wall, and anything past level 2. They are tracked, with the constant that sets
+each one, in [`docs/OPEN_ITEMS.md`](docs/OPEN_ITEMS.md), along with one rule decision still to
+make (the timer units). The
 finished project plans are kept in [`docs/history/`](docs/history/).
 
 ## Versions

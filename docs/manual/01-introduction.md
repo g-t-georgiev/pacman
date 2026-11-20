@@ -21,8 +21,8 @@ The same files are in the repository under `docs/manual/`, so the manual reads o
 - **The arcade's mechanics, measured in the arcade's own units.** 8-pixel tiles, whole-pixel
   positions, one simulation step per arcade frame at 60.606 frames per second. Speeds, turns,
   ghost decisions, the ghost house and the level table follow _The Pac-Man Dossier_ by Jamey
-  Pittman and other published analyses. Where no published source gives a value, the game uses
-  an estimate and says so: see [Estimates and open questions](./03-arcade-rules.md#estimates-and-open-questions).
+  Pittman and other published analyses. Where no published source gives a value, it was
+  measured on recordings of the original game, or the game uses an estimate and says so: see [Estimates and open questions](./03-arcade-rules.md#estimates-and-open-questions).
 - **A deterministic simulation.** The same start and the same inputs always give the same game,
   frame for frame. That is what makes rewind, replays, share links and the golden replay tests
   possible.
@@ -50,8 +50,10 @@ See [Testing](./06-testing.md) for the rest of the commands.
 
 - A rule's **source** is named where it is given: "Dossier" means _The Pac-Man Dossier_, and
   "Table A.1" is its per-level table.
-- **Estimate** marks a value no published source gives: chosen from play and video, and listed in
-  the [open items](../OPEN_ITEMS.md) to confirm.
+- **Seen on footage** marks a value measured on recordings of the original game, frame by frame
+  and from the sound: see [the footage notes](../footage/2026-11-19.md).
+- **Estimate** marks a value neither a source nor the footage gives yet, listed in the
+  [open items](../OPEN_ITEMS.md) to confirm.
 - File names like `src/game/GameEngine.ts` point to the code. In the game's page they show the
   path when you hover them.
 
