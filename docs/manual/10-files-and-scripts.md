@@ -28,26 +28,27 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 
 ## Scripts
 
-| Script             | Runs                                      | What it does                                                                           |
-| :----------------- | :---------------------------------------- | :------------------------------------------------------------------------------------- |
-| `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network                            |
-| `build`            | `vp build`                                | The production build in `dist/`                                                        |
-| `clean`            | `rm -rf dist`                             | Delete the build                                                                       |
-| `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                                         |
-| `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                                           |
-| `test`             | `vp test`                                 | Every test: unit, then e2e                                                             |
-| `test:unit`        | `vp test --project unit`                  | The headless tests                                                                     |
-| `test:e2e`         | `vp test --project e2e`                   | The browser tests                                                                      |
-| `test:regression`  | `vp test --project unit tests/regression` | Core contracts and fixed bugs (pre-commit)                                             |
-| `golden:update`    | `scripts/update-golden.ts`                | Re-record the golden replays, bumping versions as needed                               |
-| `golden:check`     | `scripts/check-golden.ts`                 | Do the goldens still match this build? (pre-commit, CI)                                |
-| `golden:trace`     | `scripts/play-trace.ts`                   | A per-second play trace of every golden, and a comparison of two                       |
-| `docs:versions`    | `scripts/versions.ts`                     | Rewrite the versions in the README and the manual's introduction                       |
-| `docs:check`       | `scripts/versions.ts --check`             | Are those versions up to date? (pre-commit, and a test)                                |
-| `release`          | `scripts/release.ts`                      | Make a release on dev (`-- --dry-run` to see it first, `-- --version x.y.z` to choose) |
-| `release:check`    | `scripts/release.ts --check`              | Does the version cover the changes since the last tag? (CI, pull requests into main)   |
-| `release:tag`      | `scripts/release.ts --tag`                | Tag the version, once (CI, after a merge into main)                                    |
-| `prepare`          | `vp config`                               | Installs the git hooks after `vp install`                                              |
+| Script             | Runs                                      | What it does                                                                              |
+| :----------------- | :---------------------------------------- | :---------------------------------------------------------------------------------------- |
+| `start`            | `vp dev --port=3000 --host=0.0.0.0`       | The dev server, reachable from other devices on the network                               |
+| `build`            | `vp build`                                | The production build in `dist/`                                                           |
+| `clean`            | `rm -rf dist`                             | Delete the build                                                                          |
+| `lint`, `lint:fix` | `vp lint`                                 | Lint (and fix)                                                                            |
+| `fmt`, `fmt:check` | `vp fmt`                                  | Format (or check formatting)                                                              |
+| `check`            | `vp check`                                | Format, lint and type checks in one (the same as the built-in `vp check`; `vp run check`) |
+| `test`             | `vp test`                                 | Every test: unit, then e2e                                                                |
+| `test:unit`        | `vp test --project unit`                  | The headless tests                                                                        |
+| `test:e2e`         | `vp test --project e2e`                   | The browser tests                                                                         |
+| `test:regression`  | `vp test --project unit tests/regression` | Core contracts and fixed bugs (pre-commit)                                                |
+| `golden:update`    | `scripts/update-golden.ts`                | Re-record the golden replays, bumping versions as needed                                  |
+| `golden:check`     | `scripts/check-golden.ts`                 | Do the goldens still match this build? (pre-commit, CI)                                   |
+| `golden:trace`     | `scripts/play-trace.ts`                   | A per-second play trace of every golden, and a comparison of two                          |
+| `docs:versions`    | `scripts/versions.ts`                     | Rewrite the versions in the README and the manual's introduction                          |
+| `docs:check`       | `scripts/versions.ts --check`             | Are those versions up to date? (pre-commit, and a test)                                   |
+| `release`          | `scripts/release.ts`                      | Make a release on dev (`-- --dry-run` to see it first, `-- --version x.y.z` to choose)    |
+| `release:check`    | `scripts/release.ts --check`              | Does the version cover the changes since the last tag? (CI, pull requests into main)      |
+| `release:tag`      | `scripts/release.ts --tag`                | Tag the version, once (CI, after a merge into main)                                       |
+| `prepare`          | `vp config`                               | Installs the git hooks after `vp install`                                                 |
 
 Run them with `vp run <script>` (`vp test`, `vp build` and `vp dev` are also Vite+ built-ins).
 

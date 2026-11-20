@@ -115,7 +115,7 @@ This README describes **Pac-Man Arcade Lab 0.3.0**.
 | Playwright: the browser tests (Chromium)     | 1.65.1                                |
 | TypeScript                                   | 7.0.2                                 |
 | React                                        | 19.3.1                                |
-| Tailwind CSS                                 | 4.3.3                                 |
+| Tailwind CSS                                 | 4.3.5                                 |
 | marked and highlight.js: the manual's page   | 18.2.1 and 11.12.0                    |
 | Node.js: CI                                  | 26                                    |
 | bun: package manager                         | 1.4.4                                 |
