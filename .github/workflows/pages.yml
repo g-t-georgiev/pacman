@@ -10,7 +10,8 @@ name: Pages
 
 on:
   push:
-    branches-ignore: [gh-pages]
+    # Dependabot's branches get no preview (its runs can't write to the site anyway)
+    branches-ignore: [gh-pages, "dependabot/**"]
   delete:
   workflow_dispatch:
 
@@ -26,8 +27,10 @@ concurrency:
 
 jobs:
   publish:
-    # A deleted tag is not a branch
-    if: github.event_name != 'delete' || github.event.ref_type == 'branch'
+    # A deleted tag is not a branch, and Dependabot's branches never had a build
+    if: >-
+      (github.event_name != 'delete' || github.event.ref_type == 'branch') &&
+      !startsWith(github.event.ref, 'dependabot/')
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -21,6 +21,7 @@ that every file under `src/` is listed here, so this page can't fall behind sile
 | `.github/workflows/release.yml`            | After a merge into main: tag the version, and a GitHub Release for a minor or major one                               |
 | `.github/workflows/pages.yml`              | On every push: build the branch for its own path and publish the site (main at /pacman/, others at /pacman/<branch>/) |
 | `.github/workflows/sync-dev.yml`           | After a push to main (or by hand): bring dev up to main (fast-forward, or a merge)                                    |
+| `.github/dependabot.yml`                   | Dependabot: one PR per dependency update into dev, weekly (a few packages grouped)                                    |
 | `.github/workflows/release-dev.yml`        | The release button: `vp run release` on dev from the Actions tab (a dry run by default)                               |
 | `.claude/launch.json`                      | Dev server entries for the Claude desktop app's preview                                                               |
 | `public/fonts/Emulogic.ttf`                | The pixel font used on the canvas (© ck!, freakyfonts.de; check the author's terms before publishing)                 |

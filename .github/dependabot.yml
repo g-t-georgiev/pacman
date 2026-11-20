@@ -1,0 +1,37 @@
+# Dependabot: one pull request per dependency update, into dev, once a week, so a breaking change
+# points at its package (see the manual, "Releases"). Packages that must move together are
+# grouped: Vite+ with its Vite core and Vitest's browser provider, React with its types, Tailwind
+# with its Vite plugin. Commit messages follow Conventional Commits as `chore(deps): ...` (or
+# `chore(deps-dev): ...`), which the release script counts as no version bump.
+#
+# Its branches (dependabot/...) get no Pages preview: see pages.yml.
+version: 2
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      vite-plus:
+        patterns: ["vite-plus", "vite", "@vitest/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"

@@ -54,9 +54,13 @@ export function formatScore(score: number): string {
   return score === 0 ? "00" : String(score);
 }
 
-/** Spare lives shown: lives beyond the one being played, up to the display limit. */
-export function livesShown(lives: number): number {
-  return Math.max(0, Math.min(HUD_LAYOUT.maxLivesShown, lives - 1));
+/**
+ * Lives shown at the bottom, up to the display limit: the spare lives, beyond the one being
+ * played. During a new game's PLAYER ONE stage, before Pac-Man appears, the life about to be
+ * played is still shown (3 icons, then 2 as the actors appear; seen on footage of the original).
+ */
+export function livesShown(lives: number, beforeFirstLife = false): number {
+  return Math.max(0, Math.min(HUD_LAYOUT.maxLivesShown, beforeFirstLife ? lives : lives - 1));
 }
 
 /** The fruit icons for a level, oldest first: the last up to 7 levels' fruit. */
@@ -97,7 +101,7 @@ export function renderArcadeHud(ctx: CanvasRenderingContext2D, engine: GameEngin
   // Bottom left: spare lives as 2x2-tile Pac-Man icons facing left
   const iconY = (L.iconRow + 1) * T;
   ctx.fillStyle = "#ffff00";
-  for (let i = 0; i < livesShown(engine.lives); i++) {
+  for (let i = 0; i < livesShown(engine.lives, engine.phase === "PLAYER_ONE"); i++) {
     const cx = (L.livesStartCol + i * 2 + 1) * T;
     ctx.beginPath();
     ctx.moveTo(cx, iconY);

@@ -68,8 +68,10 @@ directions. **Reset** restores the arrows and W A S D. The mapping is saved in t
   - **Modern** aims where the rules say, without the overflow, and runs at an even 60 Hz to
     match most displays.
 - **Joystick feel.** With it on, letting go of a direction cancels a turn you queued and haven't
-  reached yet, like centering an arcade stick. Pac-Man keeps going straight. Off (default), a
-  queued turn stays queued, the way keyboard players expect.
+  reached yet, like centering an arcade stick. Pac-Man keeps going straight. This is how the
+  original plays: it has no turn buffer, so you hold the stick in the new direction until the
+  turn (seen when playing it). Off (default), a queued turn stays queued, the way keyboard
+  players expect.
 
 The preset and joystick feel are saved in this browser.
 

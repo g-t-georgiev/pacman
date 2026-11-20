@@ -29,9 +29,13 @@ Current value, then the constant that sets it.
 
 ## Waiting on your decision
 
-- [ ] **Timer units.** The Dossier's seconds are read as 60 frames each ("1/60 s" = one frame),
-      while the Arcade preset runs 60.606 frames per second, so a "second" is 0.99 real seconds.
-      Unverified: keep this reading, or treat them as real seconds?
+- [ ] **Timer units: almost certainly frames, kept open** (decided 2026-11-20). The Dossier's
+      seconds are read as 60 frames each ("1/60 s" = one frame), while the Arcade preset runs
+      60.606 frames per second, so a "second" is 0.99 real seconds. We keep counting frames: the
+      machine had a fixed 60.606 Hz video refresh and nothing steadier to measure time against,
+      so its timers almost certainly count frames, and the Dossier's seconds are rounded from
+      them. Left open only because no source states it outright, and footage can't settle a 1%
+      difference. Reopen if a source gives the timers in frames.
 
 ## Waiting on a source
 

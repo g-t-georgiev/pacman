@@ -84,11 +84,19 @@ describe("Arcade HUD in the maze's blank rows (T13)", () => {
   });
 
   it("spare lives: the lives beyond the one in play, up to 5", () => {
-    expect([1, 2, 3, 4, 9].map(livesShown)).toEqual([0, 1, 2, 3, 5]);
+    expect([1, 2, 3, 4, 9].map((n) => livesShown(n))).toEqual([0, 1, 2, 3, 5]);
+    expect(livesShown(3, true)).toBe(3); // before the first life starts
     const engine = new GameEngine("PACMAN", 0);
-    const r = recordingContext();
-    renderArcadeHud(r.ctx, engine); // a new game: 3 lives, 2 icons
-    expect(r.fills()).toBe(2);
+    const icons = () => {
+      const r = recordingContext();
+      renderArcadeHud(r.ctx, engine);
+      return r.fills();
+    };
+    // A new game: all 3 lives during PLAYER ONE, then 2 once Pac-Man appears
+    expect(engine.phase).toBe("PLAYER_ONE");
+    expect(icons()).toBe(3);
+    while (engine.phase === "PLAYER_ONE") engine.update();
+    expect(icons()).toBe(2);
   });
 
   it("fruit: the last 7 levels', newest at the right ending at column 24", () => {

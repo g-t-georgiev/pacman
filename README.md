@@ -69,7 +69,9 @@ On GitHub, Actions also:
   GitHub Release ([release-dev.yml](.github/workflows/release-dev.yml),
   [release.yml](.github/workflows/release.yml));
 - **keep `dev` in step with `main`** after each merge into `main`
-  ([sync-dev.yml](.github/workflows/sync-dev.yml)).
+  ([sync-dev.yml](.github/workflows/sync-dev.yml));
+- **propose dependency updates**, one pull request per package into `dev`, weekly
+  ([dependabot.yml](.github/dependabot.yml)).
 
 The details are in [Replays, rewind and versions](docs/manual/05-replays-and-versions.md#releases).
 

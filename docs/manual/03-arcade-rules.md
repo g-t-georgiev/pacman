@@ -18,8 +18,9 @@ energizers, the sirens. No code or data from the original ROMs is used.
 - **One simulation step is one arcade frame.** The real machine runs at 60.606 frames per second
   (Dossier, Appendix C); so does this game with the Arcade preset (60 even with Modern).
 - **Timers count frames.** The Dossier's seconds are treated as 60 frames each, so "1/60 s" is
-  one frame. (That the arcade's timers are frame counters is our reading of the Dossier: see
-  [Estimates](#estimates-and-open-questions).)
+  one frame. The machine's fixed 60.606 Hz video refresh was its only steady clock, so its timers
+  almost certainly count frames and the Dossier's seconds are rounded from them; no source says
+  so outright (see [Estimates](#estimates-and-open-questions)).
 - **Which tile an actor is in** depends only on its center point (Dossier, "What Tile Am I In?").
   Sprites are 16 × 16 pixels, two tiles across, so they overlap the walls beside a corridor; that
   is only drawing.
@@ -339,4 +340,5 @@ game:
 - **Pac-Man's mouth:** the frame he stops on against a wall, and 8 pixels per chomp.
 - **Two sounds:** the extra life, and the start tune's notes (its length is measured; the sirens,
   the chomp, eating a ghost or a fruit and the death are measured too).
-- **Timer units:** whether the arcade's "seconds" are 60 frames (our reading) at 60.606 Hz.
+- **Timer units:** the arcade's "seconds" read as 60 frames each at 60.606 Hz. Almost certainly
+  right, but no source states it.
